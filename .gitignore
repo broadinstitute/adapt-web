@@ -1,0 +1,11 @@
+# Compiled python files
+*.pyc
+
+# MacOS Files
+.DS_Store
+
+# Built Webpack App
+/django_adapt_web/static/*
+
+# Database
+db.sqlite3
