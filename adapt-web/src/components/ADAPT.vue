@@ -5,6 +5,31 @@
       You clicked me {{ count }} times.
     </button>`
 
+        <!-- our signup form ===================== -->
+    <form id="run-form">
+      <div class="field">
+        <label class="label">cromwell_id</label>
+        <input type="text" class="input" name="cromwell_id">
+      </div>
+
+      <!-- name -->
+      <div class="field">
+        <label class="label">taxid</label>
+        <input type="number" class="input" name="taxid">
+      </div>
+
+      <!-- email -->
+      <div class="field">
+        <label class="label">ref_accs</label>
+        <input type="text" class="input" name="ref_accs">
+      </div>
+
+      <!-- submit button -->
+      <div class="field has-text-right">
+        <button type="submit" class="button is-danger">Submit</button>
+      </div>
+    </form>
+
     <button @click="adapt_run">Run ADAPT on test example</button>
     <h3>Objectives</h3>
     <input type="checkbox" id="max_act" value="maximum_activity" v-model="objs">
@@ -23,6 +48,13 @@
 const FormData = require('form-data');
 // const https = require('https');
 
+// const runForm = document.getElementById('run-form');
+// const cromwell_idInput  = signupForm.querySelector('input[name=cromwell_id]');
+// const taxidInput = signupForm.querySelector('input[name=taxid]');
+// const ref_accsInput = signupForm.querySelector('input[name=ref_accs]');
+// runForm.addEventListener('submit', processRunForm);
+
+
 export default {
   name: 'ADAPT',
   props: {
@@ -38,19 +70,27 @@ export default {
   methods: {
     async adapt_run(event) {
       const form = new FormData();
-      const json = JSON.stringify({
-        "single_adapt.adapt.queueArn": "None",
-        "single_adapt.adapt.taxid": 64320,
-        "single_adapt.adapt.ref_accs": "NC_035889",
-        "single_adapt.adapt.segment": "None",
-        "single_adapt.adapt.obj": "minimize-guides",
-        "single_adapt.adapt.specific": false,
-        "single_adapt.adapt.image": "quay.io/broadinstitute/adaptcloud",
-        "single_adapt.adapt.rand_sample": 5,
-        "single_adapt.adapt.rand_seed": 294
-      });
-      form.append('workflowUrl', 'https://github.com/broadinstitute/adapt-pipes/blob/master/single_adapt.wdl');
-      form.append('workflowInputs', json);
+      form.append("cromwell_id", "9999-9999-9999-9999")
+      form.append("taxid", 99999)
+      form.append("ref_accs", "NC_999999")
+
+
+      // const json = JSON.stringify({
+      //   "cromwell_id": "9999-9999-9999-9999",
+      //   "taxid": 99999,
+      //   "ref_accs": "NC_999999"
+      //   // "single_adapt.adapt.queueArn": "None",
+      //   // "single_adapt.adapt.taxid": 64320,
+      //   // "single_adapt.adapt.ref_accs": "NC_035889",
+      //   // "single_adapt.adapt.segment": "None",
+      //   // "single_adapt.adapt.obj": "minimize-guides",
+      //   // "single_adapt.adapt.specific": false,
+      //   // "single_adapt.adapt.image": "quay.io/broadinstitute/adaptcloud",
+      //   // "single_adapt.adapt.rand_sample": 5,
+      //   // "single_adapt.adapt.rand_seed": 294
+      // });
+      // form.append('workflowUrl', 'https://github.com/broadinstitute/adapt-pipes/blob/master/single_adapt.wdl');
+      // form.append('workflowInputs', json);
       // const agent = new https.Agent({  
       //   rejectUnauthorized: false
       // });
@@ -70,7 +110,7 @@ export default {
 
       // xhr.send(form);
 
-      const response = await fetch('http://ec2-54-91-18-102.compute-1.amazonaws.com/api/workflows/v1', {
+      const response = await fetch('/api/adaptruns', {
         method: 'post',
         body: form,
       })
@@ -85,6 +125,11 @@ export default {
       if (event) {
         alert(event.target.tagName)
       }
+    },
+    processSignupForm(e) {
+      e.preventDefault();
+
+      // form processing here
     }
   }
 }

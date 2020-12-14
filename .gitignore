@@ -6,6 +6,8 @@
 
 # Built Webpack App
 /django_adapt_web/static/*
+/adapt-web/webpack-stats.json
 
 # Database
 db.sqlite3
+/*/migrations/*
