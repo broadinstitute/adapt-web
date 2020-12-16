@@ -1,9 +1,5 @@
-import urllib.parse
-import urllib.request
-import http.client
-import socket
-import random
-import time
+import requests
+import json
 
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
@@ -21,6 +17,7 @@ from .models import ADAPTRun
 SERVER_URL = "https://ec2-54-91-18-102.compute-1.amazonaws.com/api/workflows/v1"
 WORKFLOW_URL = "https://github.com/broadinstitute/adapt-pipes/blob/master/single_adapt.wdl"
 IMAGE = "quay.io/broadinstitute/adaptcloud",
+CONTACT = "ppillai@broadinstitute.org"
 
 
 @api_view(['GET', 'POST'])
@@ -45,24 +42,21 @@ def adaptrun_list(request, format=None):
             "single_adapt.adapt.rand_sample": 5,
             "single_adapt.adapt.rand_seed": 294
         }
-        cromwell_params = {'workflowInputs': workflowInputs,
+        
+        cromwell_params = {'workflowInputs': json.dumps(workflowInputs),
                            'workflowUrl': WORKFLOW_URL}
-        cromwell_data = urllib.parse.urlencode(cromwell_params)
-        cromwell_data = cromwell_data.encode('ascii')
-        cromwell_request = urllib.request.Request(SERVER_URL, data=cromwell_data, 
-                method='POST')
         try:
-            cromwell_response = urlopen_with_tries(cromwell_request)
-        except (urllib.error.HTTPError, http.client.HTTPException,
-                urllib.error.URLError, socket.timeout):
+            cromwell_response = requests.post(SERVER_URL, files=cromwell_params, verify=False)
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout):
             content = {'Connection Error': "Unable to connect to AWS server. "
                 "Try again in a few minutes. If it still doesn't work, "
-                "contact ppillai@broadinstitute.org."}
+                "contact %s." %CONTACT}
             return Response(content, status=status.HTTP_504_GATEWAY_TIMEOUT)
-        cromwell_json = json.load(cromwell_response)
-        request.data.update({"cromwell_id": cromwell_json["id"]})
-        data = JSONParser().parse(request)
-        serializer = ADAPTRunSerializer(data=data)
+        cromwell_json = cromwell_response.json()
+        mod_request_data = request.data.copy()
+        mod_request_data.update({"cromwell_id": cromwell_json["id"]})
+        serializer = ADAPTRunSerializer(data=mod_request_data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
