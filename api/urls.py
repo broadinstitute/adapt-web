@@ -9,8 +9,8 @@ from . import views
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    path('adaptruns/', views.adaptrun_list),
-    path('adaptruns/<int:pk>/', views.adaptrun_detail),
+    path('adaptruns/', views.ADAPTRunList.as_view()),
+    path('adaptruns/<int:pk>/', views.ADAPTRunDetail.as_view()),
     # path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

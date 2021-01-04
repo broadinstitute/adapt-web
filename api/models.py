@@ -4,26 +4,40 @@ class ADAPTRun(models.Model):
     '''Defines base model for all ADAPT run types
     '''
     cromwell_id = models.CharField(max_length = 100)
-    taxid = models.IntegerField()
-    ref_accs = models.CharField(max_length = 60)
-    
+    workflowInputs = models.JSONField()
+
     ## Base Args
-    # cromwell_id = models.CharField(max_length = 100)
+    # cromwell_id = models.CharField(
+    #     max_length = 100
+    # )
     # priority = models.BooleanField()
 
 
     ## Specificity
-    # idm = models.PositiveSmallIntegerField(null=True, blank=True)
-    # idfrac = models.DecimalField(max_digits=10, decimal_places = 9, null=True, blank=True)
-    # idmethod?
+    # idm = models.PositiveSmallIntegerField(
+    #     null=True,
+    #     blank=True
+    # )
+    # idfrac = models.DecimalField(
+    #     max_digits=10,
+    #     decimal_places = 9,
+    #     null=True,
+    #     blank=True
+    # )
 
-    # specific_against_taxa = models.CharField(null=True, blank=True)
-    # specific_against_fastas = models.FileField(null=True, blank=True)
+    # specific_against_taxa = models.CharField(
+    #     null=True,
+    #     blank=True
+    # )
+    # specific_against_fastas = models.FileField(
+    #     null=True,
+    #     blank=True
+    # )
 
     ## class Meta:
     ##     abstract=True
 
-# Search Type
+# # Search Type
 # class CompTargArgs(models.Model):
 #     adaptrun = models.OneToOneField(
 #         ADAPTRun,
@@ -31,25 +45,25 @@ class ADAPTRun(models.Model):
 #         primary_key=True,
 #     )
 #     pl = models.PositiveIntegerField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 #     pm = models.PositiveSmallIntegerField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 #     pp = models.DecimalField(
-#         max_digits=10, 
-#         decimal_places=9, 
-#         null=True, 
+#         max_digits=10,
+#         decimal_places=9,
+#         null=True,
 #         blank=True
 #     )
 #     max_primers_at_site = models.PositiveSmallIntegerField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 #     max_target_length = models.PositiveIntegerField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 
@@ -61,15 +75,15 @@ class ADAPTRun(models.Model):
 #     )
 
 #     w = models.IntegerField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 #     window_step = models.IntegerField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 #     sort = models.BooleanField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 
@@ -82,17 +96,19 @@ class ADAPTRun(models.Model):
 #     )
 
 # class AutoArgArgs(model.Models):
-#     taxid = models.PositiveIntegerField()
-#     ref_accs = models.CharField(
-#         max_length = 60, 
-#         blank=True
-#     )
-
-# class AutoFileArgs(model.Models):
 #     adaptrun = models.OneToOneField(
 #         ADAPTRun,
 #         on_delete=models.CASCADE,
 #         primary_key=True,
+#     )
+#     taxid = models.PositiveIntegerField()
+#     segment = models.CharField(
+#         max_length = 60,
+#         blank=True
+#     )
+#     ref_accs = models.CharField(
+#         max_length = 60,
+#         blank=True
 #     )
 
 # # Objective
@@ -103,21 +119,21 @@ class ADAPTRun(models.Model):
 #         primary_key=True,
 #     )
 #     soft_guide_constraint = models.PositiveSmallIntegerField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 #     hard_guide_constraint = models.PositiveSmallIntegerField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 #     penalty_strength = models.DecimalField(
-#         max_digits=10, 
+#         max_digits=10,
 #         decimal_places = 9,
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 #     random_greedy = models.BooleanField(
-#         null=True, 
+#         null=True,
 #         blank=True
 #     )
 
@@ -127,4 +143,23 @@ class ADAPTRun(models.Model):
 #         on_delete=models.CASCADE,
 #         primary_key=True,
 #     )
-    # --obj minimize-guides -gm ~{gm} -gp ~{gp} --require-flanking3 H
+#     gm = models.PositiveSmallIntegerField(
+#         null=True
+#         blank=True
+#     )
+#     gp = models.DecimalField(
+#         max_digits=10,
+#         decimal_places=9,
+#         null=True,
+#         blank=True
+#     )
+#     required_flanking3 = models.CharField(
+#         max_length = 20,
+#         blank=True
+#     )
+#     required_flanking5 = models.CharField(
+#         max_length = 20,
+#         blank=True
+#     )
+
+
