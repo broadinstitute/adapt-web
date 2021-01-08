@@ -1,5 +1,4 @@
 <template>
-  <img alt="Vue logo" src="@/assets/logo.png">
   <ADAPT msg="Welcome to Your Vue.js App"/>
   <Design
     v-for="virus in viruses"
