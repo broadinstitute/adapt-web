@@ -1,15 +1,20 @@
 import requests
 import json
+import zipfile
+import uuid
 
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, Http404
+from django.core.files import File
+from django.views.decorators.csrf import csrf_exempt
+
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework import status, generics
 from rest_framework.decorators import action, api_view
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
+from rest_framework import mixins
 from rest_framework.reverse import reverse
 
 from .serializers import ADAPTRunSerializer
@@ -23,17 +28,70 @@ IMAGE = "quay.io/broadinstitute/adaptcloud"
 CONTACT = "ppillai@broadinstitute.org"
 
 
-class ADAPTRunList(APIView):
-    """
-    List all ADAPT runs, or create a new ADAPT run.
-    """
+# class ADAPTRunList(generics.ListCreateAPIView):
+#     """
+#     List all ADAPT runs, or create a new ADAPT run.
+#     """
+#     queryset = ADAPTRun.objects.all()
+#     serializer_class = ADAPTRunSerializer
 
-    def get(self, request, format=None):
-        adaptruns = ADAPTRun.objects.all()
-        serializer = ADAPTRunSerializer(adaptruns, many=True)
-        return Response(serializer.data)
+#     def post(self, request, format=None):
+#         workflowInputs = {
+#             "adapt_web.adapt.queueArn": QUEUE_ARN,
+#             "adapt_web.adapt.taxid": request.data['taxid'],
+#             "adapt_web.adapt.segment": request.data['segment'],
+#             "adapt_web.adapt.obj": request.data['obj'],
+#             "adapt_web.adapt.specific": False,
+#             "adapt_web.adapt.image": IMAGE,
+#             "adapt_web.adapt.rand_sample": 5,
+#             "adapt_web.adapt.rand_seed": 294
+#         }
 
-    def post(self, request, format=None):
+#         cromwell_params = {'workflowInputs': json.dumps(workflowInputs),
+#                            'workflowUrl': WORKFLOW_URL}
+#         try:
+#             cromwell_response = requests.post(SERVER_URL, files=cromwell_params, verify=False)
+#         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+#                 requests.exceptions.Timeout):
+#             content = {'Connection Error': "Unable to connect to AWS server. "
+#                 "Try again in a few minutes. If it still doesn't work, "
+#                 "contact %s." %CONTACT}
+#             return Response(content, status=status.HTTP_504_GATEWAY_TIMEOUT)
+#         cromwell_json = cromwell_response.json()
+#         del workflowInputs["adapt_web.adapt.queueArn"]
+#         adaptrun_info = {
+#             "cromwell_id": cromwell_json["id"],
+#             "workflowInputs": workflowInputs
+#         }
+#         # mod_request_data = request.data.copy()
+#         # mod_request_data.update({"cromwell_id": cromwell_json["id"]})
+#         serializer = ADAPTRunSerializer(data=adaptrun_info)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class ADAPTRunDetail(generics.RetrieveUpdateDestroyAPIView):
+#     """
+#     Retrieve, update or delete an ADAPT run
+#     """
+#     queryset = ADAPTRun.objects.all()
+#     serializer_class = ADAPTRunSerializer
+
+
+@api_view(['GET'])
+def api_root(request, format=None):
+    return Response({
+        'adaptruns': reverse('adaptrun-list', request=request, format=format),
+    })
+
+class ADAPTRunViewSet(viewsets.ModelViewSet):
+    # queryset = ADAPTRun.objects.all().order_by('cromwell_id')
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
+    queryset = ADAPTRun.objects.all()
+    serializer_class = ADAPTRunSerializer
+
+    def create(self, request, format=None):
         workflowInputs = {
             "adapt_web.adapt.queueArn": QUEUE_ARN,
             "adapt_web.adapt.taxid": request.data['taxid'],
@@ -42,90 +100,50 @@ class ADAPTRunList(APIView):
             "adapt_web.adapt.specific": False,
             "adapt_web.adapt.image": IMAGE,
             "adapt_web.adapt.rand_sample": 5,
-            "adapt_web.adapt.rand_seed": 294
+            "adapt_web.adapt.rand_seed": 294,
         }
-
+        zipfasta_rb = None
+        zipfasta_f = None
         cromwell_params = {'workflowInputs': json.dumps(workflowInputs),
                            'workflowUrl': WORKFLOW_URL}
+        # TODO Handle multiple files
+        if 'fasta' in request.FILES:
+            zipfasta_name = "%s.zip" %uuid.uuid4()
+            with zipfile.ZipFile(zipfasta_name, 'w') as zipfasta_w:
+                #add fastas to zipfasta
+                zipfasta_w.writestr("input.fasta", request.FILES['fasta'].read())
+
+            zipfasta_rb = open(zipfasta_name, 'rb')
+            cromwell_params['workflowDependencies'] = zipfasta_rb
+            zipfasta_f = File(zipfasta_rb)
+
+            workflowInputs["adapt_web.adapt.fasta"] = "input.fasta"
+
         try:
             cromwell_response = requests.post(SERVER_URL, files=cromwell_params, verify=False)
+        # TODO handle if fasta is too big for cromwell
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout):
             content = {'Connection Error': "Unable to connect to AWS server. "
                 "Try again in a few minutes. If it still doesn't work, "
                 "contact %s." %CONTACT}
             return Response(content, status=status.HTTP_504_GATEWAY_TIMEOUT)
+
         cromwell_json = cromwell_response.json()
         del workflowInputs["adapt_web.adapt.queueArn"]
         adaptrun_info = {
             "cromwell_id": cromwell_json["id"],
-            "workflowInputs": workflowInputs
+            "workflowInputs": workflowInputs,
+            "zipfasta": zipfasta_f
         }
-        # mod_request_data = request.data.copy()
-        # mod_request_data.update({"cromwell_id": cromwell_json["id"]})
+
         serializer = ADAPTRunSerializer(data=adaptrun_info)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class ADAPTRunDetail(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Retrieve, update or delete an ADAPT run
-    """
-    queryset = ADAPTRun.objects.all()
-    serializer_class = ADAPTRunSerializer
-
-
-# @api_view(['GET'])
-# def api_root(request, format=None):
-#     return Response({
-#         'ADAPT Runs': reverse('adaptrun-list', request=request, format=format),
-#     })
-
-# class ADAPTRunViewSet(viewsets.ModelViewSet):
-#     queryset = ADAPTRun.objects.all().order_by('cromwell_id')
-#     serializer_class = ADAPTRunSerializer
-
-#     @action(detail=True, methods=['post'])
-#     def perform_create(request):
-#         """
-#         Create an adapt run
-#         """
-#         workflowInputs = {
-#             "single_adapt.adapt.queueArn": "None",
-#             "single_adapt.adapt.taxid": 64320,
-#             "single_adapt.adapt.ref_accs": "NC_035889",
-#             "single_adapt.adapt.segment": "None",
-#             "single_adapt.adapt.obj": "minimize-guides",
-#             "single_adapt.adapt.specific": false,
-#             "single_adapt.adapt.image": IMAGE,
-#             "single_adapt.adapt.rand_sample": 5,
-#             "single_adapt.adapt.rand_seed": 294
-#         }
-#         cromwell_params = ['workflowInputs', workflowInputs,
-#                            'workflowUrl', WORKFLOW_URL]
-#         cromwell_data = urllib.parse.urlencode(cromwell_params, encoding='b')
-#         cromwell_request = urllib.request.request(SERVER_URL, data=cromwell_data,
-#                 method='POST')
-#         try:
-#             cromwell_response = urlopen_with_tries(cromwell_request)
-#         except (urllib.error.HTTPError, http.client.HTTPException,
-#                 urllib.error.URLError, socket.timeout):
-#             content = {'Connection Error': "Unable to connect to AWS server. "
-#                 "Try again in a few minutes. If it still doesn't work, "
-#                 "contact ppillai@broadinstitute.org."}
-#             return Response(content, status=status.HTTP_504_GATEWAY_TIMEOUT)
-#         cromwell_json = json.load(cromwell_response)
-#         request.data.update({"cromwell_id": cromwell_json["id"]})
-#         serializer = ADAPTRunSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    # def perform_create(self, serializer)
-    #     serializer.save(owner=self.request.user)
-    #     adaptruns = ADAPTRun.objects.all()
-    #     serializer = ADAPTRunSerializer(adaptruns, many=True)
-    #     return Response(serializer.data)
+            if zipfasta_rb:
+                zipfasta_rb.close()
+            rsp = Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            print(serializer.errors)
+            rsp = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return rsp

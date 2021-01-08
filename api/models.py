@@ -1,10 +1,15 @@
 from django.db import models
 
+# class FASTA(models.Model):
+#     '''Defines base model for all FASTA file uploads
+#     '''
+
 class ADAPTRun(models.Model):
     '''Defines base model for all ADAPT run types
     '''
     cromwell_id = models.CharField(max_length = 100)
     workflowInputs = models.JSONField()
+    zipfasta = models.FileField(null=True, blank=True)
 
     ## Base Args
     # cromwell_id = models.CharField(

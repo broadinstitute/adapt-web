@@ -21,12 +21,17 @@
         <span>Objective: {{ obj }}</span>
       </div>
 
+      <div class="large-12 medium-12 small-12 cell">
+        <label>File
+          <input type="file" id="fasta" ref="fasta" v-on:change="handleFileUpload()"/>
+        </label>
+      </div>
+
       <!-- submit button -->
       <div class="field has-text-right">
-        <button @click.prevent="adapt_run" type="submit" class="button is-danger">Submit</button>
+        <button v-on:click.prevent="adapt_run" type="submit" class="button is-danger">Submit</button>
       </div>
     </form>
-
   </div>
 </template>
 
@@ -40,38 +45,41 @@ export default {
   },
   data () {
     return {
-      taxid: 0,
-      segment: 'None',
-      obj : 'maximize-activity'
+      taxid: '',
+      segment: '',
+      obj: '',
+      fasta: ''
     }
   },
   methods: {
     async adapt_run(event) {
 
-      const json = JSON.stringify({
-        "taxid": this.taxid,
-        "segment": this.segment,
-        "obj": this.obj,
-      });
+      var data = new FormData()
+      data.append('taxid', this.taxid)
+      data.append('segment', this.segment)
+      data.append('obj', this.obj)
+      data.append('fasta', this.fasta)
 
       const csrfToken = Cookies.get('csrftoken')
 
       const response = await fetch('/api/adaptruns/', {
         method: 'POST',
         headers: {
-          "Content-Type": "application/json",
           "X-CSRFToken": csrfToken
         },
-        body: json,
+        body: data,
       })
       return response.json()
+    },
+    handleFileUpload(){
+      this.fasta = this.$refs.fasta.files[0];
     }
   }
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
+<!-- <style scoped>
 h3 {
   margin: 40px 0 0;
 }
@@ -86,4 +94,4 @@ li {
 a {
   color: #42b983;
 }
-</style>
+</style> -->

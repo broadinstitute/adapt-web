@@ -3,14 +3,10 @@ from rest_framework import routers
 from rest_framework import renderers
 from . import views
 
-# router = routers.DefaultRouter()
-# router.register(r'adaptruns', views.ADAPTRunViewSet)
+router = routers.DefaultRouter()
+router.register(r'adaptruns', views.ADAPTRunViewSet)
 
-# Wire up our API using automatic URL routing.
-# Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    path('adaptruns/', views.ADAPTRunList.as_view()),
-    path('adaptruns/<int:pk>/', views.ADAPTRunDetail.as_view()),
-    # path('', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+    path('', include(router.urls)),
+    # path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

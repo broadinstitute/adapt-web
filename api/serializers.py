@@ -5,4 +5,4 @@ from .models import ADAPTRun
 class ADAPTRunSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ADAPTRun
-        fields = ('cromwell_id', 'workflowInputs')
+        fields = ('id', 'cromwell_id', 'workflowInputs', 'zipfasta')
