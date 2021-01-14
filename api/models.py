@@ -7,9 +7,14 @@ from django.db import models
 class ADAPTRun(models.Model):
     '''Defines base model for all ADAPT run types
     '''
-    cromwell_id = models.CharField(max_length = 100)
+    cromwell_id = models.CharField(max_length=100, primary_key=True)
     workflowInputs = models.JSONField()
     zipfasta = models.FileField(null=True, blank=True)
+    status = models.CharField(max_length=100, default="Submitted")
+    submit_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-submit_time']
 
     ## Base Args
     # cromwell_id = models.CharField(

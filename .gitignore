@@ -6,6 +6,7 @@
 
 # Built Webpack App
 /django_adapt_web/static/*
+/api/aws_config.txt
 /adapt-web/webpack-stats.json
 
 # Database

@@ -1,5 +1,5 @@
 <template>
-  <ADAPT msg="Welcome to Your Vue.js App"/>
+  <ADAPT msg="Welcome to ADAPT"/>
   <Design
     v-for="virus in viruses"
     :key="virus.id"
