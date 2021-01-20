@@ -22,7 +22,7 @@
 
       <div class="large-12 medium-12 small-12 cell">
         <label>File
-          <input type="file" id="fasta" ref="fasta" v-on:change="handleFileUpload()"/>
+          <input type="file" id="fasta" ref="fasta" multiple v-on:change="handleFileUpload()"/>
         </label>
       </div>
 
@@ -45,7 +45,12 @@
 
       <!-- submit button -->
       <div class="field has-text-right">
-        <button v-on:click.prevent="get_results" type="submit" class="button is-danger" name="results_submit">Download Results</button>
+        <button v-on:click.prevent="get_results" type="submit" class="button is-danger" name="download_submit">Download Results</button>
+      </div>
+
+      <!-- submit button -->
+      <div class="field has-text-right">
+        <button v-on:click.prevent="display_results" type="submit" class="button is-danger" name="display_submit">Display Results</button>
       </div>
     </form>
   </div>
@@ -75,7 +80,10 @@ export default {
       data.append('taxid', this.taxid)
       data.append('segment', this.segment)
       data.append('obj', this.obj)
-      data.append('fasta', this.fasta)
+      for (let file of this.fasta) {
+        data.append('fasta[]', file, file.name);
+      }
+      // data.append('fasta', this.fasta)
 
       const csrfToken = Cookies.get('csrftoken')
 
@@ -110,16 +118,27 @@ export default {
       this.status = response.data.status
       return response
     },
+    async display_results(event) {
+      const csrfToken = Cookies.get('csrftoken')
+
+      let response = await fetch('/api/adaptruns/' + this.runid + '/results', {
+        headers: {
+          "X-CSRFToken": csrfToken
+        }
+      })
+
+      return response
+    },
     async get_results(event) {
       const csrfToken = Cookies.get('csrftoken')
 
-      let response = await fetch('/api/adaptruns/' + this.runid + '/outputs', {
+      let response = await fetch('/api/adaptruns/' + this.runid + '/download', {
         headers: {
           "X-CSRFToken": csrfToken
         }
       }).then(response => {
         if (response.status == 200) {
-          this.downloadGuides(response)
+          this.download_file(response)
         } else {
           response
         }
@@ -127,24 +146,23 @@ export default {
 
       return response
     },
-    async downloadGuides(response){
+    async download_file(response){
       let blob = await response.blob()
       let url = window.URL.createObjectURL(new Blob([blob]))
       let link = document.createElement('a')
       link.href = url
-      let filename = this.runid
-      if (blob.type == "text/csv") {
-        filename = filename + '.csv'
-      }
-      else {
-        filename = filename + '.zip'
-      }
+      let filename = response.headers.get('content-disposition')
+        .split(';')
+        .find(n => n.includes('filename='))
+        .replace('filename=', '')
+        .trim()
+      console.log(filename)
       link.setAttribute('download', filename)
       document.body.appendChild(link)
       link.click()
     },
     handleFileUpload(){
-      this.fasta = this.$refs.fasta.files[0];
+      this.fasta = this.$refs.fasta.files;
     }
   }
 }

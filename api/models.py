@@ -9,7 +9,6 @@ class ADAPTRun(models.Model):
     '''
     cromwell_id = models.CharField(max_length=100, primary_key=True)
     workflowInputs = models.JSONField()
-    zipfasta = models.FileField(null=True, blank=True)
     status = models.CharField(max_length=100, default="Submitted")
     submit_time = models.DateTimeField(auto_now_add=True)
 

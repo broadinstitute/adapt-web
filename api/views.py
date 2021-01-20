@@ -3,6 +3,7 @@ import json
 import zipfile
 import uuid
 import boto3
+from io import BytesIO
 from botocore.exceptions import ClientError
 import sys
 
@@ -28,6 +29,7 @@ WORKFLOW_URL = "https://github.com/broadinstitute/adapt-pipes/blob/master/adapt_
 # QUEUE_ARN = "arn:aws:batch:us-east-1:194065838422:job-queue/priority-Adapt-Cromwell-54-Core"
 QUEUE_ARN = "none"
 IMAGE = "quay.io/broadinstitute/adaptcloud"
+STORAGE_BUCKET = "adaptwebstorage"
 
 with open('./api/aws_config.txt') as f:
     AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY = f.read().splitlines()
@@ -36,57 +38,6 @@ CONTACT = "ppillai@broadinstitute.org"
 SUCCESSFUL_STATES = ["Succeeded"]
 FAILED_STATES = ["Failed", "Aborted"]
 FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
-
-
-# class ADAPTRunList(generics.ListCreateAPIView):
-#     """
-#     List all ADAPT runs, or create a new ADAPT run.
-#     """
-#     queryset = ADAPTRun.objects.all()
-#     serializer_class = ADAPTRunSerializer
-
-#     def post(self, request, format=None):
-#         workflowInputs = {
-#             "adapt_web.adapt.queueArn": QUEUE_ARN,
-#             "adapt_web.adapt.taxid": request.data['taxid'],
-#             "adapt_web.adapt.segment": request.data['segment'],
-#             "adapt_web.adapt.obj": request.data['obj'],
-#             "adapt_web.adapt.specific": False,
-#             "adapt_web.adapt.image": IMAGE,
-#             "adapt_web.adapt.rand_sample": 5,
-#             "adapt_web.adapt.rand_seed": 294
-#         }
-
-#         cromwell_params = {'workflowInputs': json.dumps(workflowInputs),
-#                            'workflowUrl': WORKFLOW_URL}
-#         try:
-#             cromwell_response = requests.post(SERVER_URL, files=cromwell_params, verify=False)
-#         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
-#                 requests.exceptions.Timeout):
-#             content = {'Connection Error': "Unable to connect to AWS server. "
-#                 "Try again in a few minutes. If it still doesn't work, "
-#                 "contact %s." %CONTACT}
-#             return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
-#         cromwell_json = cromwell_response.json()
-#         del workflowInputs["adapt_web.adapt.queueArn"]
-#         adaptrun_info = {
-#             "cromwell_id": cromwell_json["id"],
-#             "workflowInputs": workflowInputs
-#         }
-#         # mod_request_data = request.data.copy()
-#         # mod_request_data.update({"cromwell_id": cromwell_json["id"]})
-#         serializer = ADAPTRunSerializer(data=adaptrun_info)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=httpstatus.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=httpstatus.HTTP_400_BAD_REQUEST)
-
-# class ADAPTRunDetail(generics.RetrieveUpdateDestroyAPIView):
-#     """
-#     Retrieve, update or delete an ADAPT run
-#     """
-#     queryset = ADAPTRun.objects.all()
-#     serializer_class = ADAPTRunSerializer
 
 
 @api_view(['GET'])
@@ -112,26 +63,33 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             "adapt_web.adapt.rand_sample": 5,
             "adapt_web.adapt.rand_seed": 294,
         }
-        zipfasta_rb = None
-        zipfasta_f = None
+
+        if 'fasta[]' in request.FILES:
+            try:
+                S3 = boto3.client("s3",
+                    aws_access_key_id=AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+                S3_id = uuid.uuid4()
+                input_files = []
+                for i, input_file in enumerate(request.FILES.getlist('fasta[]')):
+                    # TODO more file validation
+                    if input_file.name[-6:] != ".fasta":
+                        content = {'Input Error': "Please only select FASTA files as input."}
+                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+                    key = "%s/input%i_%s"%(S3_id, i, input_file.name)
+                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
+                    input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
+                workflowInputs["adapt_web.adapt.fasta"] = input_files
+            except ClientError as e:
+                content = {'Connection Error': "Unable to connect to our file storage. "
+                    "Try again in a few minutes. If it still doesn't work, "
+                    "contact %s." %CONTACT}
+                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+
         cromwell_params = {'workflowInputs': json.dumps(workflowInputs),
                            'workflowUrl': WORKFLOW_URL}
-        # TODO Handle multiple files
-        if 'fasta' in request.FILES:
-            zipfasta_name = "%s.zip" %uuid.uuid4()
-            with zipfile.ZipFile(zipfasta_name, 'w') as zipfasta_w:
-                #add fastas to zipfasta
-                zipfasta_w.writestr("input.fasta", request.FILES['fasta'].read())
-
-            zipfasta_rb = open(zipfasta_name, 'rb')
-            cromwell_params['workflowDependencies'] = zipfasta_rb
-            zipfasta_f = File(zipfasta_rb)
-
-            workflowInputs["adapt_web.adapt.fasta"] = "input.fasta"
-
         try:
             cromwell_response = requests.post(SERVER_URL, files=cromwell_params, verify=False)
-        # TODO handle if fasta is too big for cromwell
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout):
             content = {'Connection Error': "Unable to connect to our servers. "
@@ -144,17 +102,13 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         adaptrun_info = {
             "cromwell_id": cromwell_json["id"],
             "workflowInputs": workflowInputs,
-            "zipfasta": zipfasta_f
         }
 
         serializer = ADAPTRunSerializer(data=adaptrun_info)
         if serializer.is_valid():
             serializer.save()
-            if zipfasta_rb:
-                zipfasta_rb.close()
             rsp = Response(serializer.data, status=httpstatus.HTTP_201_CREATED)
         else:
-            print(serializer.errors)
             rsp = Response(serializer.errors, status=httpstatus.HTTP_400_BAD_REQUEST)
         return rsp
 
@@ -177,10 +131,11 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         content = {'cromwell_id': adaptrun.cromwell_id, 'status': adaptrun.status}
         return Response(content)
 
-    @action(detail=True)
-    def outputs(self, request, *args, **kwargs):
+
+    def _getresults(self, request, *args, **kwargs):
         self.status(request, *args, **kwargs)
         adaptrun = self.get_object()
+        output_files = []
         if adaptrun.status in SUCCESSFUL_STATES:
             try:
                 cromwell_response = requests.get("%s/%s/outputs" %(SERVER_URL,adaptrun.cromwell_id), verify=False)
@@ -191,7 +146,6 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     "contact %s." %CONTACT}
                 return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
             cromwell_json = cromwell_response.json()
-            output_files = []
             try:
                 # in outputs, there should just be 1 output variable (<wdl name>.guides),
                 # which contains a dictionary of key file number, value file
@@ -219,24 +173,6 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         "Try again in a few minutes. If it still doesn't work, "
                         "contact %s." %CONTACT}
                     return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
-            if len(output_files) == 1:
-                final_output = list(output_files)[0]
-                final_output_type = "text/csv"
-            else:
-                content = {'Not implemented error': "Not implemented"}
-                return Response(content, status=httpstatus.HTTP_501_NOT_IMPLEMENTED)
-                # with zipfile.ZipFile(, 'w')
-
-                # # Reset file pointer
-                # tmp.seek(0)
-                # final_output = zipfile.ZipFile()
-                # # Write file data to response
-                # return HttpResponse(, mimetype='application/x-zip-compressed')
-                # final_output_type = "application/zip"
-            response = FileResponse(final_output, content_type=final_output_type)
-            # response['Content-Length'] = final_output.size
-            # response['Content-Disposition'] = 'attachment; filename="%s"' % final_output.name
-            return response
 
         elif adaptrun.status in FAILED_STATES:
             # TODO give reasons that the job might fail
@@ -251,3 +187,42 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 "hours on large datasets. You may check your job status "
                 "at the status API endpoint."}
             return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+        return output_files
+
+    @action(detail=True)
+    def download(self, request, *args, **kwargs):
+        response = self._getresults(request, *args, **kwargs)
+        if isinstance(response, list):
+            if len(response) == 1:
+                output = response[0].read().decode("utf-8")
+                output_type = "text/tsv"
+                output_ext = ".tsv"
+            else:
+                output_files = [output_file.read().decode("utf-8") for output_file in response]
+                output_type = "application/zip"
+                zipped_output = BytesIO()
+                with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
+                    for i, output_file in enumerate(output):
+                        zipped_output_a.writestr("%s.%i.tsv" %(self.kwargs['pk'], i), output_file)
+                zipped_output.seek(0)
+                output = zipped_output
+                output_ext = ".zip"
+            filename = self.kwargs['pk']+output_ext
+            response = FileResponse(output, content_type=output_type)
+            response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        return response
+
+    @action(detail=True)
+    def results(self, request, *args, **kwargs):
+        response = self._getresults(request, *args, **kwargs)
+        if isinstance(response, list):
+            output_files = [output_file.read().decode("utf-8") for output_file in response]
+            content = {}
+            for i, output_file in enumerate(output_files):
+                content[i] = {}
+                lines = output_file.splitlines()
+                headers = lines[0].split('\t')
+                for j, line in enumerate(lines[1:]):
+                    content[i][j] = {headers[k]: val for k,val in enumerate(line.split('\t'))}
+            response = Response(content)
+        return response
