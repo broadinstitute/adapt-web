@@ -24,17 +24,19 @@ export default {
         { id: 2, family: 'Coronaviridae', genus: 'Betacoronavirus', species: 'Severe acute respiratory syndrome-related coronavirus', subspecies: 'SARS-CoV-2' }
       ]
     }
-  }
+  },
+  // created: function() {
+  //   // Alias the component instance as `vm`, so that we
+  //   // can access it inside the promise function
+  //   var vm = this;
+  //   // Fetch our array of posts from an API
+  //   fetch("/api/designs/")
+  //     .then(function(response) {
+  //       return response.json();
+  //     })
+  //     .then(function(data) {
+  //       vm.posts = data;
+  //     });
+  // }
 }
 </script>
-
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>

@@ -13,7 +13,7 @@ export default {
   props: {
     family: String,
     genus: String,
-    species: String, 
+    species: String,
     subspecies: String,
   }
 }

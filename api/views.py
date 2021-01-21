@@ -24,9 +24,9 @@ from .serializers import ADAPTRunSerializer
 from .models import ADAPTRun
 
 SERVER_URL = "https://ec2-54-91-18-102.compute-1.amazonaws.com/api/workflows/v1"
-WORKFLOW_URL = "https://github.com/broadinstitute/adapt-pipes/blob/master/adapt_web.wdl"
+WORKFLOW_URL = "https://raw.githubusercontent.com/broadinstitute/adapt-pipes/master/adapt_web.wdl"
 
-# QUEUE_ARN = "arn:aws:batch:us-east-1:194065838422:job-queue/priority-Adapt-Cromwell-54-Core"
+# QUEUE_ARN = "arn:aws:batch:us-east-1:194065838422:job-queue/default-Adapt-Cromwell-54-Core"
 QUEUE_ARN = "none"
 IMAGE = "quay.io/broadinstitute/adaptcloud"
 STORAGE_BUCKET = "adaptwebstorage"
@@ -38,6 +38,9 @@ CONTACT = "ppillai@broadinstitute.org"
 SUCCESSFUL_STATES = ["Succeeded"]
 FAILED_STATES = ["Failed", "Aborted"]
 FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
+STR_OPT_INPUT_VARS = ['segment', 'obj']
+INT_OPT_INPUT_VARS = ['taxid']
+OPTIONAL_INPUT_VARS = STR_OPT_INPUT_VARS + INT_OPT_INPUT_VARS
 
 
 @api_view(['GET'])
@@ -55,14 +58,17 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
     def create(self, request, format=None):
         workflowInputs = {
             "adapt_web.adapt.queueArn": QUEUE_ARN,
-            "adapt_web.adapt.taxid": request.data['taxid'],
-            "adapt_web.adapt.segment": request.data['segment'],
-            "adapt_web.adapt.obj": request.data['obj'],
             "adapt_web.adapt.specific": False,
             "adapt_web.adapt.image": IMAGE,
             "adapt_web.adapt.rand_sample": 5,
             "adapt_web.adapt.rand_seed": 294,
         }
+        for optional_input_var in OPTIONAL_INPUT_VARS:
+            if optional_input_var in request.data:
+                val = request.data[optional_input_var]
+                if optional_input_var in INT_OPT_INPUT_VARS:
+                    val = int(val)
+                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = val
 
         if 'fasta[]' in request.FILES:
             try:
