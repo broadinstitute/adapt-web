@@ -5,7 +5,7 @@
 .DS_Store
 
 # Built Webpack App
-/django_adapt_web/static/*
+/static/*
 /api/aws_config.txt
 /adapt-web/webpack-stats.json
 

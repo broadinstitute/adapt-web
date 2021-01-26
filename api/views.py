@@ -38,9 +38,39 @@ CONTACT = "ppillai@broadinstitute.org"
 SUCCESSFUL_STATES = ["Succeeded"]
 FAILED_STATES = ["Failed", "Aborted"]
 FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
-STR_OPT_INPUT_VARS = ['segment', 'obj']
-INT_OPT_INPUT_VARS = ['taxid']
-OPTIONAL_INPUT_VARS = STR_OPT_INPUT_VARS + INT_OPT_INPUT_VARS
+STR_OPT_INPUT_VARS = [
+    'segment',
+    'maximization_algorithm',
+    'require_flanking3',
+    'require_flanking5'
+]
+INT_OPT_INPUT_VARS = [
+    'taxid',
+    'gl',
+    'pl',
+    'pm',
+    'bestntargets',
+    'max_primers_at_site',
+    'max_target_length',
+    'idm',
+    'gm',
+    'soft_guide_constraint',
+    'hard_guide_constraint',
+    'rand_sample',
+    'rand_seed',
+]
+FLOAT_OPT_INPUT_VARS = [
+    'pp',
+    'primer_gc_lo',
+    'primer_gc_hi',
+    'objfnweights_a',
+    'objfnweights_b',
+    'cluster_threshold',
+    'idfrac',
+    'gp',
+    'penalty_strength',
+]
+OPTIONAL_INPUT_VARS = STR_OPT_INPUT_VARS + INT_OPT_INPUT_VARS + FLOAT_OPT_INPUT_VARS
 
 
 @api_view(['GET'])
@@ -58,24 +88,25 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
     def create(self, request, format=None):
         workflowInputs = {
             "adapt_web.adapt.queueArn": QUEUE_ARN,
-            "adapt_web.adapt.specific": False,
             "adapt_web.adapt.image": IMAGE,
-            "adapt_web.adapt.rand_sample": 5,
-            "adapt_web.adapt.rand_seed": 294,
+            "adapt_web.adapt.obj": request.data['obj'],
         }
-        for optional_input_var in OPTIONAL_INPUT_VARS:
+        for optional_input_var in STR_OPT_INPUT_VARS:
             if optional_input_var in request.data:
-                val = request.data[optional_input_var]
-                if optional_input_var in INT_OPT_INPUT_VARS:
-                    val = int(val)
-                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = val
-
+                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = request.data[optional_input_var]
+        for optional_input_var in INT_OPT_INPUT_VARS:
+            if optional_input_var in request.data:
+                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = int(request.data[optional_input_var])
+        for optional_input_var in FLOAT_OPT_INPUT_VARS:
+            if optional_input_var in request.data:
+                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = float(request.data[optional_input_var])
+        print(workflowInputs)
+        S3_id = uuid.uuid4()
         if 'fasta[]' in request.FILES:
             try:
                 S3 = boto3.client("s3",
                     aws_access_key_id=AWS_ACCESS_KEY_ID,
                     aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-                S3_id = uuid.uuid4()
                 input_files = []
                 for i, input_file in enumerate(request.FILES.getlist('fasta[]')):
                     # TODO more file validation
@@ -86,6 +117,27 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
                     input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
                 workflowInputs["adapt_web.adapt.fasta"] = input_files
+            except ClientError as e:
+                content = {'Connection Error': "Unable to connect to our file storage. "
+                    "Try again in a few minutes. If it still doesn't work, "
+                    "contact %s." %CONTACT}
+                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+
+        if 'specificity_fasta[]' in request.FILES:
+            try:
+                S3 = boto3.client("s3",
+                    aws_access_key_id=AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+                sp_files = []
+                for i, sp_file in enumerate(request.FILES.getlist('specificity_fasta[]')):
+                    # TODO more file validation
+                    if sp_file.name[-6:] != ".fasta":
+                        content = {'Input Error': "Please only select FASTA files as input."}
+                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+                    key = "%s/sp_%i_%s"%(S3_id, i, sp_file.name)
+                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_file)
+                    sp_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
+                workflowInputs["adapt_web.adapt.specificity_fasta"] = sp_files
             except ClientError as e:
                 content = {'Connection Error': "Unable to connect to our file storage. "
                     "Try again in a few minutes. If it still doesn't work, "

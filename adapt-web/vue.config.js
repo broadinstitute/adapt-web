@@ -26,11 +26,18 @@ const pages =  {
     title: 'Designs',
     chunks: ['chunk-vendors', 'chunk-common', 'designs']
   },
-  adapt: {
-    entry: './src/pages/ADAPT/main.js',
+  runadapt: {
+    entry: './src/pages/RunADAPT/main.js',
     template: 'public/index.html',
-    filename: 'adapt.html',
-    title: 'ADAPT',
+    filename: 'runadapt.html',
+    title: 'Run ADAPT',
+    chunks: ['chunk-vendors', 'chunk-common', 'adapt']
+  },
+  results: {
+    entry: './src/pages/Results/main.js',
+    template: 'public/index.html',
+    filename: 'results.html',
+    title: 'View Results',
     chunks: ['chunk-vendors', 'chunk-common', 'adapt']
   }
 }
@@ -42,7 +49,7 @@ module.exports = {
   publicPath: process.env.NODE_ENV === 'production'
     ? ''
     : 'http://localhost:8080/',
-  outputDir: '../django_adapt_web/static/vue/',
+  outputDir: '../static/vue/',
 
   chainWebpack: config => {
 

@@ -1,14 +1,14 @@
 <template>
-  <ADAPT/>
+  <RunADAPT/>
 </template>
 
 <script>
-import ADAPT from '@/components/ADAPT.vue'
+import RunADAPT from '@/components/RunADAPT.vue'
 
 export default {
   name: 'App',
   components: {
-    ADAPT
+    RunADAPT
   }
 }
 </script>

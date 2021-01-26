@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+:root {
+  --navy: 0, 13, 84;
+  --violet: 87, 54, 255;
+  --cyan: 73, 216, 255;
+  --mint: 54, 255, 187;
+  --lilac: 173, 186, 255;
+
+/*  --navy: #000d54;
+  --violet: #5736ff;
+  --cyan: #49d8ff;
+  --mint: #36ffbb;
+  --lilac: #adbaff;
+*/
+}
+
+.header {
+  color: rgb(var(--navy));
+  text-align: center;
+  margin: auto;
+}
+
+.menu {
+  font-size: 1.2em;
+  padding-left: 4vw;
+  padding-right: 4vw;
+  display: inline;
+  vertical-align: middle;
+}
+
+.title {
+  padding-left: 4vw;
+  padding-right: 4vw;
+  font-size: 4em;
+  display: inline;
+  vertical-align: middle;
+}
+
+body, input, button {
+  font-family: Rubik, Helvetica, Arial, sans-serif;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin-left: 5vw;
+  margin-right: 5vw;
+}
+
+button {
+  border-width: 0;
+}
+
+.header a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.menu a:hover, .menu a:active {
+  color: rgba(var(--navy), .6);
+}
+
+#app {
+  margin-top: 40px;
+}
+
+.mobile {
+  display: none;
+}
+
+@media only screen and (max-width: 970px) {
+  /* For mobile phones: */
+  .desktop {
+    display: none;
+  }
+  .mobile {
+    display: block;
+  }
+
+}
