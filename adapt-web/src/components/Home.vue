@@ -1,9 +1,9 @@
 <template>
   <div class="home">
-    <button>About ADAPT</button>
-    <button>Premade Diagnostic Assay Designs</button>
-    <button>Run ADAPT on Your Own Data</button>
-    <button>Check Your Results</button>
+    <a href="/about"><button>About ADAPT</button></a>
+    <a href="/designs"><button>Premade Diagnostic Assay Designs</button></a>
+    <a href="/run"><button>Run ADAPT on Your Own Data</button></a>
+    <a href="/results"><button>Check Your Results</button></a>
   </div>
 </template>
 
@@ -28,7 +28,7 @@ export default {
 }
 
 .home button:hover {
-  background-color: #0099cc;
+  background-color: rgba(var(--navy), 1);
 }
 
 </style>

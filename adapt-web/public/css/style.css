@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,700;1,400;1,700&family=Aldrich:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 :root {
   --navy: 0, 13, 84;
@@ -18,11 +18,12 @@
 .header {
   color: rgb(var(--navy));
   text-align: center;
+  align-items: center;
   margin: auto;
 }
 
 .menu {
-  font-size: 1.2em;
+  font-size: min(1.2em, 4vw);
   padding-left: 4vw;
   padding-right: 4vw;
   display: inline;
@@ -32,13 +33,14 @@
 .title {
   padding-left: 4vw;
   padding-right: 4vw;
-  font-size: 4em;
+  font-size: min(4em, 13vw);
   display: inline;
   vertical-align: middle;
+  font-family: Aldrich, Helvetica, Arial, sans-serif;
 }
 
-body, input, button {
-  font-family: Rubik, Helvetica, Arial, sans-serif;
+body, select, input, button {
+  font-family: Barlow, Helvetica, Arial, sans-serif;
 }
 
 body {
@@ -46,15 +48,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
   margin-left: 5vw;
   margin-right: 5vw;
+  margin-top: 8px;
 }
 
-button {
+button, input[type=button] {
   border-width: 0;
+  transition: 0.3s;
 }
 
 .header a {
   color: inherit;
   text-decoration: none;
+  transition: 0.3s;
 }
 
 .menu a:hover, .menu a:active {
@@ -77,5 +82,18 @@ button {
   .mobile {
     display: block;
   }
-
+  .menu {
+    text-align: right;
+  }
+  .header {
+    text-align: left;
+    display: flex;
+  }
+  .title {
+    flex: 1.5;
+    padding-right: 0;
+  }
+  .menuset {
+    flex: 1;
+  }
 }

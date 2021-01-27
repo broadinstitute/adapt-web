@@ -2,7 +2,7 @@
   <div class="results">
     <form id="status-form">
       <div class="field">
-        <label class="label">runid</label>
+        <label class="label">Run ID: </label>
         <input type="text" name="runid" v-model="runid">
       </div>
 
@@ -23,6 +23,7 @@
       </div>
     </form>
   </div>
+  <p>{{ resultjson }}</p>
 </template>
 
 <script>
@@ -34,6 +35,7 @@ export default {
     return {
       runid: '',
       status: '',
+      resultjson: '',
     }
   },
   methods: {
@@ -44,14 +46,17 @@ export default {
         headers: {
           "X-CSRFToken": csrfToken
         }
-      }).then(response =>
-        response.json().then(data => ({
+      })
+      if (response.ok) {
+        response = await response.json().then(data => ({
           data: data,
           status: response.status
-        })
-      ))
-
-      this.status = response.data.status
+        }))
+        this.status = response.data.status
+      } else {
+        let msg = await response.text()
+        alert(msg);
+      }
       return response
     },
     async display_results(event) {
@@ -62,7 +67,12 @@ export default {
           "X-CSRFToken": csrfToken
         }
       })
-
+      if (response.ok) {
+        this.resultjson = await response.json()
+      } else {
+        let msg = await response.text()
+        alert(msg);
+      }
       return response
     },
     async get_results(event) {
@@ -72,13 +82,13 @@ export default {
         headers: {
           "X-CSRFToken": csrfToken
         }
-      }).then(response => {
-        if (response.status == 200) {
-          this.download_file(response)
-        } else {
-          response
-        }
       })
+      if (response.ok) {
+          this.download_file(response)
+      } else {
+        let msg = await response.text()
+        alert(msg);
+      }
 
       return response
     },

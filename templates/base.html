@@ -17,10 +17,12 @@
     <div class="title"><a href="/">AD<img src="{% static 'vue/img/logo.png' %}" alt="ADAPT Logo" style="height:0.7em">PT</a></div>
     <div class="desktop menu"><a href="/run">RUN</a></div>
     <div class="desktop menu"><a href="/results">RESULTS</a></div>
-    <div class="mobile menu"><a href="/about">ABOUT</a></div>
-    <div class="mobile menu"><a href="/designs">ASSAYS</a></div>
-    <div class="mobile menu"><a href="/run">RUN</a></div>
-    <div class="mobile menu"><a href="/results">RESULTS</a></div>
+    <div class="menuset">
+      <div class="mobile menu"><a href="/about">ABOUT<br></a></div>
+      <div class="mobile menu"><a href="/designs">ASSAYS<br></a></div>
+      <div class="mobile menu"><a href="/run">RUN<br></a></div>
+      <div class="mobile menu"><a href="/results">RESULTS<br></a></div>
+    </div>
   </div>
   <hr>
   {% block content %}

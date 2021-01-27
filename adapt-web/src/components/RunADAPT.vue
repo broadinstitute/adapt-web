@@ -7,44 +7,47 @@
           <label class="label">Taxonomic ID: </label>
           <input type="number" name="taxid" v-model="form_input.taxid">
         </div>
-
         <div class="field">
           <label class="label">Segment: </label>
           <input type="text" name="segment" v-model="form_input.segment">
         </div>
 
-        <div class="large-12 medium-12 small-12 cell">
-          <label class="label">Input FASTAs: </label>
-          <input type="file" id="fasta" ref="fasta" multiple v-on:change="handleFASTAUpload()"/>
-        </div>
-      </section>
+        <label class="label">Input FASTAs: </label>
+        <input type="button" id="fasta_button" value="Upload FASTAs" onclick="document.getElementById('fasta').click()" />
+        <input type="file" id="fasta" ref="fasta" multiple v-on:change="handleFASTAUpload()"/>
+        <span v-if="form_input.fasta">&emsp;Files:
+          <span v-for="(file, index) in form_input.fasta" :key="file.name">{{ file.name }}<span v-if="index+1 < form_input.fasta.length">, </span></span>
+        </span>
+        </section>
 
       <section id="specificity-form">
         <h2>Specificity</h2>
-        <div class="large-12 medium-12 small-12 cell">
-          <label class="label">File</label>
+          <label class="label">Specificity FASTAs: </label>
+          <input type="button" id="fasta_button" value="Upload FASTAs" onclick="document.getElementById('specificity_fasta').click()" />
           <input type="file" id="specificity_fasta" ref="specificity_fasta" multiple v-on:change="handleSpecificityFASTAUpload()"/>
-        </div>
+          <span v-if="form_input.specificity_fasta">&emsp;Files:
+          <span v-for="(file, index) in form_input.specificity_fasta" :key="file.name">{{ file.name }}<span v-if="index+1 < form_input.specificity_fasta.length">, </span></span>
+        </span>
       </section>
 
       <section id="options-form">
         <h2>Options</h2>
-        <div id="v-model-select" class="field">
-          <label class="label">Objective: </label>
-          <select v-model="form_input.obj">
-            <option disabled value="">Please select one: </option>
-            <option value="maximize-activity">maximize activity</option>
-            <option value="minimize-guides">minimize guides</option>
-          </select>
-        </div>
         <div class="field">
-          <label>Number of Assays</label>
+          <label>Number of Assays: </label>
           <input class="label" type="number" name="bestntargets" v-model="form_input.bestntargets">
         </div>
       </section>
 
       <section id="advoptions-form">
         <h2>Advanced Options</h2>
+        <div id="v-model-select" class="field">
+          <label class="label">Objective: </label>
+          <select v-model="form_input.obj">
+            <option disabled value="">Please select one: </option>
+            <option value="maximize-activity" selected>maximize activity</option>
+            <option value="minimize-guides">minimize guides</option>
+          </select>
+        </div>
         <div class="field">
           <label class="label">Guide Length: </label>
           <input type="number" name="gl" v-model="form_input.gl">
@@ -58,18 +61,15 @@
           <input type="number" name="pm" v-model="form_input.pm">
         </div>
         <div class="field">
-          <label class="label">Primer Coverage Fraction</label>
+          <label class="label">Primer Coverage Fraction: </label>
           <input type="number" name="pp" v-model="form_input.pp" min="0" max="1" step=".000001">
         </div>
         <div class="field">
-          <label class="label">Primer GC content</label>
-          <label class="label">Low</label>
-          <input type="number" name="gclo" v-model="form_input.primer_gc_lo" min="0" max="1" step=".000001">
-          <label class="label">High</label>
-          <input type="number" name="gchi" v-model="form_input.primer_gc_hi" min="0" max="1" step=".000001">
+          <label class="label">Cluster Threshold: </label>
+          <input type="number" name="cluster_threshold" v-model="form_input.cluster_threshold" min="0" max="1" step=".000001">
         </div>
         <div class="field">
-          <label class="label">Maximum number of Primers at a site: </label>
+          <label class="label">Maximum Number of Primers at a site: </label>
           <input type="number" name="max_primers_at_site" v-model="form_input.max_primers_at_site">
         </div>
         <div class="field">
@@ -77,15 +77,18 @@
           <input type="number" name="max_target_length" v-model="form_input.max_target_length">
         </div>
         <div class="field">
-          <label class="label">Objective Function Weights: </label>
-          <label class="label">Penalty for Number of Primers: </label>
-          <input type="number" name="objfnweights_a" v-model="form_input.objfnweights_a" min="0" max="1" step=".000001">
-          <label class="label">Penalty for Amplicon Length: </label>
-          <input type="number" name="objfnweights_b" v-model="form_input.objfnweights_b" min="0" max="1" step=".000001">
+          <h4>Primer GC content</h4>
+          <label class="label">Low: </label>
+          <input type="number" name="gclo" v-model="form_input.primer_gc_lo" min="0" max="1" step=".000001">
+          <label class="label">&emsp;High: </label>
+          <input type="number" name="gchi" v-model="form_input.primer_gc_hi" min="0" max="1" step=".000001">
         </div>
         <div class="field">
-          <label class="label">Cluster Threshold: </label>
-          <input type="number" name="cluster_threshold" v-model="form_input.cluster_threshold" min="0" max="1" step=".000001">
+          <h4>Objective Function Weights</h4>
+          <label class="label">Penalty for Number of Primers: </label>
+          <input type="number" name="objfnweights_a" v-model="form_input.objfnweights_a" min="0" max="1" step=".000001">
+          <label class="label">&emsp;Penalty for Amplicon Length: </label>
+          <input type="number" name="objfnweights_b" v-model="form_input.objfnweights_b" min="0" max="1" step=".000001">
         </div>
         <h3>Advanced Specificity Options</h3>
         <div class="field">
@@ -121,6 +124,8 @@
         <button v-on:click.prevent="adapt_run" type="submit" class="button is-danger">Submit</button>
       </div>
     </form>
+    <p v-if="status">{{ status + "!" }}</p>
+    <p v-if="runid">{{ "Run ID: " + runid }}</p>
   </div>
 </template>
 
@@ -156,6 +161,8 @@ export default {
         fasta: '',
         specificity_fasta: '',
       },
+      runid: '',
+      status: '',
     }
   },
   methods: {
@@ -166,9 +173,6 @@ export default {
           form_data.append(input_var, this.form_input[input_var])
         }
       }
-      // form_data.append('taxid', this.form_input.taxid)
-      // form_data.append('segment', this.form_input.segment)
-      // form_data.append('obj', this.form_input.obj)
       for (let file of this.form_input.fasta) {
         form_data.append('fasta[]', file, file.name);
       }
@@ -190,6 +194,8 @@ export default {
           status: response.status
         })
       ))
+      this.status = response.data.status
+      this.runid = response.data.cromwell_id
       return response
     },
     handleFASTAUpload(){
@@ -198,6 +204,12 @@ export default {
     handleSpecificityFASTAUpload(){
       this.form_input.specificity_fasta = this.$refs.specificity_fasta.files;
     }
-  }
+  },
 }
 </script>
+
+<style scoped>
+input[type=file] {
+  display: none
+}
+</style>
