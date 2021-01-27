@@ -1,124 +1,22 @@
 <template>
   <div class="runadapt">
-    <form id="run-form">
-      <section id="input-form">
-        <h2>Input</h2>
-        <div class="field">
-          <label class="label">Taxonomic ID: </label>
-          <input type="number" name="taxid" v-model="form_input.taxid">
+    <form id="full-form">
+      <div v-for="(sec, i) in Object.keys(inputs)" :key="i">
+        <h2>{{ inputs[sec].label }}</h2>
+        <div v-for="(subsec, j) in get_sub(Object.keys(inputs[sec]))" :key="j">
+          <h3 v-if="inputs[sec][subsec].label">{{ inputs[sec][subsec].label }}</h3>
+          <div class="field" v-for="(input_var, k) in get_sub(Object.keys(inputs[sec][subsec]))" :key="k">
+            <label class="label" :for="input_var">{{ inputs[sec][subsec][input_var].label + ": "}}</label>
+            <input v-if="inputs[sec][subsec][input_var].type == 'file'" type="button" :id="input_var + '_button'" value="Upload Files" @click="fileclick(input_var)">
+            <input v-if="inputs[sec][subsec][input_var].type == 'file'" :type="inputs[sec][subsec][input_var].type" :id="input_var" :ref="input_var" multiple v-on:change="handleFilesUpload(sec,subsec,input_var)">
+            <span v-if="inputs[sec][subsec][input_var].type == 'file' && inputs[sec][subsec][input_var].value">&emsp;Files:
+              <span v-for="(file, index) in inputs[sec][subsec][input_var].value" :key="file.name">{{ file.name }}<span v-if="index+1 < inputs[sec][subsec][input_var].value.length">, </span></span>
+            </span>
+            <input v-if="inputs[sec][subsec][input_var].type == 'number'" :type="inputs[sec][subsec][input_var].type" :id="input_var" v-model="inputs[sec][subsec][input_var].value" :min="inputs[sec][subsec][input_var].min" :max="inputs[sec][subsec][input_var].max" :step="inputs[sec][subsec][input_var].step">
+            <input v-if="inputs[sec][subsec][input_var].type == 'text'" :type="inputs[sec][subsec][input_var].type" :id="input_var" v-model="inputs[sec][subsec][input_var].value">
+          </div>
         </div>
-        <div class="field">
-          <label class="label">Segment: </label>
-          <input type="text" name="segment" v-model="form_input.segment">
-        </div>
-
-        <label class="label">Input FASTAs: </label>
-        <input type="button" id="fasta_button" value="Upload FASTAs" onclick="document.getElementById('fasta').click()" />
-        <input type="file" id="fasta" ref="fasta" multiple v-on:change="handleFASTAUpload()"/>
-        <span v-if="form_input.fasta">&emsp;Files:
-          <span v-for="(file, index) in form_input.fasta" :key="file.name">{{ file.name }}<span v-if="index+1 < form_input.fasta.length">, </span></span>
-        </span>
-        </section>
-
-      <section id="specificity-form">
-        <h2>Specificity</h2>
-          <label class="label">Specificity FASTAs: </label>
-          <input type="button" id="fasta_button" value="Upload FASTAs" onclick="document.getElementById('specificity_fasta').click()" />
-          <input type="file" id="specificity_fasta" ref="specificity_fasta" multiple v-on:change="handleSpecificityFASTAUpload()"/>
-          <span v-if="form_input.specificity_fasta">&emsp;Files:
-          <span v-for="(file, index) in form_input.specificity_fasta" :key="file.name">{{ file.name }}<span v-if="index+1 < form_input.specificity_fasta.length">, </span></span>
-        </span>
-      </section>
-
-      <section id="options-form">
-        <h2>Options</h2>
-        <div class="field">
-          <label>Number of Assays: </label>
-          <input class="label" type="number" name="bestntargets" v-model="form_input.bestntargets">
-        </div>
-      </section>
-
-      <section id="advoptions-form">
-        <h2>Advanced Options</h2>
-        <div id="v-model-select" class="field">
-          <label class="label">Objective: </label>
-          <select v-model="form_input.obj">
-            <option disabled value="">Please select one: </option>
-            <option value="maximize-activity" selected>maximize activity</option>
-            <option value="minimize-guides">minimize guides</option>
-          </select>
-        </div>
-        <div class="field">
-          <label class="label">Guide Length: </label>
-          <input type="number" name="gl" v-model="form_input.gl">
-        </div>
-        <div class="field">
-          <label class="label">Primer Length: </label>
-          <input type="number" name="pl" v-model="form_input.pl">
-        </div>
-        <div class="field">
-          <label class="label">Primer Mismatches: </label>
-          <input type="number" name="pm" v-model="form_input.pm">
-        </div>
-        <div class="field">
-          <label class="label">Primer Coverage Fraction: </label>
-          <input type="number" name="pp" v-model="form_input.pp" min="0" max="1" step=".000001">
-        </div>
-        <div class="field">
-          <label class="label">Cluster Threshold: </label>
-          <input type="number" name="cluster_threshold" v-model="form_input.cluster_threshold" min="0" max="1" step=".000001">
-        </div>
-        <div class="field">
-          <label class="label">Maximum Number of Primers at a site: </label>
-          <input type="number" name="max_primers_at_site" v-model="form_input.max_primers_at_site">
-        </div>
-        <div class="field">
-          <label class="label">Maximum Amplicon Length: </label>
-          <input type="number" name="max_target_length" v-model="form_input.max_target_length">
-        </div>
-        <div class="field">
-          <h4>Primer GC content</h4>
-          <label class="label">Low: </label>
-          <input type="number" name="gclo" v-model="form_input.primer_gc_lo" min="0" max="1" step=".000001">
-          <label class="label">&emsp;High: </label>
-          <input type="number" name="gchi" v-model="form_input.primer_gc_hi" min="0" max="1" step=".000001">
-        </div>
-        <div class="field">
-          <h4>Objective Function Weights</h4>
-          <label class="label">Penalty for Number of Primers: </label>
-          <input type="number" name="objfnweights_a" v-model="form_input.objfnweights_a" min="0" max="1" step=".000001">
-          <label class="label">&emsp;Penalty for Amplicon Length: </label>
-          <input type="number" name="objfnweights_b" v-model="form_input.objfnweights_b" min="0" max="1" step=".000001">
-        </div>
-        <h3>Advanced Specificity Options</h3>
-        <div class="field">
-          <label class="label">Number of Mismatches to be Identical: </label>
-          <input type="number" name="idm" v-model="form_input.idm">
-        </div>
-        <div class="field">
-          <label class="label">Fraction of Group Hit to be Identical: </label>
-          <input type="number" name="idfrac" v-model="form_input.idfrac" min="0" max="1" step=".000001">
-        </div>
-        <h3>Advanced Minimize Guides Options</h3>
-        <div class="field">
-          <label class="label">Guide Mismatches: </label>
-          <input type="number" name="gm" v-model="form_input.gm">
-        </div>
-        <div class="field">
-          <label class="label">Guide Coverage Fraction: </label>
-          <input type="number" name="gp" v-model="form_input.gp" min="0" max="1" step=".000001">
-        </div>
-        <h3>Advanced Maximize Activity Options</h3>
-        <div class="field">
-          <label class="label">Soft Guide Constraint: </label>
-          <input type="number" name="soft_guide_constraint" v-model="form_input.soft_guide_constraint">
-        </div>
-        <div class="field">
-          <label class="label">Hard Guide Constraint: </label>
-          <input type="number" name="hard_guide_constraint" v-model="form_input.hard_guide_constraint">
-        </div>
-      </section>
-
+      </div>
       <!-- submit button -->
       <div class="field has-text-right">
         <button v-on:click.prevent="adapt_run" type="submit" class="button is-danger">Submit</button>
@@ -136,30 +34,162 @@ export default {
   name: 'RunADAPT',
   data () {
     return {
-      form_input: {
-        taxid: '',
-        segment: '',
-        obj: '',
-        bestntargets: '',
-        gl: '',
-        pl: '',
-        pm: '',
-        pp: '',
-        primer_gc_lo: '',
-        primer_gc_hi: '',
-        objfnweights_a: '',
-        objfnweights_b: '',
-        cluster_threshold: '',
-        max_primers_at_site: '',
-        max_target_length: '',
-        idm: '',
-        idfrac: '',
-        gm: '',
-        gp: '',
-        soft_guide_constraint: '',
-        hard_guide_constraint: '',
-        fasta: '',
-        specificity_fasta: '',
+      inputs: {
+        inputtype: {
+          label: 'Inputs',
+          autoinput: {
+            label: 'Auto Download from NCBI',
+            taxid: {
+              label: 'Taxonomic ID',
+              type: 'text',
+              value: ''
+            },
+            segment: {
+              label: 'Segment',
+              type: 'text',
+              value: '',
+            },
+          },
+          fileinput: {
+            label: 'Custom FASTA File',
+            fasta: {
+              label: 'FASTA',
+              type: 'file',
+              value: '',
+            },
+          },
+        },
+        sp: {
+          label: 'Specificity',
+          fasta: {
+            label: 'FASTA',
+            specificity_fasta: {
+              label: 'FASTA',
+              type: 'file',
+              value: '',
+            },
+          },
+        },
+        opts: {
+          label: 'Options',
+          all: {
+            obj: {
+              label: 'Objective',
+              type: 'text',
+              value: '',
+            },
+            bestntargets: {
+              label: 'Number of Assays',
+              type: 'text',
+              value: '',
+            },
+          },
+        },
+        advopts: {
+          label: 'Advanced Options',
+          all: {
+            gl: {
+              label: 'Guide Length',
+              type: 'text',
+              value: '',
+            },
+            pl: {
+              label: 'Primer Length',
+              type: 'text',
+              value: '',
+            },
+            pm: {
+              label: 'Primer Mismatches',
+              type: 'text',
+              value: '',
+            },
+            pp: {
+              label: 'Primer Coverage Fraction',
+              type: 'text',
+              value: '',
+            },
+            cluster_threshold: {
+              label: 'Cluster Threshold',
+              type: 'text',
+              value: '',
+            },
+            max_primers_at_site: {
+              label: 'Maximum Primers at Site',
+              type: 'text',
+              value: '',
+            },
+            max_target_length: {
+              label: 'Maximum Amplicon Length',
+              type: 'text',
+              value: '',
+            },
+          },
+          gc: {
+            label: 'GC Content',
+            primer_gc_lo: {
+              label: 'Low',
+              type: 'text',
+              value: '',
+            },
+            primer_gc_hi: {
+              label: 'High',
+              type: 'text',
+              value: '',
+            },
+          },
+          objw: {
+            label: 'Objective Function Weights',
+            objfnweights_a: {
+              label: 'Penalty for Number of Primers',
+              type: 'text',
+              value: '',
+            },
+            objfnweights_b: {
+              label: 'Penalty for Amplicon Length',
+              type: 'text',
+              value: '',
+            },
+          },
+          sp: {
+            label: 'Specificity',
+            idm: {
+              label: 'Number of Mismatches to be Identical',
+              type: 'text',
+              value: '',
+            },
+            idfrac: {
+              label: 'Fraction of Group Hit to be Identical',
+              type: 'text',
+              value: '',
+            },
+          },
+          minguides: {
+            label: 'Minimize Guides',
+            gm: {
+              label: 'Guide Mismatches',
+              type: 'text',
+              value: '',
+            },
+            gp: {
+              label: 'Guide Coverage Fraction',
+              type: 'text',
+              value: '',
+            },
+          },
+          maxact: {
+            label: 'Maximize Activity',
+            soft_guide_constraint: {
+              label: 'Soft Guide Constraint',
+              type: 'text',
+              value: '',
+            },
+            hard_guide_constraint: {
+              label: 'Hard Guide Constraint',
+              type: 'text',
+              value: '',
+            },
+          },
+        },
       },
       runid: '',
       status: '',
@@ -168,16 +198,20 @@ export default {
   methods: {
     async adapt_run(event) {
       let form_data = new FormData()
-      for (let input_var of Object.keys(this.form_input)) {
-        if (this.form_input[input_var] != '') {
-          form_data.append(input_var, this.form_input[input_var])
+      for (let sec of Object.keys(this.inputs)) {
+        for (let subsec of this.get_sub(Object.keys(this.inputs[sec]))) {
+          for (let input_var of this.get_sub(Object.keys(this.inputs[sec][subsec]))) {
+            if (this.inputs[sec][subsec][input_var].value != '') {
+              if (input_var.includes('fasta')) {
+                for (let file of this.inputs[sec][subsec][input_var].value) {
+                  form_data.append(input_var + '[]', file, file.name);
+                }
+              } else {
+                form_data.append(input_var, this.inputs[sec][subsec][input_var].value)
+              }
+            }
+          }
         }
-      }
-      for (let file of this.form_input.fasta) {
-        form_data.append('fasta[]', file, file.name);
-      }
-      for (let file of this.form_input.specificity_fasta) {
-        form_data.append('specificity_fasta[]', file, file.name);
       }
 
       const csrfToken = Cookies.get('csrftoken')
@@ -198,11 +232,23 @@ export default {
       this.runid = response.data.cromwell_id
       return response
     },
-    handleFASTAUpload(){
-      this.form_input.fasta = this.$refs.fasta.files;
+    // handleFASTAUpload(){
+    //   this.inputs.fasta = this.$refs.fasta.files;
+    // },
+    // handleSpecificityFASTAUpload(){
+    //   this.inputs.specificity_fasta = this.$refs.specificity_fasta.files;
+    // }
+    get_sub(sec_keys) {
+      return sec_keys.filter(item => {
+        return item != 'label';
+      })
     },
-    handleSpecificityFASTAUpload(){
-      this.form_input.specificity_fasta = this.$refs.specificity_fasta.files;
+    fileclick(input_var) {
+      this.$refs[input_var].click()
+    },
+    handleFilesUpload(sec, subsec, input_var){
+      console.log(input_var)
+      this.inputs[sec][subsec][input_var].value = this.$refs[input_var].files;
     }
   },
 }
