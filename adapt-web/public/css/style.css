@@ -59,11 +59,11 @@ button, input[type=button] {
 .header a {
   color: inherit;
   text-decoration: none;
-  transition: 0.3s;
 }
 
 .menu a:hover, .menu a:active {
   color: rgba(var(--navy), .6);
+  transition: 0.3s;
 }
 
 #app {
