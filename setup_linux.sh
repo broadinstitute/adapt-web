@@ -6,8 +6,8 @@ sudo apt install npm
 sudo apt install python3.8
 sudo apt install python3-pip
 sudo npm install -g vue@next
-sudo npm install -g @vue/cli
-sudo npm install -g @vue/cli-plugin-babel
-sudo npm install -g @vue/cli-plugin-eslint
-sudo npm install -g webpack-bundle-tracker
+sudo yarn --cwd adapt-web/ install
 sudo pip install -r requirements.txt || sudo pip3 install -r requirements.txt
+touch api/aws_config.txt
+echo 'INSERTACCESSKEY' >> api/aws_config.txt
+echo 'INSERTSECRETACCESSKEY' >> api/aws_config.txt
