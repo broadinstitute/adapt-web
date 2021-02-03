@@ -1,6 +1,8 @@
 yarn --cwd ./adapt-web build
+python manage.py makemigrations
+python manage.py migrate
 
-for cmd in "python manage.py runserver" "yarn --cwd ./adapt-web serve"; do {
+for cmd in "python manage.py runserver 0.0.0.0:8000" "yarn --cwd ./adapt-web serve --mode production --host 0.0.0.0 --port 8080"; do {
   echo "Process \"$cmd\" started";
   $cmd & pid=$!
   PID_LIST+=" $pid";
