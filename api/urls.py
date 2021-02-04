@@ -5,6 +5,12 @@ from . import views
 
 router = routers.DefaultRouter()
 router.register(r'adaptruns', views.ADAPTRunViewSet)
+router.register(r'virus', views.VirusViewSet)
+router.register(r'assay', views.AssayViewSet)
+router.register(r'leftprimer', views.LeftPrimerViewSet)
+router.register(r'rightprimer', views.RightPrimerViewSet)
+router.register(r'crrnaset', views.crRNASetViewSet)
+router.register(r'crrna', views.crRNAViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

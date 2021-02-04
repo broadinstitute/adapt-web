@@ -20,8 +20,8 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
-from .serializers import ADAPTRunSerializer
-from .models import ADAPTRun
+from .serializers import *
+from .models import *
 
 SERVER_URL = "https://ec2-54-91-18-102.compute-1.amazonaws.com/api/workflows/v1"
 WORKFLOW_URL = "https://raw.githubusercontent.com/broadinstitute/adapt-pipes/master/adapt_web.wdl"
@@ -284,3 +284,32 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     content[i][j] = {headers[k]: val for k,val in enumerate(line.split('\t'))}
             response = Response(content)
         return response
+
+class VirusViewSet(viewsets.ModelViewSet):
+    queryset = Virus.objects.all()
+    serializer_class = VirusSerializer
+
+class AssayViewSet(viewsets.ModelViewSet):
+    serializer_class = AssaySerializer
+    queryset = Assay.objects.all()
+
+    # def get_queryset(self):
+    #     taxid = self.request.taxid
+    #     return Assay.objects.filter(virus=taxid)
+
+class LeftPrimerViewSet(viewsets.ModelViewSet):
+    queryset = LeftPrimer.objects.all()
+    serializer_class = LeftPrimerSerializer
+
+class RightPrimerViewSet(viewsets.ModelViewSet):
+    queryset = RightPrimer.objects.all()
+    serializer_class = RightPrimerSerializer
+
+class crRNASetViewSet(viewsets.ModelViewSet):
+    queryset = crRNASet.objects.all()
+    serializer_class = crRNASetSerializer
+
+class crRNAViewSet(viewsets.ModelViewSet):
+    queryset = crRNA.objects.all()
+    serializer_class = crRNASerializer
+
