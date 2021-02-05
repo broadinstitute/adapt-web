@@ -73,7 +73,7 @@ module.exports = {
 
     config
       .plugin('BundleTracker')
-      .use(BundleTracker, [{filename: '../adapt-web/webpack-stats.json'}]);
+      .use(BundleTracker, [{filename: './webpack-stats.json'}]);
 
     config.resolve.alias
         .set('__STATIC__', 'static')

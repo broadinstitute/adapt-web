@@ -1,4 +1,4 @@
-# adapt-web
+# vue_frontend
 
 ## Project setup
 ```
