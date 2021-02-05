@@ -224,7 +224,7 @@ export default {
         },
         body: form_data,
       })
-      if (response.status < 300 && response.status >= 200) {
+      if (response.ok) {
         let responsejson = await response.json()
         this.status = "Submitted!"
         this.runid = responsejson.cromwell_id
