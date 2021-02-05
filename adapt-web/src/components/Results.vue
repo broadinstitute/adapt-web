@@ -53,6 +53,7 @@ export default {
   },
   methods: {
     async run_status(event) {
+      Cookies.set('runid', this.runid)
       const csrfToken = Cookies.get('csrftoken')
 
       let response = await fetch('/api/adaptruns/' + this.runid + '/status', {
@@ -73,6 +74,7 @@ export default {
       return response
     },
     async display_results(event) {
+      Cookies.set('runid', this.runid)
       const csrfToken = Cookies.get('csrftoken')
 
       let response = await fetch('/api/adaptruns/' + this.runid + '/results', {
@@ -89,6 +91,7 @@ export default {
       return response
     },
     async get_results(event) {
+      Cookies.set('runid', this.runid)
       const csrfToken = Cookies.get('csrftoken')
 
       let response = await fetch('/api/adaptruns/' + this.runid + '/download', {

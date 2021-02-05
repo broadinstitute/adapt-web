@@ -7,13 +7,13 @@
           <h3 v-if="inputs[sec][subsec].label">{{ inputs[sec][subsec].label }}</h3>
           <div class="field" v-for="(input_var, k) in get_sub(Object.keys(inputs[sec][subsec]))" :key="k">
             <label class="label" :for="input_var">{{ inputs[sec][subsec][input_var].label + ": "}}</label>
-            <input v-if="inputs[sec][subsec][input_var].type == 'file'" type="button" :id="input_var + '_button'" value="Upload Files" @click="fileclick(input_var)">
-            <input v-if="inputs[sec][subsec][input_var].type == 'file'" :type="inputs[sec][subsec][input_var].type" :id="input_var" :ref="input_var" multiple v-on:change="handleFilesUpload(sec,subsec,input_var)">
+            <input v-if="inputs[sec][subsec][input_var].type == 'file'" type="button" :id="input_var + '_button'" value="Upload Files" @click="fileclick(input_var)" :required="inputs[sec][subsec][input_var].required ? true : false">
+            <input v-if="inputs[sec][subsec][input_var].type == 'file'" :type="inputs[sec][subsec][input_var].type" :id="input_var" :ref="input_var" multiple v-on:change="handleFilesUpload(sec,subsec,input_var)" :required="inputs[sec][subsec][input_var].required ? true : false">
             <span v-if="inputs[sec][subsec][input_var].type == 'file' && inputs[sec][subsec][input_var].value">&emsp;Files:
               <span v-for="(file, index) in inputs[sec][subsec][input_var].value" :key="file.name">{{ file.name }}<span v-if="index+1 < inputs[sec][subsec][input_var].value.length">, </span></span>
             </span>
-            <input v-if="inputs[sec][subsec][input_var].type == 'number'" :type="inputs[sec][subsec][input_var].type" :id="input_var" v-model="inputs[sec][subsec][input_var].value" :min="inputs[sec][subsec][input_var].min" :max="inputs[sec][subsec][input_var].max" :step="inputs[sec][subsec][input_var].step">
-            <input v-if="inputs[sec][subsec][input_var].type == 'text'" :type="inputs[sec][subsec][input_var].type" :id="input_var" v-model="inputs[sec][subsec][input_var].value">
+            <input v-if="inputs[sec][subsec][input_var].type == 'number'" :type="inputs[sec][subsec][input_var].type" :id="input_var" v-model="inputs[sec][subsec][input_var].value" :min="inputs[sec][subsec][input_var].min" :max="inputs[sec][subsec][input_var].max" :step="inputs[sec][subsec][input_var].step" :required="inputs[sec][subsec][input_var].required ? true : false">
+            <input v-if="inputs[sec][subsec][input_var].type == 'text'" :type="inputs[sec][subsec][input_var].type" :id="input_var" v-model="inputs[sec][subsec][input_var].value" :required="inputs[sec][subsec][input_var].required ? true : false">
           </div>
         </div>
       </div>
@@ -77,6 +77,7 @@ export default {
               label: 'Objective',
               type: 'text',
               value: '',
+              required: true,
             },
             bestntargets: {
               label: 'Number of Assays',
