@@ -22,7 +22,7 @@
         <button v-on:click.prevent="adapt_run" type="submit" class="button is-danger">Submit</button>
       </div>
     </form>
-    <p v-if="status">{{ status + "!" }}</p>
+    <p v-if="status">{{ status }}</p>
     <p v-if="runid">{{ "Run ID: " + runid }}</p>
   </div>
 </template>
@@ -197,6 +197,7 @@ export default {
   },
   methods: {
     async adapt_run(event) {
+      this.status = "Loading..."
       let form_data = new FormData()
       for (let sec of Object.keys(this.inputs)) {
         for (let subsec of this.get_sub(Object.keys(this.inputs[sec]))) {
@@ -222,14 +223,18 @@ export default {
           "X-CSRFToken": csrfToken
         },
         body: form_data,
-      }).then(response =>
-        response.json().then(responsejson => ({
-          data: responsejson,
-          status: response.status
-        })
-      ))
-      this.status = response.data.status
-      this.runid = response.data.cromwell_id
+      })
+      if (response.status < 300 && response.status >= 200) {
+        let responsejson = await response.json()
+        this.status = "Submitted!"
+        this.runid = responsejson.cromwell_id
+        Cookies.set('runid', responsejson.cromwell_id)
+        Cookies.set('submitted', true)
+        window.location.href = '/results'
+      }
+      else {
+        this.status = "Submission Error"
+      }
       return response
     },
     // handleFASTAUpload(){

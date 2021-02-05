@@ -1,5 +1,8 @@
 <template>
   <div class="results">
+    <div v-if="submitted">Job submitted!<br>
+    Your run ID is {{runid}}. Store this for future reference.<br>
+    Check below for status.</div>
     <form id="status-form">
       <div class="field">
         <label class="label">Run ID: </label>
@@ -36,6 +39,16 @@ export default {
       runid: '',
       status: '',
       resultjson: '',
+      submitted: false,
+    }
+  },
+  mounted() {
+    if (Cookies.get('runid') != null) {
+      this.runid = Cookies.get('runid')
+      if (Cookies.get('submitted') == 'true') {
+        Cookies.remove('submitted')
+        this.submitted = true
+      }
     }
   },
   methods: {
