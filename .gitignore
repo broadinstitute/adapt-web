@@ -7,7 +7,7 @@
 # Built Webpack App
 /static/*
 /api/aws_config.txt
-/adapt-web/webpack-stats.json
+/vue_frontend/webpack-stats.json
 
 # Database
 db.sqlite3
