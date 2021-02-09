@@ -6,8 +6,9 @@
 
 # Built Webpack App
 /static/*
+
+# Secure information
 /api/aws_config.txt
-/vue_frontend/webpack-stats.json
 
 # Database
 db.sqlite3

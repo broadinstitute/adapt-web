@@ -25,8 +25,8 @@
         <button v-on:click.prevent="display_results" type="submit" class="button is-danger" name="display_submit">Display Results</button>
       </div>
     </form>
+    <p>{{ resultjson }}</p>
   </div>
-  <p>{{ resultjson }}</p>
 </template>
 
 <script>

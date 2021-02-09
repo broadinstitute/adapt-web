@@ -1,12 +1,14 @@
 <template>
-  <Design
-    v-for="virus in viruses"
-    :key="virus.id"
-    :family="virus.family"
-    :genus="virus.genus"
-    :species="virus.species"
-    :subspecies="virus.subspecies"
-  ></Design>
+  <div id="app">
+    <Design
+      v-for="virus in viruses"
+      :key="virus.id"
+      :family="virus.family"
+      :genus="virus.genus"
+      :species="virus.species"
+      :subspecies="virus.subspecies"
+    ></Design>
+  </div>
 </template>
 
 <script>

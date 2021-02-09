@@ -1,5 +1,7 @@
 <template>
-  <RunADAPT/>
+  <div id="app">
+    <RunADAPT/>
+  </div>
 </template>
 
 <script>
