@@ -23,11 +23,10 @@ from rest_framework.reverse import reverse
 from .serializers import *
 from .models import *
 
-SERVER_URL = "https://ec2-52-22-166-32.compute-1.amazonaws.com/api/workflows/v1"
-WORKFLOW_URL = "https://raw.githubusercontent.com/broadinstitute/adapt-pipes/master/adapt_web.wdl"
+SERVER_URL = "https://ip-10-0-5-28.ec2.internal/api/workflows/v1"
+WORKFLOW_URL = "https://raw.githubusercontent.com/broadinstitute/adapt-pipes/main/adapt_web.wdl"
 
-# QUEUE_ARN = "arn:aws:batch:us-east-1:194065838422:job-queue/default-Adapt-Cromwell-54-Core"
-QUEUE_ARN = "none"
+QUEUE_ARN = "arn:aws:batch:us-east-1:194065838422:job-queue/default-Adapt-Cromwell-54-Core"
 IMAGE = "quay.io/broadinstitute/adaptcloud"
 STORAGE_BUCKET = "adaptwebstorage"
 
@@ -80,7 +79,6 @@ def api_root(request, format=None):
     })
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):
-    # queryset = ADAPTRun.objects.all().order_by('cromwell_id')
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     queryset = ADAPTRun.objects.all()
     serializer_class = ADAPTRunSerializer
