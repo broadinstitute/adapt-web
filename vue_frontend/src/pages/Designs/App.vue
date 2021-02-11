@@ -2,7 +2,7 @@
   <div id="app">
     <Design
       v-for="virus in viruses"
-      :key="virus.id"
+      :key="virus.taxid"
       :family="virus.family"
       :genus="virus.genus"
       :species="virus.species"
@@ -13,6 +13,8 @@
 
 <script>
 import Design from '@/components/Design.vue'
+const Cookies = require('js-cookie')
+const csrfToken = Cookies.get('csrftoken')
 
 export default {
   name: 'App',
@@ -21,24 +23,27 @@ export default {
   },
   data () {
     return {
-      viruses: [
-        { id: 1, family: 'Flaviviridae', genus: 'Flaviviridae', species: 'Zika virus', subspecies: 'None' },
-        { id: 2, family: 'Coronaviridae', genus: 'Betacoronavirus', species: 'Severe acute respiratory syndrome-related coronavirus', subspecies: 'SARS-CoV-2' }
-      ]
+      viruses: {}
     }
   },
-  // created: function() {
-  //   // Alias the component instance as `vm`, so that we
-  //   // can access it inside the promise function
-  //   var vm = this;
-  //   // Fetch our array of posts from an API
-  //   fetch("/api/designs/")
-  //     .then(function(response) {
-  //       return response.json();
-  //     })
-  //     .then(function(data) {
-  //       vm.posts = data;
-  //     });
-  // }
+  created () {
+    this.fetchData()
+  },
+  methods : {
+    async fetchData () {
+      let response = await fetch('/api/virus/', {
+        headers: {
+          "X-CSRFToken": csrfToken
+        }
+      })
+      if (response.ok) {
+        this.viruses = await response.json()
+      }
+      else {
+        let msg = await response.text()
+        alert(msg);
+      }
+    }
+  }
 }
 </script>
