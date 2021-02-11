@@ -11,8 +11,9 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, FileResponse, Http404
 from django.core.files import File
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
 
-from rest_framework import viewsets, generics, mixins
+from rest_framework import viewsets, generics, mixins, permissions
 from rest_framework.views import APIView
 from rest_framework import status as httpstatus
 from rest_framework.decorators import action, api_view
@@ -72,11 +73,9 @@ FLOAT_OPT_INPUT_VARS = [
 OPTIONAL_INPUT_VARS = STR_OPT_INPUT_VARS + INT_OPT_INPUT_VARS + FLOAT_OPT_INPUT_VARS
 
 
-@api_view(['GET'])
-def api_root(request, format=None):
-    return Response({
-        'adaptruns': reverse('adaptrun-list', request=request, format=format),
-    })
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
@@ -284,10 +283,12 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         return response
 
 class VirusViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = Virus.objects.all()
     serializer_class = VirusSerializer
 
 class AssayViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     serializer_class = AssaySerializer
     queryset = Assay.objects.all()
 
@@ -296,18 +297,22 @@ class AssayViewSet(viewsets.ModelViewSet):
     #     return Assay.objects.filter(virus=taxid)
 
 class LeftPrimerViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = LeftPrimer.objects.all()
     serializer_class = LeftPrimerSerializer
 
 class RightPrimerViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = RightPrimer.objects.all()
     serializer_class = RightPrimerSerializer
 
 class crRNASetViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = crRNASet.objects.all()
     serializer_class = crRNASetSerializer
 
 class crRNAViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = crRNA.objects.all()
     serializer_class = crRNASerializer
 
