@@ -23,7 +23,7 @@ from rest_framework.reverse import reverse
 from .serializers import *
 from .models import *
 
-SERVER_URL = "https://ip-10-0-5-28.ec2.internal/api/workflows/v1"
+SERVER_URL = "https://ip-10-0-16-250.ec2.internal/api/workflows/v1"
 WORKFLOW_URL = "https://raw.githubusercontent.com/broadinstitute/adapt-pipes/main/adapt_web.wdl"
 
 QUEUE_ARN = "arn:aws:batch:us-east-1:194065838422:job-queue/default-Adapt-Cromwell-54-Core"
