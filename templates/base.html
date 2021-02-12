@@ -3,18 +3,20 @@
 {% load static %}
 
 <head>
-    <meta charset="utf-8">
-    <title>ADAPT</title>
-    <link rel="stylesheet" href="{% static 'vue/css/style.css' %}">
-    <meta name="description" content="">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <title>ADAPT</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'vue/css/style.css' %}">
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
-<body>
+<body class="m-2">
   <div class="header">
     <div class="desktop menu"><a href="/about">ABOUT</a></div>
     <div class="desktop menu"><a href="/designs">ASSAYS</a></div>
-    <div class="title"><a href="/">AD<img src="{% static 'vue/img/logo.png' %}" alt="ADAPT Logo" style="height:0.7em">PT</a></div>
+    <div class="title"><a href="/">AD<img class="logo" src="{% static 'vue/img/logo.png' %}" alt="ADAPT Logo">PT</a></div>
     <div class="desktop menu"><a href="/run">RUN</a></div>
     <div class="desktop menu"><a href="/results">RESULTS</a></div>
     <div class="menuset">

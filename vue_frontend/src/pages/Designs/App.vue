@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" class="mx-3 mt-4 mb-5">
     <Design
       v-for="virus in viruses"
       :key="virus.taxid"

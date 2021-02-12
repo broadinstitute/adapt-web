@@ -1,2 +1,10 @@
+$font-family-sans-serif:    'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+
+$brand-primary:             #000d54;
+
+$link-color:                $brand-primary;
+$link-hover-color:          rgba($link-color, .6);
+$link-hover-decoration:     none;
+
 @import 'node_modules/bootstrap/scss/bootstrap.scss';
 @import 'node_modules/bootstrap-vue/src/index.scss';
