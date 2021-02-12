@@ -1,27 +1,75 @@
 <template>
   <div class="runadapt">
-    <form id="full-form">
-      <div v-for="(sec, i) in Object.keys(inputs)" :key="i">
-        <h2>{{ inputs[sec].label }}</h2>
-        <div v-for="(subsec, j) in get_sub(Object.keys(inputs[sec]))" :key="j">
-          <h3 v-if="inputs[sec][subsec].label">{{ inputs[sec][subsec].label }}</h3>
-          <div class="field" v-for="(input_var, k) in get_sub(Object.keys(inputs[sec][subsec]))" :key="k">
-            <label class="label" :for="input_var">{{ inputs[sec][subsec][input_var].label + ": "}}</label>
-            <input v-if="inputs[sec][subsec][input_var].type == 'file'" type="button" :id="input_var + '_button'" value="Upload Files" @click="fileclick(input_var)" :required="inputs[sec][subsec][input_var].required ? true : false">
-            <input v-if="inputs[sec][subsec][input_var].type == 'file'" :type="inputs[sec][subsec][input_var].type" :id="input_var" :ref="input_var" multiple v-on:change="handleFilesUpload(sec,subsec,input_var)" :required="inputs[sec][subsec][input_var].required ? true : false">
-            <span v-if="inputs[sec][subsec][input_var].type == 'file' && inputs[sec][subsec][input_var].value">&emsp;Files:
-              <span v-for="(file, index) in inputs[sec][subsec][input_var].value" :key="file.name">{{ file.name }}<span v-if="index+1 < inputs[sec][subsec][input_var].value.length">, </span></span>
-            </span>
-            <input v-if="inputs[sec][subsec][input_var].type == 'number'" :type="inputs[sec][subsec][input_var].type" :id="input_var" v-model="inputs[sec][subsec][input_var].value" :min="inputs[sec][subsec][input_var].min" :max="inputs[sec][subsec][input_var].max" :step="inputs[sec][subsec][input_var].step" :required="inputs[sec][subsec][input_var].required ? true : false">
-            <input v-if="inputs[sec][subsec][input_var].type == 'text'" :type="inputs[sec][subsec][input_var].type" :id="input_var" v-model="inputs[sec][subsec][input_var].value" :required="inputs[sec][subsec][input_var].required ? true : false">
+    <b-form id="full-form" @submit="adapt_run" class="mx-3 px-3">
+      <b-form-group
+        class="sec"
+        v-for="(sec, i) in Object.keys(inputs)"
+        :label="inputs[sec].label ? inputs[sec].label : ''"
+        :key="i"
+        :id="sec"
+      >
+        <b-form-group
+          class="subsec"
+          v-for="(subsec, j) in get_sub(Object.keys(inputs[sec]))"
+          v-show="inputs[sec][subsec].show"
+          :label="inputs[sec][subsec].label ? inputs[sec][subsec].label : ''"
+          label-cols-lg=3
+          :key="j"
+          :id="subsec"
+        >
+          <div v-show="inputs[sec][subsec].show">
+            <b-form-group
+              class="field"
+              v-for="(input_var, k) in get_sub(Object.keys(inputs[sec][subsec]))"
+              :key="k"
+              :label="inputs[sec][subsec][input_var].label"
+              :label-for="input_var"
+              label-cols-md=4
+              content-cols-md=8
+              label-align=left
+              label-align-md=right
+            >
+              <b-form-file
+                v-if="inputs[sec][subsec][input_var].type == 'file'"
+                v-model="inputs[sec][subsec][input_var].value"
+                :id="input_var"
+                :file-name-formatter="formatNames"
+                placeholder="Choose a file or drop it here..."
+                drop-placeholder="Drop file here..."
+                accept=".fasta"
+                multiple
+              ></b-form-file>
+              <b-form-spinbutton
+                v-if="inputs[sec][subsec][input_var].type == 'number'"
+                v-model="inputs[sec][subsec][input_var].value"
+                :id="input_var"
+                :min="inputs[sec][subsec][input_var].min"
+                :max="inputs[sec][subsec][input_var].max"
+                :step="inputs[sec][subsec][input_var].step"
+                :required="inputs[sec][subsec][input_var].required ? true : false"
+                inline
+              ></b-form-spinbutton>
+              <b-form-select
+                v-if="inputs[sec][subsec][input_var].type == 'options'"
+                v-model="inputs[sec][subsec][input_var].value"
+                :id="input_var"
+                :options="inputs[sec][subsec][input_var].options"
+              >
+              </b-form-select>
+              <b-form-input
+                v-if="inputs[sec][subsec][input_var].type == 'text'"
+                v-model="inputs[sec][subsec][input_var].value"
+                :id="input_var"
+                :type="inputs[sec][subsec][input_var].type"
+                :required="inputs[sec][subsec][input_var].required ? true : false"
+              ></b-form-input>
+            </b-form-group>
           </div>
-        </div>
-      </div>
+        </b-form-group>
+      </b-form-group>
       <!-- submit button -->
-      <div class="field has-text-right">
-        <button v-on:click.prevent="adapt_run" type="submit" class="button is-danger">Submit</button>
-      </div>
-    </form>
+      <b-button type="submit" variant="primary">Submit</b-button>
+    </b-form>
     <p v-if="status">{{ status }}</p>
     <p v-if="runid">{{ "Run ID: " + runid }}</p>
   </div>
@@ -37,8 +85,22 @@ export default {
       inputs: {
         inputtype: {
           label: 'Inputs',
+          inputchoices: {
+            show: true,
+            inputchoice: {
+              label: 'Input Type',
+              type: 'options',
+              value: '',
+              options: [
+                { value: 'fasta', text: 'Prealigned FASTA' },
+                { value: 'auto-from-args', text: 'Taxonomic ID' },
+              ],
+              required: true,
+            },
+          },
           autoinput: {
             label: 'Auto Download from NCBI',
+            show: false,
             taxid: {
               label: 'Taxonomic ID',
               type: 'text',
@@ -52,10 +114,11 @@ export default {
           },
           fileinput: {
             label: 'Custom FASTA File',
+            show: false,
             fasta: {
               label: 'FASTA',
               type: 'file',
-              value: '',
+              value: [],
             },
           },
         },
@@ -63,20 +126,26 @@ export default {
           label: 'Specificity',
           fasta: {
             label: 'FASTA',
+            show: true,
             specificity_fasta: {
               label: 'FASTA',
               type: 'file',
-              value: '',
+              value: [],
             },
           },
         },
         opts: {
           label: 'Options',
           all: {
+            show: true,
             obj: {
               label: 'Objective',
-              type: 'text',
+              type: 'options',
               value: '',
+              options: [
+                { value: 'maximize-activity', text: 'Maximize Activity' },
+                { value: 'minimize-guides', text: 'Minimize Guides' },
+              ],
               required: true,
             },
             bestntargets: {
@@ -89,6 +158,7 @@ export default {
         advopts: {
           label: 'Advanced Options',
           all: {
+            show: true,
             gl: {
               label: 'Guide Length',
               type: 'text',
@@ -126,6 +196,7 @@ export default {
             },
           },
           gc: {
+            show: true,
             label: 'GC Content',
             primer_gc_lo: {
               label: 'Low',
@@ -139,6 +210,7 @@ export default {
             },
           },
           objw: {
+            show: true,
             label: 'Objective Function Weights',
             objfnweights_a: {
               label: 'Penalty for Number of Primers',
@@ -152,6 +224,7 @@ export default {
             },
           },
           sp: {
+            show: false,
             label: 'Specificity',
             idm: {
               label: 'Number of Mismatches to be Identical',
@@ -166,6 +239,7 @@ export default {
           },
           minguides: {
             label: 'Minimize Guides',
+            show: false,
             gm: {
               label: 'Guide Mismatches',
               type: 'text',
@@ -179,6 +253,7 @@ export default {
           },
           maxact: {
             label: 'Maximize Activity',
+            show: false,
             soft_guide_constraint: {
               label: 'Soft Guide Constraint',
               type: 'text',
@@ -248,6 +323,9 @@ export default {
       return sec_keys.filter(item => {
         return item != 'label';
       })
+    },
+    formatNames(files) {
+      return files.length === 1 ? files[0].name : `${files.length} files selected`
     },
     fileclick(input_var) {
       this.$refs[input_var].click()
