@@ -3,7 +3,7 @@
     <div class="header">
       <div class="desktop menu"><a href="/about">ABOUT</a></div>
       <div class="desktop menu"><a href="/designs">ASSAYS</a></div>
-      <div class="title"><a href="/">AD<img class="logo" @load="onLoad" :src="`${publicPath}/static/vue/img/logo.png`" alt="A">PT</a></div>
+      <div class="title"><a href="/">AD<img v-if="prod" class="logo" @load="onLoad" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" @load="onLoad" src="@/assets/img/logo.png" alt="A">PT</a></div>
       <div class="desktop menu"><a href="/run">RUN</a></div>
       <div class="desktop menu"><a href="/results">RESULTS</a></div>
       <div class="menuset">
@@ -22,8 +22,14 @@ export default {
   name: 'Header',
   data () {
     return {
-      publicPath: process.env.BASE_URL,
+      imgsrc: process.env.BASE_URL,
+      prod: false,
       slowshow: 0
+    }
+  },
+  created () {
+    if (!this.imgsrc.includes('localhost')) {
+      this.prod = true;
     }
   },
   methods: {
