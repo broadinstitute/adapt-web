@@ -1,10 +1,12 @@
 <template>
-  <div class="design">
-    <h1>{{ family }}</h1>
-    <h2>{{ genus }}</h2>
-    <h3>{{ species }}</h3>
-    <h4>{{ subspecies }}</h4>
-  </div>
+  <transition appear name="fade">
+    <div class="design">
+      <h1>{{ family }}</h1>
+      <h2>{{ genus }}</h2>
+      <h3>{{ species }}</h3>
+      <h4>{{ subspecies }}</h4>
+    </div>
+  </transition>
 </template>
 
 <script>

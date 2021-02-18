@@ -1,5 +1,6 @@
 <template>
   <div id="app" class="mx-3 mt-4 mb-5">
+    <Header/>
     <Design
       v-for="virus in viruses"
       :key="virus.taxid"
@@ -12,6 +13,7 @@
 </template>
 
 <script>
+import Header from '@/components/Header.vue'
 import Design from '@/components/Design.vue'
 const Cookies = require('js-cookie')
 const csrfToken = Cookies.get('csrftoken')
@@ -19,6 +21,7 @@ const csrfToken = Cookies.get('csrftoken')
 export default {
   name: 'App',
   components: {
+    Header,
     Design
   },
   data () {

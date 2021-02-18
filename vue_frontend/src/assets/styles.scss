@@ -1,10 +1,99 @@
-$font-family-sans-serif:    'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+$font-family-sans-serif:    'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
 
 $brand-primary:             #000d54;
 
 $link-color:                $brand-primary;
 $link-hover-color:          rgba($link-color, .6);
 $link-hover-decoration:     none;
+
+
+:root {
+  --navy: 0, 13, 84;
+  --violet: 87, 54, 255;
+  --cyan: 73, 216, 255;
+  --mint: 54, 255, 187;
+  --lilac: 173, 186, 255;
+
+/*  --navy: #000d54;
+  --violet: #5736ff;
+  --cyan: #49d8ff;
+  --mint: #36ffbb;
+  --lilac: #adbaff;
+*/
+}
+
+.header {
+  text-align: center;
+  align-items: center;
+  margin: auto;
+}
+
+.menu {
+  font-size: min(1.2em, 4vw);
+  padding-left: 4vw;
+  padding-right: 4vw;
+  display: inline;
+  vertical-align: middle;
+}
+
+.title {
+  padding-left: 4vw;
+  padding-right: 4vw;
+  font-size: min(4em, 13vw);
+  font-weight: 500;
+  display: inline;
+  vertical-align: middle;
+  font-family: Rubik, Helvetica, Arial, sans-serif;
+}
+
+button, input[type=button] {
+  border-width: 0;
+  transition: 0.3s;
+}
+
+.header a:hover, .header a:active {
+  transition: 0.3s;
+}
+
+.logo {
+  height: 0.85em;
+  padding-bottom: 0.15em;
+}
+
+.mobile {
+  display: none;
+}
+
+@media only screen and (max-width: 970px) {
+  /* For mobile phones: */
+  .desktop {
+    display: none;
+  }
+  .mobile {
+    display: block;
+  }
+  .menu {
+    text-align: right;
+  }
+  .header {
+    text-align: left;
+    display: flex;
+  }
+  .title {
+    flex: 1.5;
+    padding-right: 0;
+  }
+  .menuset {
+    flex: 1;
+  }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
+}
 
 @import 'node_modules/bootstrap/scss/bootstrap.scss';
 @import 'node_modules/bootstrap-vue/src/index.scss';

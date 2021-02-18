@@ -1,32 +1,34 @@
 <template>
-  <div class="results">
-    <div v-if="submitted">Job submitted!<br>
-    Your run ID is {{runid}}. Store this for future reference.<br>
-    Check below for status.</div>
-    <form id="status-form">
-      <div class="field">
-        <label class="label">Run ID: </label>
-        <input type="text" name="runid" v-model="runid">
-      </div>
+  <transition appear name="fade">
+    <div class="results">
+      <div v-if="submitted">Job submitted!<br>
+      Your run ID is {{runid}}. Store this for future reference.<br>
+      Check below for status.</div>
+      <form id="status-form">
+        <div class="field">
+          <label class="label">Run ID: </label>
+          <input type="text" name="runid" v-model="runid">
+        </div>
 
-      <span>Status: {{ status }}</span>
-      <!-- submit button -->
-      <div class="field has-text-right">
-        <button v-on:click.prevent="run_status" type="submit" class="button is-danger" name="status_submit">Get Status</button>
-      </div>
+        <span>Status: {{ status }}</span>
+        <!-- submit button -->
+        <div class="field has-text-right">
+          <button v-on:click.prevent="run_status" type="submit" class="button is-danger" name="status_submit">Get Status</button>
+        </div>
 
-      <!-- submit button -->
-      <div class="field has-text-right">
-        <button v-on:click.prevent="get_results" type="submit" class="button is-danger" name="download_submit">Download Results</button>
-      </div>
+        <!-- submit button -->
+        <div class="field has-text-right">
+          <button v-on:click.prevent="get_results" type="submit" class="button is-danger" name="download_submit">Download Results</button>
+        </div>
 
-      <!-- submit button -->
-      <div class="field has-text-right">
-        <button v-on:click.prevent="display_results" type="submit" class="button is-danger" name="display_submit">Display Results</button>
-      </div>
-    </form>
-    <p>{{ resultjson }}</p>
-  </div>
+        <!-- submit button -->
+        <div class="field has-text-right">
+          <button v-on:click.prevent="display_results" type="submit" class="button is-danger" name="display_submit">Display Results</button>
+        </div>
+      </form>
+      <p>{{ resultjson }}</p>
+    </div>
+  </transition>
 </template>
 
 <script>
