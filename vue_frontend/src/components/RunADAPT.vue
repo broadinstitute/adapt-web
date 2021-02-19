@@ -1,8 +1,8 @@
 <template>
   <transition appear name="fade">
     <div class="runadapt">
-      <ValidationObserver v-slot="{ invalid, untouched }">
-        <b-form id="full-form" @submit.prevent="adapt_run" class="mx-3 px-3">
+      <ValidationObserver ref="form" v-slot="{ handleSubmit }">
+        <b-form id="full-form" @submit.stop.prevent="handleSubmit(adapt_run)" class="mx-3 px-3">
           <b-form-group
             class="sec"
             v-for="(sec, i) in Object.keys(inputs)"
@@ -42,6 +42,7 @@
                     label-align-md=right
                   >
                     <ValidationProvider
+                      :vid="input_var"
                       :rules="inputs[sec][subsec][input_var].rules"
                       v-slot="validationContext"
                       :name="inputs[sec][subsec][input_var].label"
@@ -64,10 +65,7 @@
                         :placeholder="inputs[sec][subsec][input_var].placeholder ? inputs[sec][subsec][input_var].placeholder.toString() : ''"
                         :id="input_var"
                         :type="inputs[sec][subsec][input_var].type"
-                        :min="inputs[sec][subsec][input_var].min"
-                        :max="inputs[sec][subsec][input_var].max"
                         :step="inputs[sec][subsec][input_var].step"
-                        :required="inputs[sec][subsec][input_var].required ? true : false"
                         :aria-describedby="input_var + '-feedback'"
                         :state="getValidationState(validationContext, inputs[sec][subsec][input_var].value)"
                       ></b-form-input>
@@ -97,7 +95,7 @@
             </b-collapse>
           </b-form-group>
           <!-- submit button -->
-          <b-button type="submit" variant="primary" :disabled="invalid || untouched">Submit</b-button>
+          <b-button type="submit" variant="primary">Submit</b-button>
         </b-form>
       </ValidationObserver>
       <p v-if="status">{{ status }}</p>
@@ -112,8 +110,11 @@ import {
   ValidationObserver,
   extend,
 } from 'vee-validate';
-import * as rules from 'vee-validate/dist/rules';
-import { messages } from 'vee-validate/dist/locale/en.json';
+import {
+  required,
+  integer,
+  double
+} from 'vee-validate/dist/rules';
 import { setInteractionMode } from 'vee-validate';
 const Cookies = require('js-cookie');
 
@@ -125,11 +126,111 @@ export default {
   },
   mounted () {
     setInteractionMode('eager');
-    Object.keys(rules).forEach(rule => {
-      extend(rule, {
-        ...rules[rule],
-        message: messages[rule]
-      });
+    // let checkEmpty = (val) => {
+    //   return (Array.isArray(val) && val.length === 0) ||
+    //          [false, null, undefined].includes(val) ||
+    //          !String(val).trim().length
+    // }
+    extend('required', {
+      ...required,
+      message: "The {_field_} is required"
+    });
+    extend('required_if', {
+      computesRequired: true,
+      validate: (value, args) => {
+        let required;
+        if (args.length > 1) {
+          required = args.slice(1).includes(String(args[0]).trim());
+        } else {
+          required = !this.checkEmpty(args[0]);
+        }
+        if (!required) {
+          return {
+            valid: true,
+            required
+          }
+        }
+        return {
+          valid: !this.checkEmpty(value),
+          required
+        }
+      },
+      message: "The {_field_} is required"
+    });
+    extend('required_if_greater', {
+      computesRequired: true,
+      validate: (value, args) => {
+        let required = this.checkEmpty(args[0])? false : Number(args[0]) > Number(args[1]);
+        if (!required) {
+          return {
+            valid: true,
+            required
+          }
+        }
+        return {
+          valid: !this.checkEmpty(value),
+          required
+        }
+      },
+      message: "The {_field_} is required"
+    });
+    extend('required_if_less', {
+      computesRequired: true,
+      validate: (value, args) => {
+        let required =  this.checkEmpty(args[0])? false : Number(args[0]) < Number(args[1]);
+        if (!required) {
+          return {
+            valid: true,
+            required
+          }
+        }
+        return {
+          valid: !this.checkEmpty(value),
+          required
+        }
+      },
+      message: "The {_field_} is required"
+    });
+    extend('integer', {
+      ...integer,
+      message: "The {_field_} must be an integer"
+    });
+    extend('double', {
+      validate(value, args) {
+        const regex = new RegExp(`^-?\\d+\\.?\\d*`);
+        return Array.isArray(value) ? value.every(val => regex.test(String(val))) : regex.test(String(value));
+      },
+      message: "The {_field_} must be a valid decimal"
+    });
+    extend('between', {
+      validate(value, args) {
+        return Number(value) >= Number(args[0]) && Number(value) <= Number(args[1]);
+      },
+      message: (fieldName, placeholders) => {
+        return `The ${fieldName} must be at least ${placeholders[0]} and at most ${placeholders[1]}`;
+      }
+    });
+    extend('min_value', {
+      validate(value, args) {
+        return this.checkEmpty(args[0])? true : Number(value) >= Number(args[0]);
+      },
+      message: (fieldName, placeholders) => {
+        if (placeholders[1]) {
+          return `The ${fieldName} must be greater than or equal to the ${placeholders[1]}`;
+        }
+        return `The ${fieldName} must be at least ${placeholders[0]}`;
+      }
+    });
+    extend('max_value', {
+      validate(value, args) {
+        return this.checkEmpty(args[0])? true : Number(value) <= Number(args[0]);
+      },
+      message: (fieldName, placeholders) => {
+        if (placeholders[1]) {
+          return `The ${fieldName} must be less than or equal to the ${placeholders[1]}`;
+        }
+        return `The ${fieldName} must be at least ${placeholders[0]}`;
+      }
     });
     extend('amplicon', {
       validate: value => {
@@ -143,7 +244,7 @@ export default {
         }
         return value >= 2*primer_length + guide_length;
       },
-      message: "The {_field_} field must be greater than or equal to double the primer length plus the guide length",
+      message: "The {_field_} must be greater than or equal to double the primer length plus the guide length",
     });
   },
   data () {
@@ -162,8 +263,7 @@ export default {
                 { value: 'fasta', text: 'Prealigned FASTA' },
                 { value: 'auto-from-args', text: 'Auto Download from NCBI via Taxonomic ID' },
               ],
-              required: true,
-              rules: '',
+              rules: 'required',
             },
           },
           autoinput: {
@@ -171,15 +271,15 @@ export default {
             show: false,
             taxid: {
               label: 'Taxonomic ID',
-              type: 'text',
+              type: 'number',
               value: '',
-              rules: '',
+              rules: 'required_if:@inputchoice,auto-from-args',
             },
             segment: {
               label: 'Segment',
               type: 'text',
               value: '',
-              rules: '',
+              rules: 'required_if:@inputchoice,auto-from-args',
             },
           },
           fileinput: {
@@ -189,7 +289,7 @@ export default {
               label: 'FASTA',
               type: 'file',
               value: [],
-              rules: '',
+              rules: 'required_if:@inputchoice,fasta',
             },
           },
         },
@@ -206,25 +306,23 @@ export default {
                 { value: 'maximize-activity', text: 'Maximize Activity' },
                 { value: 'minimize-guides', text: 'Minimize Guides' },
               ],
-              required: true,
-              rules: '',
+              rules: 'required',
             },
             bestntargets: {
               label: 'Number of Assays',
               type: 'number',
               value: '',
-              required: true,
-              rules: 'required|min_value:1|integer',
+              rules: 'between:1,20|integer|required',
             },
           },
         },
         sp: {
           label: 'Specificity',
           collapsible: true,
-          fasta: {
+          sp_file: {
             label: 'FASTA',
             show: true,
-            specificity_fasta: {
+            sp_fasta: {
               label: 'FASTA',
               type: 'file',
               value: [],
@@ -263,13 +361,15 @@ export default {
               type: 'number',
               value: '',
               placeholder: 0.98,
-              rules: 'min_value:0|max_value:1|double',
+              step: 0.00000001,
+              rules: 'between:0,1|double:0',
             },
             cluster_threshold: {
               label: 'Cluster Threshold',
               type: 'number',
               value: '',
               placeholder: 0.3,
+              step: 0.00000001,
               rules: 'double'
             },
             max_primers_at_site: {
@@ -291,18 +391,20 @@ export default {
             show: true,
             label: 'Percent GC Content Allowed in Primers',
             primer_gc_lo: {
-              label: 'Low',
+              label: 'Low GC Percent Content in Primer',
               type: 'number',
               value: '',
               placeholder: 0.35,
-              rules: 'min_value:0|max_value:1|double',
+              step: 0.00000001,
+              rules: 'required_if_less:@primer_gc_hi,0.35|max_value:@primer_gc_hi,High GC Percent Content in Primer|between:0,1|double',
             },
             primer_gc_hi: {
-              label: 'High',
+              label: 'High GC Percent Content in Primer',
               type: 'number',
               value: '',
               placeholder: 0.65,
-              rules: 'min_value:0|max_value:1|double',
+              step: 0.00000001,
+              rules: 'required_if_greater:@primer_gc_lo,0.65|min_value:@primer_gc_lo,Low GC Percent Content in Primer|between:0,1|double',
             },
           },
           objw: {
@@ -313,6 +415,7 @@ export default {
               type: 'number',
               value: '',
               placeholder: 0.5,
+              step: 0.00000001,
               rules: 'double',
             },
             objfnweights_b: {
@@ -320,6 +423,7 @@ export default {
               type: 'number',
               value: '',
               placeholder: 0.25,
+              step: 0.00000001,
               rules: 'double',
             },
           },
@@ -328,15 +432,18 @@ export default {
             label: 'Specificity',
             idm: {
               label: 'Number of Mismatches to be Identical',
-              type: 'text',
+              type: 'number',
               value: '',
+              placeholder: 4,
               rules: '',
             },
             idfrac: {
               label: 'Fraction of Group Hit to be Identical',
-              type: 'text',
+              type: 'number',
               value: '',
-              rules: '',
+              placeholder: 0.01,
+              step: 0.00000001,
+              rules: 'between:0,1|double',
             },
           },
           minguides: {
@@ -344,15 +451,19 @@ export default {
             show: false,
             gm: {
               label: 'Guide Mismatches',
-              type: 'text',
+              type: 'number',
               value: '',
-              rules: '',
+              placeholder: 3,
+              step: 0.00000001,
+              rules: 'min_value:0|integer',
             },
             gp: {
               label: 'Guide Coverage Fraction',
-              type: 'text',
+              type: 'number',
               value: '',
-              rules: '',
+              placeholder: 0.98,
+              step: 0.00000001,
+              rules: 'between:0,1|double',
             },
           },
           maxact: {
@@ -360,15 +471,17 @@ export default {
             show: false,
             soft_guide_constraint: {
               label: 'Soft Guide Constraint',
-              type: 'text',
+              type: 'number',
               value: '',
-              rules: '',
+              placeholder: 1,
+              rules: 'max_value:@hard_guide_constraint,Hard Guide Constraint|min_value:1|integer',
             },
             hard_guide_constraint: {
               label: 'Hard Guide Constraint',
-              type: 'text',
+              type: 'number',
               value: '',
-              rules: '',
+              placeholder: 5,
+              rules: 'required_if_greater:@soft_guide_constraint,5|min_value:@soft_guide_constraint,Soft Guide Constraint|integer',
             },
           },
         },
@@ -383,6 +496,9 @@ export default {
     },
     objval() {
       return this.inputs.opts.all.obj.value
+    },
+    spval() {
+      return !this.checkEmpty(this.inputs.sp.sp_file.sp_fasta.value)
     }
   },
   watch: {
@@ -393,10 +509,18 @@ export default {
     objval(val) {
       this.inputs.advopts.minguides.show = val == 'minimize-guides';
       this.inputs.advopts.maxact.show = val == 'maximize-activity';
+    },
+    spval(val) {
+      this.inputs.advopts.sp.show = val
     }
   },
   methods: {
-    async adapt_run(event) {
+    checkEmpty(val) {
+      return (Array.isArray(val) && val.length === 0) ||
+             [false, null, undefined].includes(val) ||
+             !String(val).trim().length
+    },
+    async adapt_run() {
       this.status = "Loading..."
       let form_data = new FormData()
       for (let sec of Object.keys(this.inputs)) {
@@ -437,12 +561,6 @@ export default {
       }
       return response
     },
-    // handleFASTAUpload(){
-    //   this.inputs.fasta = this.$refs.fasta.files;
-    // },
-    // handleSpecificityFASTAUpload(){
-    //   this.inputs.specificity_fasta = this.$refs.specificity_fasta.files;
-    // }
     get_sub(sec_keys) {
       return sec_keys.filter(item => {
         return item != 'label';
@@ -451,14 +569,8 @@ export default {
     formatNames(files) {
       return files.length === 1 ? files[0].name : `${files.length} files selected`
     },
-    // dirty, validated, required, failed,
-    getValidationState({pristine, valid = null }, input_var) {
-      return pristine || valid ? null : valid;
-      // if (!required && input_var.length == 0) {
-      //   return null;
-      // } else {
-      //   return dirty || validated ? valid : null;
-      // }
+    getValidationState({failed, valid = null }, input_var) {
+      return !failed ? null : valid;
     },
     fileclick(input_var) {
       this.$refs[input_var].click()
@@ -466,7 +578,7 @@ export default {
     handleFilesUpload(sec, subsec, input_var){
       console.log(input_var)
       this.inputs[sec][subsec][input_var].value = this.$refs[input_var].files;
-    }
+    },
   },
 }
 </script>
