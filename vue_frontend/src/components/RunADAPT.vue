@@ -126,23 +126,19 @@ export default {
   },
   mounted () {
     setInteractionMode('eager');
-    // let checkEmpty = (val) => {
-    //   return (Array.isArray(val) && val.length === 0) ||
-    //          [false, null, undefined].includes(val) ||
-    //          !String(val).trim().length
-    // }
+    let checkEmpty = this.checkEmpty
     extend('required', {
       ...required,
       message: "The {_field_} is required"
     });
     extend('required_if', {
       computesRequired: true,
-      validate: (value, args) => {
+      validate(value, args) {
         let required;
         if (args.length > 1) {
           required = args.slice(1).includes(String(args[0]).trim());
         } else {
-          required = !this.checkEmpty(args[0]);
+          required = !checkEmpty(args[0]);
         }
         if (!required) {
           return {
@@ -151,7 +147,7 @@ export default {
           }
         }
         return {
-          valid: !this.checkEmpty(value),
+          valid: !checkEmpty(value),
           required
         }
       },
@@ -159,8 +155,8 @@ export default {
     });
     extend('required_if_greater', {
       computesRequired: true,
-      validate: (value, args) => {
-        let required = this.checkEmpty(args[0])? false : Number(args[0]) > Number(args[1]);
+      validate(value, args) {
+        let required = checkEmpty(args[0])? false : Number(args[0]) > Number(args[1]);
         if (!required) {
           return {
             valid: true,
@@ -168,7 +164,7 @@ export default {
           }
         }
         return {
-          valid: !this.checkEmpty(value),
+          valid: !checkEmpty(value),
           required
         }
       },
@@ -176,8 +172,8 @@ export default {
     });
     extend('required_if_less', {
       computesRequired: true,
-      validate: (value, args) => {
-        let required =  this.checkEmpty(args[0])? false : Number(args[0]) < Number(args[1]);
+      validate(value, args) {
+        let required = checkEmpty(args[0])? false : Number(args[0]) < Number(args[1]);
         if (!required) {
           return {
             valid: true,
@@ -185,7 +181,7 @@ export default {
           }
         }
         return {
-          valid: !this.checkEmpty(value),
+          valid: !checkEmpty(value),
           required
         }
       },
@@ -212,7 +208,7 @@ export default {
     });
     extend('min_value', {
       validate(value, args) {
-        return this.checkEmpty(args[0])? true : Number(value) >= Number(args[0]);
+        return checkEmpty(args[0])? true : Number(value) >= Number(args[0]);
       },
       message: (fieldName, placeholders) => {
         if (placeholders[1]) {
@@ -223,7 +219,7 @@ export default {
     });
     extend('max_value', {
       validate(value, args) {
-        return this.checkEmpty(args[0])? true : Number(value) <= Number(args[0]);
+        return checkEmpty(args[0])? true : Number(value) <= Number(args[0]);
       },
       message: (fieldName, placeholders) => {
         if (placeholders[1]) {
@@ -233,7 +229,7 @@ export default {
       }
     });
     extend('amplicon', {
-      validate: value => {
+      validate(value) {
         let primer_length = this.inputs.advopts.all.pl.placeholder
         if (this.inputs.advopts.all.pl.value) {
           primer_length = this.inputs.advopts.all.pl.value
