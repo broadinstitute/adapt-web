@@ -358,7 +358,7 @@ export default {
               value: '',
               placeholder: 0.98,
               step: 0.00000001,
-              rules: 'between:0,1|double:0',
+              rules: 'between:0,1|double',
             },
             cluster_threshold: {
               label: 'Cluster Threshold',
