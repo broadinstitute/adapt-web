@@ -193,7 +193,7 @@ export default {
     });
     extend('double', {
       validate(value, args) {
-        const regex = new RegExp(`^-?\\d+\\.?\\d*`);
+        const regex = new RegExp(`^-?(\\d+\\.?\\d*|\\.\\d+)`);
         return Array.isArray(value) ? value.every(val => regex.test(String(val))) : regex.test(String(value));
       },
       message: "The {_field_} must be a valid decimal"
