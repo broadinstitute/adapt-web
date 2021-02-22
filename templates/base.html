@@ -3,28 +3,15 @@
 {% load static %}
 
 <head>
-    <meta charset="utf-8">
-    <title>ADAPT</title>
-    <link rel="stylesheet" href="{% static 'vue/css/style.css' %}">
-    <meta name="description" content="">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <title>ADAPT</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet">
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
-<body>
-  <div class="header">
-    <div class="desktop menu"><a href="/about">ABOUT</a></div>
-    <div class="desktop menu"><a href="/designs">ASSAYS</a></div>
-    <div class="title"><a href="/">AD<img src="{% static 'vue/img/logo.png' %}" alt="ADAPT Logo" style="height:0.7em">PT</a></div>
-    <div class="desktop menu"><a href="/run">RUN</a></div>
-    <div class="desktop menu"><a href="/results">RESULTS</a></div>
-    <div class="menuset">
-      <div class="mobile menu"><a href="/about">ABOUT<br></a></div>
-      <div class="mobile menu"><a href="/designs">ASSAYS<br></a></div>
-      <div class="mobile menu"><a href="/run">RUN<br></a></div>
-      <div class="mobile menu"><a href="/results">RESULTS<br></a></div>
-    </div>
-  </div>
-  <hr>
+<body class="m-2">
   {% block content %}
   {% endblock %}
 </body>

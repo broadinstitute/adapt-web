@@ -31,14 +31,14 @@ const pages =  {
     template: 'public/index.html',
     filename: 'runadapt.html',
     title: 'Run ADAPT',
-    chunks: ['chunk-vendors', 'chunk-common', 'adapt']
+    chunks: ['chunk-vendors', 'chunk-common', 'runadapt']
   },
   results: {
     entry: './src/pages/Results/main.js',
     template: 'public/index.html',
     filename: 'results.html',
     title: 'View Results',
-    chunks: ['chunk-vendors', 'chunk-common', 'adapt']
+    chunks: ['chunk-vendors', 'chunk-common', 'results']
   }
 }
 

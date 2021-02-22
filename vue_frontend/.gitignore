@@ -24,3 +24,6 @@ pnpm-debug.log*
 
 # Build files
 webpack-stats.json
+
+# Lock files
+package-lock.json

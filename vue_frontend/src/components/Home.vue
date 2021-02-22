@@ -1,10 +1,12 @@
 <template>
-  <div class="home">
-    <a href="/about"><button>About ADAPT</button></a>
-    <a href="/designs"><button>Premade Diagnostic Assay Designs</button></a>
-    <a href="/run"><button>Run ADAPT on Your Own Data</button></a>
-    <a href="/results"><button>Check Your Results</button></a>
-  </div>
+  <transition appear name="fade">
+    <div class="home">
+      <a href="/about"><button>About ADAPT</button></a>
+      <a href="/designs"><button>Premade Diagnostic Assay Designs</button></a>
+      <a href="/run"><button>Run ADAPT on Your Own Data</button></a>
+      <a href="/results"><button>Check Your Results</button></a>
+    </div>
+  </transition>
 </template>
 
 <script>
