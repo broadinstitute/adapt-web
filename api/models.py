@@ -1,27 +1,140 @@
 from django.db import models
 
-
-class Virus(models.Model):
-    '''Defines base model for all viruses with premade designs
+class Taxon(models.Model):
+    '''Defines base model for all viral taxonomies with premade designs
     '''
     taxid = models.PositiveIntegerField(
         primary_key=True
     )
-    family = models.CharField(
+
+
+class Family(models.Model):
+    '''Defines base model for all viral families with premade designs
+    '''
+    taxon = models.OneToOneField(Taxon,
+        on_delete=models.CASCADE,
+        primary_key=True
+    )
+    latin_name = models.CharField(
         max_length=100
     )
-    genus = models.CharField(
+    @property
+    def lineage_names(self):
+        return [
+            (self.latin_name, self.taxon.taxid),
+        ]
+    @property
+    def lineage(self):
+        return [
+            self,
+        ]
+
+
+class Genus(models.Model):
+    '''Defines base model for all viral genuses with premade designs
+    '''
+    taxon = models.OneToOneField(Taxon,
+        on_delete=models.CASCADE,
+        primary_key=True
+    )
+    family = models.ForeignKey(Family,
+        on_delete=models.CASCADE,
+    )
+    latin_name = models.CharField(
         max_length=100,
         blank=True
     )
-    species = models.CharField(
+    @property
+    def lineage_names(self):
+        return [
+            (self.family.latin_name, self.family.taxon.taxid),
+            (self.latin_name, self.taxon.taxid),
+        ]
+    @property
+    def lineage(self):
+        return [
+            self.family,
+            self,
+        ]
+
+
+class Species(models.Model):
+    '''Defines base model for all viral species with premade designs
+    '''
+    taxon = models.OneToOneField(Taxon,
+        on_delete=models.CASCADE,
+        primary_key=True
+    )
+    genus = models.ForeignKey(Genus,
+        on_delete=models.CASCADE,
+    )
+    latin_name = models.CharField(
         max_length=100,
         blank=True
     )
-    subspecies = models.CharField(
+    @property
+    def lineage_names(self):
+        return [
+            (self.genus.family.latin_name, self.genus.family.taxon.taxid),
+            (self.genus.latin_name, self.genus.taxon.taxid),
+            (self.latin_name, self.taxon.taxid),
+        ]
+    @property
+    def lineage(self):
+        return [
+            self.genus.family,
+            self.genus,
+            self,
+        ]
+
+
+class Subspecies(models.Model):
+    '''Defines base model for all viral subspecies with premade designs
+    '''
+    taxon = models.OneToOneField(Taxon,
+        on_delete=models.CASCADE,
+        primary_key=True
+    )
+    species = models.ForeignKey(Species,
+        on_delete=models.CASCADE,
+    )
+    latin_name = models.CharField(
         max_length=100,
         blank=True
     )
+    @property
+    def lineage_names(self):
+        return [
+            (self.species.genus.family.latin_name, self.species.genus.family.taxon.taxid),
+            (self.species.genus.latin_name, self.species.genus.taxon.taxid),
+            (self.species.latin_name, self.species.taxon.taxid),
+            (self.latin_name, self.taxon.taxid),
+        ]
+    @property
+    def lineage(self):
+        return [
+            self.species.genus.family,
+            self.species.genus,
+            self.species,
+            self,
+        ]
+
+
+class PrimerSet(models.Model):
+    frac_bound = models.DecimalField(
+        max_digits=17,
+        decimal_places=16
+    )
+    start_pos = models.PositiveIntegerField()
+
+
+class LeftPrimers(PrimerSet):
+    pass
+
+
+class RightPrimers(PrimerSet):
+    pass
+
 
 class Primer(models.Model):
     frac_bound = models.DecimalField(
@@ -31,13 +144,19 @@ class Primer(models.Model):
     target = models.CharField(
         max_length = 100
     )
-    start_pos = models.PositiveIntegerField()
+    left_primer_set = models.ForeignKey(LeftPrimers,
+        related_name='primers',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    right_primer_set = models.ForeignKey(RightPrimers,
+        related_name='primers',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
 
-class LeftPrimer(Primer):
-    pass
-
-class RightPrimer(Primer):
-    pass
 
 class crRNASet(models.Model):
     frac_bound = models.DecimalField(
@@ -56,6 +175,7 @@ class crRNASet(models.Model):
         max_digits=20,
         decimal_places=16
     )
+
 
 class crRNA(models.Model):
     crRNA_set = models.ForeignKey(crRNASet,
@@ -80,10 +200,11 @@ class crRNA(models.Model):
     # class Meta:
     #     ordering = ['crRNA_set__assay__rank', 'start_pos']
 
+
 class Assay(models.Model):
     '''Defines base model for an assay for a virus
     '''
-    virus = models.ForeignKey(Virus,
+    taxon = models.ForeignKey(Taxon,
         related_name='assays',
         on_delete=models.CASCADE
     )
@@ -92,12 +213,12 @@ class Assay(models.Model):
         max_digits=20,
         decimal_places=16
     )
-    left_primer = models.OneToOneField(
-        LeftPrimer,
+    left_primers = models.OneToOneField(
+        LeftPrimers,
         on_delete=models.CASCADE
     )
-    right_primer = models.OneToOneField(
-        RightPrimer,
+    right_primers = models.OneToOneField(
+        RightPrimers,
         on_delete=models.CASCADE
     )
     amplicon_start = models.PositiveIntegerField()
@@ -109,7 +230,8 @@ class Assay(models.Model):
     )
 
     class Meta:
-        ordering = ['virus__taxid', 'rank']
+        ordering = ['taxon__taxid', 'rank']
+
 
 class ADAPTRun(models.Model):
     '''Defines base model for all ADAPT run types
@@ -126,163 +248,8 @@ class ADAPTRun(models.Model):
     submit_time = models.DateTimeField(
         auto_now_add=True
     )
-
+    @property
+    def short_id(self):
+        return self.cromwell_id[:8]
     class Meta:
         ordering = ['-submit_time']
-
-    ## Base Args
-    # cromwell_id = models.CharField(
-    #     max_length = 100
-    # )
-    # priority = models.BooleanField()
-
-
-    ## Specificity
-    # idm = models.PositiveSmallIntegerField(
-    #     null=True,
-    #     blank=True
-    # )
-    # idfrac = models.DecimalField(
-    #     max_digits=10,
-    #     decimal_places = 9,
-    #     null=True,
-    #     blank=True
-    # )
-
-    # specific_against_taxa = models.CharField(
-    #     blank=True
-    # )
-    # specific_against_fastas = models.FileField(
-    #     null=True,
-    #     blank=True
-    # )
-
-    ## class Meta:
-    ##     abstract=True
-
-# # Search Type
-# class CompTargArgs(models.Model):
-#     adaptrun = models.OneToOneField(
-#         ADAPTRun,
-#         on_delete=models.CASCADE,
-#         primary_key=True,
-#     )
-#     pl = models.PositiveIntegerField(
-#         null=True,
-#         blank=True
-#     )
-#     pm = models.PositiveSmallIntegerField(
-#         null=True,
-#         blank=True
-#     )
-#     pp = models.DecimalField(
-#         max_digits=10,
-#         decimal_places=9,
-#         null=True,
-#         blank=True
-#     )
-#     max_primers_at_site = models.PositiveSmallIntegerField(
-#         null=True,
-#         blank=True
-#     )
-#     max_target_length = models.PositiveIntegerField(
-#         null=True,
-#         blank=True
-#     )
-
-# class SlidWindArgs(models.Model):
-#     adaptrun = models.OneToOneField(
-#         ADAPTRun,
-#         on_delete=models.CASCADE,
-#         primary_key=True,
-#     )
-
-#     w = models.IntegerField(
-#         null=True,
-#         blank=True
-#     )
-#     window_step = models.IntegerField(
-#         null=True,
-#         blank=True
-#     )
-#     sort = models.BooleanField(
-#         null=True,
-#         blank=True
-#     )
-
-# # Input Type
-# class FastaArgs(model.Models):
-#     adaptrun = models.OneToOneField(
-#         ADAPTRun,
-#         on_delete=models.CASCADE,
-#         primary_key=True,
-#     )
-
-# class AutoArgArgs(model.Models):
-#     adaptrun = models.OneToOneField(
-#         ADAPTRun,
-#         on_delete=models.CASCADE,
-#         primary_key=True,
-#     )
-#     taxid = models.PositiveIntegerField()
-#     segment = models.CharField(
-#         max_length = 60,
-#         blank=True
-#     )
-#     ref_accs = models.CharField(
-#         max_length = 60,
-#         blank=True
-#     )
-
-# # Objective
-# class MaxActArgs(models.Model):
-#     adaptrun = models.OneToOneField(
-#         ADAPTRun,
-#         on_delete=models.CASCADE,
-#         primary_key=True,
-#     )
-#     soft_guide_constraint = models.PositiveSmallIntegerField(
-#         null=True,
-#         blank=True
-#     )
-#     hard_guide_constraint = models.PositiveSmallIntegerField(
-#         null=True,
-#         blank=True
-#     )
-#     penalty_strength = models.DecimalField(
-#         max_digits=10,
-#         decimal_places = 9,
-#         null=True,
-#         blank=True
-#     )
-#     random_greedy = models.BooleanField(
-#         null=True,
-#         blank=True
-#     )
-
-# class MinGuideArgs(models.Model):
-#     adaptrun = models.OneToOneField(
-#         ADAPTRun,
-#         on_delete=models.CASCADE,
-#         primary_key=True,
-#     )
-#     gm = models.PositiveSmallIntegerField(
-#         null=True
-#         blank=True
-#     )
-#     gp = models.DecimalField(
-#         max_digits=10,
-#         decimal_places=9,
-#         null=True,
-#         blank=True
-#     )
-#     required_flanking3 = models.CharField(
-#         max_length = 20,
-#         blank=True
-#     )
-#     required_flanking5 = models.CharField(
-#         max_length = 20,
-#         blank=True
-#     )
-
-

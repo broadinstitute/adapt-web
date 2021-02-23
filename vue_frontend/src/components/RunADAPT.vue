@@ -123,6 +123,8 @@ import {
 } from 'vee-validate/dist/rules';
 import { setInteractionMode } from 'vee-validate';
 const Cookies = require('js-cookie');
+// Needs CSRF for the server to accept the request
+const csrfToken = Cookies.get('csrftoken')
 
 export default {
   name: 'RunADAPT',
@@ -566,9 +568,6 @@ export default {
         }
       }
 
-      // Needs CSRF for the server to accept the request
-      const csrfToken = Cookies.get('csrftoken')
-
       let response = await fetch('/api/adaptruns/', {
         method: 'POST',
         headers: {
@@ -620,8 +619,9 @@ export default {
 input[type=file] {
   display: none
 }
-.collapsed > .when-open,
-.not-collapsed > .when-closed {
+
+.collapsed .when-open,
+.not-collapsed .when-closed {
   display: none;
 }
 </style>

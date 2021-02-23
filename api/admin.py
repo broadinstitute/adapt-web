@@ -1,12 +1,7 @@
 from django.contrib import admin
-from .models import *
+from . import models
 
-
-admin.site.register(ADAPTRun)
-admin.site.register(Virus)
-admin.site.register(Assay)
-admin.site.register(crRNASet)
-admin.site.register(crRNA)
-admin.site.register(LeftPrimer)
-admin.site.register(RightPrimer)
-admin.site.register(Primer)
+for model_name in dir(models):
+    model = models.__dict__[model_name]
+    if isinstance(model, type):
+        admin.site.register(model)

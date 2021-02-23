@@ -4,15 +4,14 @@ from rest_framework import renderers
 from rest_framework.authtoken import views as auth_views
 from . import views
 
+
 router = routers.DefaultRouter()
-router.register(r'users', views.UserViewSet)
-router.register(r'adaptruns', views.ADAPTRunViewSet)
-router.register(r'virus', views.VirusViewSet)
-router.register(r'assay', views.AssayViewSet)
-router.register(r'leftprimer', views.LeftPrimerViewSet)
-router.register(r'rightprimer', views.RightPrimerViewSet)
-router.register(r'crrnaset', views.crRNASetViewSet)
-router.register(r'crrna', views.crRNAViewSet)
+for view_name in dir(views):
+    if view_name.endswith("ViewSet"):
+        view = views.__dict__[view_name]
+        if isinstance(view, type):
+            base = view.serializer_class.Meta.model.__name__.lower()
+            router.register(base, view, base)
 
 urlpatterns = [
     path('', include(router.urls)),

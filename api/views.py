@@ -15,7 +15,6 @@ from django.contrib.auth.models import User
 
 from rest_framework import viewsets, generics, mixins, permissions
 from rest_framework import status as httpstatus
-from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
@@ -84,6 +83,176 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+
+class TaxonViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Taxon Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    queryset = Taxon.objects.all()
+    serializer_class = TaxonSerializer
+
+
+class FamilyViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Family Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    queryset = Family.objects.all()
+    serializer_class = FamilySerializer
+
+
+class GenusViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Genus Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    serializer_class = GenusSerializer
+
+    def get_queryset(self):
+        family = self.request.query_params.get('family')
+        if not family:
+            return Genus.objects.all()
+        return Genus.objects.filter(family__taxon__taxid=family)
+
+
+class SpeciesViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Species Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    serializer_class = SpeciesSerializer
+
+    def get_queryset(self):
+        genus = self.request.query_params.get('genus')
+        if not genus:
+            return Species.objects.all()
+        return Species.objects.filter(genus__taxon__taxid=genus)
+
+
+class SubspeciesViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Subspecies Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    serializer_class = SubspeciesSerializer
+
+    def get_queryset(self):
+        species = self.request.query_params.get('species')
+        if not species:
+            return Subspecies.objects.all()
+        return Subspecies.objects.filter(species__taxon__taxid=species)
+
+
+class LeftPrimersViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Left Primers Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    queryset = LeftPrimers.objects.all()
+    serializer_class = LeftPrimersSerializer
+
+
+class RightPrimersViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Right Primers Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    queryset = RightPrimers.objects.all()
+    serializer_class = RightPrimersSerializer
+
+
+class PrimerViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Primer Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    queryset = Primer.objects.all()
+    serializer_class = PrimerSerializer
+
+
+class crRNASetViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the crRNA Set Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    queryset = crRNASet.objects.all()
+    serializer_class = crRNASetSerializer
+
+
+class crRNAViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the crRNA Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    queryset = crRNA.objects.all()
+    serializer_class = crRNASerializer
+
+
+class AssayViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Assay Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    serializer_class = AssaySerializer
+    queryset = Assay.objects.all()
+
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):
     """
@@ -363,87 +532,3 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             response = FileResponse(output, content_type=output_type)
             response['Content-Disposition'] = 'attachment; filename=%s' % filename
         return response
-
-
-class VirusViewSet(viewsets.ModelViewSet):
-    """
-    Produces the various API views for the Virus Model
-
-    Abstracts the HTTP requests to the actions list, create, retrieve,
-    update, partial_update, and destroy, which are inherited.
-    """
-    # These permission classes make sure only authenticated admin users can
-    # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    queryset = Virus.objects.all()
-    serializer_class = VirusSerializer
-
-
-class AssayViewSet(viewsets.ModelViewSet):
-    """
-    Produces the various API views for the Assay Model
-
-    Abstracts the HTTP requests to the actions list, create, retrieve,
-    update, partial_update, and destroy, which are inherited.
-    """
-    # These permission classes make sure only authenticated admin users can
-    # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    serializer_class = AssaySerializer
-    queryset = Assay.objects.all()
-
-
-class LeftPrimerViewSet(viewsets.ModelViewSet):
-    """
-    Produces the various API views for the Left Primer Model
-
-    Abstracts the HTTP requests to the actions list, create, retrieve,
-    update, partial_update, and destroy, which are inherited.
-    """
-    # These permission classes make sure only authenticated admin users can
-    # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    queryset = LeftPrimer.objects.all()
-    serializer_class = LeftPrimerSerializer
-
-
-class RightPrimerViewSet(viewsets.ModelViewSet):
-    """
-    Produces the various API views for the Right Primer Model
-
-    Abstracts the HTTP requests to the actions list, create, retrieve,
-    update, partial_update, and destroy, which are inherited.
-    """
-    # These permission classes make sure only authenticated admin users can
-    # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    queryset = RightPrimer.objects.all()
-    serializer_class = RightPrimerSerializer
-
-
-class crRNASetViewSet(viewsets.ModelViewSet):
-    """
-    Produces the various API views for the crRNA Set Model
-
-    Abstracts the HTTP requests to the actions list, create, retrieve,
-    update, partial_update, and destroy, which are inherited.
-    """
-    # These permission classes make sure only authenticated admin users can
-    # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    queryset = crRNASet.objects.all()
-    serializer_class = crRNASetSerializer
-
-
-class crRNAViewSet(viewsets.ModelViewSet):
-    """
-    Produces the various API views for the crRNA Model
-
-    Abstracts the HTTP requests to the actions list, create, retrieve,
-    update, partial_update, and destroy, which are inherited.
-    """
-    # These permission classes make sure only authenticated admin users can
-    # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    queryset = crRNA.objects.all()
-    serializer_class = crRNASerializer

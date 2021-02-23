@@ -33,6 +33,8 @@
 
 <script>
 const Cookies = require('js-cookie')
+// Needs CSRF for the server to accept the request
+const csrfToken = Cookies.get('csrftoken')
 
 export default {
   name: 'Results',
@@ -58,7 +60,6 @@ export default {
     async run_status(event) {
       // Check the status of a job from backend
       Cookies.set('runid', this.runid)
-      const csrfToken = Cookies.get('csrftoken')
 
       let response = await fetch('/api/adaptruns/' + this.runid + '/status', {
         headers: {
@@ -78,10 +79,9 @@ export default {
       return response
     },
     async display_results(event) {
-      // Get results ad JSON from backend
+      // Get results JSON from backend
       // TODO do something with them
       Cookies.set('runid', this.runid)
-      const csrfToken = Cookies.get('csrftoken')
 
       let response = await fetch('/api/adaptruns/' + this.runid + '/results', {
         headers: {
@@ -99,7 +99,6 @@ export default {
     async get_results(event) {
       // Download results as a TSV or ZIP from backend
       Cookies.set('runid', this.runid)
-      const csrfToken = Cookies.get('csrftoken')
 
       let response = await fetch('/api/adaptruns/' + this.runid + '/download', {
         headers: {
