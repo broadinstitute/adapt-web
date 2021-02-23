@@ -2,7 +2,9 @@
 Web interface for using ADAPT
 
 ## Set up
-If you'd like to set up on Linux, run `setup_linux.sh` (you may need to run in sudo mode). If you're on Mac, do the following:
+If you'd like to set up on Linux, run `setup_linux.sh` (you may need to run in sudo mode). 
+
+If you're on Mac, do the following:
 To install the necessary packages for Django, run the following:
 ```
 pip install -r requirements.txt
@@ -30,13 +32,13 @@ To install Vue's dependencies, run:
 yarn --cwd vue_frontend/ install
 ```
 
-To update the database  (only necessary if not using ./start.sh), run:
+To update the database  (only necessary if not using `start.sh`), run:
 ```
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-To build Vue into a webpack bundle (only necessary if not using ./start.sh), run:
+To build Vue into a webpack bundle (only necessary if not using `start.sh`), run:
 ```
 yarn --cwd vue_frontend/ build
 ```
@@ -45,7 +47,7 @@ Finally, you'll need to create `api/aws_config.txt`. It should contain two lines
 
 ## Run server
 
-If you would like to run the server publically, use `start.sh`. If you're running it locally, you'll need to open two terminals to run the Django and Vue servers simultaneously.
+If you would like to run the server publically (such that other computers on your network can access the site), use `start.sh`. If you're running it locally, you'll need to open two terminals to run the Django and Vue servers simultaneously.
 
 To run the Django server, run:
 ```
