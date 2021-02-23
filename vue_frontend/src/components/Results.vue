@@ -45,6 +45,7 @@ export default {
     }
   },
   mounted() {
+    // Check if a job was just submitted based on cookies
     if (Cookies.get('runid') != null) {
       this.runid = Cookies.get('runid')
       if (Cookies.get('submitted') == 'true') {
@@ -55,6 +56,7 @@ export default {
   },
   methods: {
     async run_status(event) {
+      // Check the status of a job from backend
       Cookies.set('runid', this.runid)
       const csrfToken = Cookies.get('csrftoken')
 
@@ -76,6 +78,8 @@ export default {
       return response
     },
     async display_results(event) {
+      // Get results ad JSON from backend
+      // TODO do something with them
       Cookies.set('runid', this.runid)
       const csrfToken = Cookies.get('csrftoken')
 
@@ -93,6 +97,7 @@ export default {
       return response
     },
     async get_results(event) {
+      // Download results as a TSV or ZIP from backend
       Cookies.set('runid', this.runid)
       const csrfToken = Cookies.get('csrftoken')
 
@@ -111,6 +116,9 @@ export default {
       return response
     },
     async download_file(response){
+      // Helper function to download files
+      // i have no idea why this is so complicated but apparently this is how
+      // to download a file?? may try to simplify at some point
       let blob = await response.blob()
       let url = window.URL.createObjectURL(new Blob([blob]))
       let link = document.createElement('a')

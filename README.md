@@ -30,9 +30,21 @@ To install Vue's dependencies, run:
 yarn --cwd vue_frontend/ install
 ```
 
+To update the database  (only necessary if not using ./start.sh), run:
+```
+python manage.py makemigrations
+python manage.py migrate
+```
+
+To build Vue into a webpack bundle (only necessary if not using ./start.sh), run:
+```
+yarn --cwd vue_frontend/ build
+```
+
 Finally, you'll need to create `api/aws_config.txt`. It should contain two lines: the first an AWS access key, the second a AWS secret access key. @priyappillai has a key she can send; if you're not testing AWS functionality, you can put in gibberish for both to allow the server to compile.
 
 ## Run server
+
 If you would like to run the server publically, use `start.sh`. If you're running it locally, you'll need to open two terminals to run the Django and Vue servers simultaneously.
 
 To run the Django server, run:
@@ -44,6 +56,7 @@ To run the Vue server, run:
 ```
 yarn --cwd vue_frontend/ serve
 ```
+Running the Vue server is only necessary if a webpack bundle hasn't been built or if you would like updates to Vue to be applied without rebuilding the bundle.
 
 ## Directory Structure
 Anything in italics is what you most likely want to edit.
@@ -52,10 +65,13 @@ Anything in italics is what you most likely want to edit.
 Contains all of the Vue related files. The Vue server is run from inside this directory. `package.json` contains the list of dependencies; other files are general configuration files.
 
 #### public
-Any files that need to be accessible to Django and/or the browser directly. This includes the website-wide stylesheet, the logo, the favicon, and a default index page (might be able to remove the index page).
+Any files that need to be accessible to Django directly. This includes the logo, the favicon, and a default index page (might be able to remove the index page).
 
 #### *src*
 All the parts specific to Vue.
+
+##### assets
+The site wide stylesheet (written in SCSS) and images are in this folder.
 
 ##### *components*
 Contains the actual HTML/CSS/JS/Vue code. There are 4 components; each currently corresponds with a page.

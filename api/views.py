@@ -3,9 +3,9 @@ import json
 import zipfile
 import uuid
 import boto3
+import sys
 from io import BytesIO
 from botocore.exceptions import ClientError
-import sys
 
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, FileResponse, Http404
@@ -14,9 +14,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 
 from rest_framework import viewsets, generics, mixins, permissions
-from rest_framework.views import APIView
 from rest_framework import status as httpstatus
-from rest_framework.decorators import action, api_view
+from rest_framework.views import APIView
+from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -74,124 +74,44 @@ OPTIONAL_INPUT_VARS = STR_OPT_INPUT_VARS + INT_OPT_INPUT_VARS + FLOAT_OPT_INPUT_
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Produces the various API views for the User Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    The User model is used to log into the Django admin and to
+    authenticate admins to update the model list.
+    """
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the ADAPT Run Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    Additional actions are created using the @action decorator,
+    which creates an API enpoint for the action. This viewset
+    overrides create to submit to Cromwell and format data and
+    creates custom actions to get the status and results.
+    """
+    # Allows POST requests to be input in a variety of ways
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     queryset = ADAPTRun.objects.all()
     serializer_class = ADAPTRunSerializer
 
-    def create(self, request, format=None):
-        workflowInputs = {
-            "adapt_web.adapt.queueArn": QUEUE_ARN,
-            "adapt_web.adapt.image": IMAGE,
-            "adapt_web.adapt.obj": request.data['obj'],
-        }
-        for optional_input_var in STR_OPT_INPUT_VARS:
-            if optional_input_var in request.data:
-                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = request.data[optional_input_var]
-        for optional_input_var in INT_OPT_INPUT_VARS:
-            if optional_input_var in request.data:
-                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = int(request.data[optional_input_var])
-        for optional_input_var in FLOAT_OPT_INPUT_VARS:
-            if optional_input_var in request.data:
-                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = float(request.data[optional_input_var])
-        print(workflowInputs)
-        S3_id = uuid.uuid4()
-        if 'fasta[]' in request.FILES:
-            try:
-                S3 = boto3.client("s3",
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-                input_files = []
-                for i, input_file in enumerate(request.FILES.getlist('fasta[]')):
-                    # TODO more file validation
-                    if input_file.name[-6:] != ".fasta":
-                        content = {'Input Error': "Please only select FASTA files as input."}
-                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    key = "%s/input%i_%s"%(S3_id, i, input_file.name)
-                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
-                    input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
-                workflowInputs["adapt_web.adapt.fasta"] = input_files
-            except ClientError as e:
-                content = {'Connection Error': "Unable to connect to our file storage. "
-                    "Try again in a few minutes. If it still doesn't work, "
-                    "contact %s." %CONTACT}
-                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
-
-        if 'specificity_fasta[]' in request.FILES:
-            try:
-                S3 = boto3.client("s3",
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-                sp_files = []
-                for i, sp_file in enumerate(request.FILES.getlist('specificity_fasta[]')):
-                    # TODO more file validation
-                    if sp_file.name[-6:] != ".fasta":
-                        content = {'Input Error': "Please only select FASTA files as input."}
-                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    key = "%s/sp_%i_%s"%(S3_id, i, sp_file.name)
-                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_file)
-                    sp_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
-                workflowInputs["adapt_web.adapt.specificity_fasta"] = sp_files
-            except ClientError as e:
-                content = {'Connection Error': "Unable to connect to our file storage. "
-                    "Try again in a few minutes. If it still doesn't work, "
-                    "contact %s." %CONTACT}
-                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
-
-        cromwell_params = {'workflowInputs': json.dumps(workflowInputs),
-                           'workflowUrl': WORKFLOW_URL}
-        try:
-            cromwell_response = requests.post(SERVER_URL, files=cromwell_params, verify=False)
-        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout):
-            content = {'Connection Error': "Unable to connect to our servers. "
-                "Try again in a few minutes. If it still doesn't work, "
-                "contact %s." %CONTACT}
-            return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
-
-        cromwell_json = cromwell_response.json()
-        del workflowInputs["adapt_web.adapt.queueArn"]
-        adaptrun_info = {
-            "cromwell_id": cromwell_json["id"],
-            "workflowInputs": workflowInputs,
-        }
-
-        serializer = ADAPTRunSerializer(data=adaptrun_info)
-        if serializer.is_valid():
-            serializer.save()
-            rsp = Response(serializer.data, status=httpstatus.HTTP_201_CREATED)
-        else:
-            rsp = Response(serializer.errors, status=httpstatus.HTTP_400_BAD_REQUEST)
-        return rsp
-
-    @action(detail=True)
-    def status(self, request, *args, **kwargs):
-        adaptrun = self.get_object()
-        if adaptrun.status not in FINAL_STATES:
-            try:
-                cromwell_response = requests.get("%s/%s/status" %(SERVER_URL,adaptrun.cromwell_id), verify=False)
-            except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout):
-                content = {'Connection Error': "Unable to connect to our servers. "
-                    "Try again in a few minutes. If it still doesn't work, "
-                    "contact %s." %CONTACT}
-                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
-            cromwell_json = cromwell_response.json()
-            adaptrun.status = cromwell_json["status"]
-            adaptrun.save()
-
-        content = {'cromwell_id': adaptrun.cromwell_id, 'status': adaptrun.status}
-        return Response(content)
-
-
     def _getresults(self, request, *args, **kwargs):
+        """
+        Helper function for download and results
+        """
+        # Check status of run
         self.status(request, *args, **kwargs)
         adaptrun = self.get_object()
         output_files = []
+        # Only get results if job succeeded
         if adaptrun.status in SUCCESSFUL_STATES:
+            # Call Cromwell server
             try:
                 cromwell_response = requests.get("%s/%s/outputs" %(SERVER_URL,adaptrun.cromwell_id), verify=False)
             except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
@@ -220,6 +140,8 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     output_files.append(S3.get_object(Bucket = bucket, Key = key)["Body"])
             except ClientError as e:
                 if e.response['Error']['Code'] == "NoSuchKey":
+                    # This would only be possible if Cromwell didn't upload to S3 properly
+                    # or if S3 lost data
                     content = {'Server Error': "Unable to find output files. "
                     "Please contact %s with your run ID." %CONTACT}
                     return Response(content, status=httpstatus.HTTP_502_BAD_GATEWAY)
@@ -236,40 +158,167 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 "please check your input prior to your next request. "
                 "If you continue to have issues, contact %s" %CONTACT}
             return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
         else:
             content = {'Bad Request': "Job is not finished running. "
                 "Please wait until the job is done; this can take a few "
                 "hours on large datasets. You may check your job status "
                 "at the status API endpoint."}
             return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
         return output_files
 
+    def create(self, request, format=None):
+        """
+        Handles POST requests
+
+        Overrides the default create function to submit to Cromwell first.
+        Expects data from POST request to include the same input names as
+        adapt_web.wdl. Autofills the queue and image based on our Cromwell
+        server, sends the request to Cromwell, and, if successful, saves the
+        run metadata in the web server database.
+        """
+        # TODO: Validate inputs before sending to Cromwell
+        workflowInputs = {
+            # Cromwell Server based inputs
+            "adapt_web.adapt.queueArn": QUEUE_ARN,
+            "adapt_web.adapt.image": IMAGE,
+            # The objective is the only required input regardless of input type
+            "adapt_web.adapt.obj": request.data['obj'],
+        }
+        # Add inputs if they exist
+        # Cromwell requires correct typing, so cast to be safe
+        for optional_input_var in STR_OPT_INPUT_VARS:
+            if optional_input_var in request.data:
+                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = request.data[optional_input_var]
+        for optional_input_var in INT_OPT_INPUT_VARS:
+            if optional_input_var in request.data:
+                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = int(request.data[optional_input_var])
+        for optional_input_var in FLOAT_OPT_INPUT_VARS:
+            if optional_input_var in request.data:
+                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = float(request.data[optional_input_var])
+        # If there are files in the request, upload to our S3 bucket, labeled with a unique identifier
+        # We don't have Cromwell's unique identifier, so make a different one (will be stored)
+        S3_id = uuid.uuid4()
+        if 'fasta[]' in request.FILES:
+            try:
+                # Connect to S3 and upload file
+                S3 = boto3.client("s3",
+                    aws_access_key_id=AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+                input_files = []
+                for i, input_file in enumerate(request.FILES.getlist('fasta[]')):
+                    # TODO more file validation
+                    if input_file.name[-6:] != ".fasta":
+                        content = {'Input Error': "Please only select FASTA files as input."}
+                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+                    key = "%s/in_%i_%s"%(S3_id, i, input_file.name)
+                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
+                    input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
+                workflowInputs["adapt_web.adapt.fasta"] = input_files
+            except ClientError as e:
+                # TODO: could add more specific errors?
+                content = {'Connection Error': "Unable to connect to our file storage. "
+                    "Try again in a few minutes. If it still doesn't work, "
+                    "contact %s." %CONTACT}
+                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+
+        # TODO: deduplicate this code; nearly identical to above
+        if 'specificity_fasta[]' in request.FILES:
+            try:
+                S3 = boto3.client("s3",
+                    aws_access_key_id=AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+                sp_files = []
+                for i, sp_file in enumerate(request.FILES.getlist('specificity_fasta[]')):
+                    # TODO more file validation
+                    if sp_file.name[-6:] != ".fasta":
+                        content = {'Input Error': "Please only select FASTA files as input."}
+                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+                    key = "%s/sp_%i_%s"%(S3_id, i, sp_file.name)
+                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_file)
+                    sp_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
+                workflowInputs["adapt_web.adapt.specificity_fasta"] = sp_files
+            except ClientError as e:
+                content = {'Connection Error': "Unable to connect to our file storage. "
+                    "Try again in a few minutes. If it still doesn't work, "
+                    "contact %s." %CONTACT}
+                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+
+        # Send to Cromwell; note that request requires input to be sent via "files"
+        #   in order to send a JSON within a JSON
+        cromwell_params = {'workflowInputs': json.dumps(workflowInputs),
+                           'workflowUrl': WORKFLOW_URL}
+        try:
+            cromwell_response = requests.post(SERVER_URL, files=cromwell_params, verify=False)
+        # TODO: Unsure if these are all the possible connection errors
+        # TODO: Catch non-connection based errors; those are likely due to an input issue
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout):
+            content = {'Connection Error': "Unable to connect to our servers. "
+                "Try again in a few minutes. If it still doesn't work, "
+                "contact %s." %CONTACT}
+            return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+
+        cromwell_json = cromwell_response.json()
+        # Don't store confidential information on our AWS account in the web server database;
+        # do store the cromwell ID
+        del workflowInputs["adapt_web.adapt.queueArn"]
+        adaptrun_info = {
+            # If Cromwell submission was unsuccessful, this will cause an error
+            "cromwell_id": cromwell_json["id"],
+            "workflowInputs": workflowInputs,
+        }
+
+        # Set up and save run to the web server database
+        serializer = ADAPTRunSerializer(data=adaptrun_info)
+        if serializer.is_valid():
+            serializer.save()
+            rsp = Response(serializer.data, status=httpstatus.HTTP_201_CREATED)
+        else:
+            # This should never happen, since the inputs are set only after a
+            # successful submission to Cromwell
+            rsp = Response(serializer.errors, status=httpstatus.HTTP_400_BAD_REQUEST)
+        return rsp
+
     @action(detail=True)
-    def download(self, request, *args, **kwargs):
-        response = self._getresults(request, *args, **kwargs)
-        if isinstance(response, list):
-            if len(response) == 1:
-                output = response[0].read().decode("utf-8")
-                output_type = "text/tsv"
-                output_ext = ".tsv"
-            else:
-                output_files = [output_file.read().decode("utf-8") for output_file in response]
-                output_type = "application/zip"
-                zipped_output = BytesIO()
-                with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
-                    for i, output_file in enumerate(output):
-                        zipped_output_a.writestr("%s.%i.tsv" %(self.kwargs['pk'], i), output_file)
-                zipped_output.seek(0)
-                output = zipped_output
-                output_ext = ".zip"
-            filename = self.kwargs['pk']+output_ext
-            response = FileResponse(output, content_type=output_type)
-            response['Content-Disposition'] = 'attachment; filename=%s' % filename
-        return response
+    def status(self, request, *args, **kwargs):
+        """
+        Gets the status of the run ID specified in request
+
+        Function called at the "status" API endpoint
+        """
+        adaptrun = self.get_object()
+        # Check if the run wasn't finished the last time status was checked
+        if adaptrun.status not in FINAL_STATES:
+            # Call Cromwell server
+            try:
+                cromwell_response = requests.get("%s/%s/status" %(SERVER_URL,adaptrun.cromwell_id), verify=False)
+            except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout):
+                content = {'Connection Error': "Unable to connect to our servers. "
+                    "Try again in a few minutes. If it still doesn't work, "
+                    "contact %s." %CONTACT}
+                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+            cromwell_json = cromwell_response.json()
+            # Update the model with the current status
+            adaptrun.status = cromwell_json["status"]
+            adaptrun.save()
+
+        # Return response with id and status
+        content = {'cromwell_id': adaptrun.cromwell_id, 'status': adaptrun.status}
+        return Response(content)
 
     @action(detail=True)
     def results(self, request, *args, **kwargs):
+        """
+        Produces a JSON of the results
+
+        Function called at the "results" API endpoint
+        """
         response = self._getresults(request, *args, **kwargs)
+        # The 'response' from _getresults is either an HTTP Response
+        # or a list of files which needs to be processed
         if isinstance(response, list):
             output_files = [output_file.read().decode("utf-8") for output_file in response]
             content = {}
@@ -282,37 +331,119 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             response = Response(content)
         return response
 
+    @action(detail=True)
+    def download(self, request, *args, **kwargs):
+        """
+        Produces a file of the results to download
+
+        Makes a TSV if there is only one file and a ZIP otherwise.
+        Function called at the "download" API endpoint.
+        """
+        response = self._getresults(request, *args, **kwargs)
+        # The 'response' from _getresults is either an HTTP Response
+        # or a list of files which needs to be processed
+        if isinstance(response, list):
+            if len(response) == 1:
+                # If there is only one file, no need to zip
+                output = response[0].read().decode("utf-8")
+                output_type = "text/tsv"
+                output_ext = ".tsv"
+            else:
+                output_files = [output_file.read().decode("utf-8") for output_file in response]
+                output_type = "application/zip"
+                # Create the zip file in memory only
+                zipped_output = BytesIO()
+                with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
+                    for i, output_file in enumerate(output):
+                        zipped_output_a.writestr("%s.%i.tsv" %(self.kwargs['pk'], i), output_file)
+                zipped_output.seek(0)
+                output = zipped_output
+                output_ext = ".zip"
+            filename = self.kwargs['pk']+output_ext
+            response = FileResponse(output, content_type=output_type)
+            response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        return response
+
+
 class VirusViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Virus Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = Virus.objects.all()
     serializer_class = VirusSerializer
 
+
 class AssayViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Assay Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     serializer_class = AssaySerializer
     queryset = Assay.objects.all()
 
-    # def get_queryset(self):
-    #     taxid = self.request.taxid
-    #     return Assay.objects.filter(virus=taxid)
 
 class LeftPrimerViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Left Primer Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = LeftPrimer.objects.all()
     serializer_class = LeftPrimerSerializer
 
+
 class RightPrimerViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Right Primer Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = RightPrimer.objects.all()
     serializer_class = RightPrimerSerializer
 
+
 class crRNASetViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the crRNA Set Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = crRNASet.objects.all()
     serializer_class = crRNASetSerializer
 
+
 class crRNAViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the crRNA Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     queryset = crRNA.objects.all()
     serializer_class = crRNASerializer
-

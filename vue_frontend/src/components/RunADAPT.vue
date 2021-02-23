@@ -1,8 +1,10 @@
 <template>
   <transition appear name="fade">
     <div class="runadapt">
+      <!-- Form created dynamically with 3 loops - one for sections, one for subsections, one for the fields -->
       <ValidationObserver ref="form" v-slot="{ handleSubmit }">
         <b-form id="full-form" @submit.stop.prevent="handleSubmit(adapt_run)" class="mx-3 px-3">
+          <!-- Section loop -->
           <b-form-group
             class="sec"
             v-for="(sec, i) in Object.keys(inputs)"
@@ -10,6 +12,7 @@
             :key="i"
             :id="sec"
           >
+          <!-- Make collapsible section, if it is one -->
           <a
             v-if="inputs[sec].collapsible"
             @click.prevent
@@ -20,6 +23,7 @@
               :id="sec + '-toggle'"
               :visible="inputs[sec].collapsible ? false : true"
             >
+              <!-- Subsection loop -->
               <b-form-group
                 class="subsec"
                 v-for="(subsec, j) in get_sub(Object.keys(inputs[sec]))"
@@ -30,6 +34,7 @@
                 :id="subsec"
               >
                 <div v-show="inputs[sec][subsec].show">
+                  <!-- Field loop -->
                   <b-form-group
                     class="field"
                     v-for="(input_var, k) in get_sub(Object.keys(inputs[sec][subsec]))"
@@ -41,12 +46,14 @@
                     label-align=left
                     label-align-md=right
                   >
+                    <!-- ValidationProvider allows VeeValidate to put rules on a field -->
                     <ValidationProvider
                       :vid="input_var"
                       :rules="inputs[sec][subsec][input_var].rules"
                       v-slot="validationContext"
                       :name="inputs[sec][subsec][input_var].label"
                     >
+                      <!-- v-if only produces the input depending on the type -->
                       <b-form-file
                         v-if="inputs[sec][subsec][input_var].type == 'file'"
                         v-model="inputs[sec][subsec][input_var].value"
@@ -113,7 +120,6 @@ import {
 import {
   required,
   integer,
-  double
 } from 'vee-validate/dist/rules';
 import { setInteractionMode } from 'vee-validate';
 const Cookies = require('js-cookie');
@@ -125,12 +131,19 @@ export default {
     ValidationObserver
   },
   mounted () {
+    // Makes VeeValidate check only on change events if the field is untouched or valid,
+    // but on input events if the field is invalid
     setInteractionMode('eager');
+    // Direct reference to checkEmpty needed for extend to access it within validate
     let checkEmpty = this.checkEmpty
+    // 'extend' creates rules for validation. In theory VeeValidate should come with many
+    // of these preimplemented (such as 'required' and 'integer'), but preimplemented versions
+    // don't work for anything with named parameters for some reason
     extend('required', {
       ...required,
       message: "The {_field_} is required"
     });
+    // Sets field to ge required if another field (args[0]) is a value (args[1:])
     extend('required_if', {
       computesRequired: true,
       validate(value, args) {
@@ -153,6 +166,7 @@ export default {
       },
       message: "The {_field_} is required"
     });
+    // Sets field to ge required if another field (args[0]) is greater than a value (args[1])
     extend('required_if_greater', {
       computesRequired: true,
       validate(value, args) {
@@ -170,6 +184,7 @@ export default {
       },
       message: "The {_field_} is required"
     });
+    // Sets field to ge required if another field (args[0]) is less than a value (args[1])
     extend('required_if_less', {
       computesRequired: true,
       validate(value, args) {
@@ -210,6 +225,7 @@ export default {
       validate(value, args) {
         return checkEmpty(args[0])? true : Number(value) >= Number(args[0]);
       },
+      // Sets the message to say greater than a specified string if one is supplied; otherwise, just says number
       message: (fieldName, placeholders) => {
         if (placeholders[1]) {
           return `The ${fieldName} must be greater than or equal to the ${placeholders[1]}`;
@@ -221,6 +237,7 @@ export default {
       validate(value, args) {
         return checkEmpty(args[0])? true : Number(value) <= Number(args[0]);
       },
+      // Sets the message to say greater than a specified string if one is supplied; otherwise, just says number
       message: (fieldName, placeholders) => {
         if (placeholders[1]) {
           return `The ${fieldName} must be less than or equal to the ${placeholders[1]}`;
@@ -228,6 +245,7 @@ export default {
         return `The ${fieldName} must be at least ${placeholders[0]}`;
       }
     });
+    // Specific rule for amplicon length
     extend('amplicon', {
       validate(value) {
         let primer_length = this.inputs.advopts.all.pl.placeholder
@@ -245,6 +263,12 @@ export default {
   },
   data () {
     return {
+      // Fields of the form. Divided into sections, subsections, and fields,
+      // Sections have a label and a true/false 'collapsible' value
+      // Subsections have an optional label and a true/false 'show' value that is set
+      // depending on input choices
+      // Fields have a label, a type, a value, rules to validate it, and options if it is
+      // an options type
       inputs: {
         inputtype: {
           label: 'Inputs',
@@ -486,6 +510,10 @@ export default {
       status: '',
     }
   },
+  // computed and watch are used to show certain sections of the form dependent on input choices
+  // computed properties are reevalutated whenever their dependencies change
+  // watch allows things to happen when those computed properties change
+  // Nested data cannot otherwise be accessed by watch
   computed: {
     inputchoiceval() {
       return this.inputs.inputtype.inputchoices.inputchoice.value
@@ -512,11 +540,14 @@ export default {
   },
   methods: {
     checkEmpty(val) {
+      // Helper function
       return (Array.isArray(val) && val.length === 0) ||
              [false, null, undefined].includes(val) ||
              !String(val).trim().length
     },
     async adapt_run() {
+      // Handles submission
+      // Relies on innermost input field names matching adapt_web.wdl's input variable names.
       this.status = "Loading..."
       let form_data = new FormData()
       for (let sec of Object.keys(this.inputs)) {
@@ -535,6 +566,7 @@ export default {
         }
       }
 
+      // Needs CSRF for the server to accept the request
       const csrfToken = Cookies.get('csrftoken')
 
       let response = await fetch('/api/adaptruns/', {
@@ -553,21 +585,26 @@ export default {
         window.location.href = '/results'
       }
       else {
+        // TODO better error handling
         this.status = "Submission Error"
       }
       return response
     },
     get_sub(sec_keys) {
+      // Helper function to get children of section; possibly unnecessary
       return sec_keys.filter(item => {
         return item != 'label';
       })
     },
     formatNames(files) {
+      // Produces the correct string to indicate file input
       return files.length === 1 ? files[0].name : `${files.length} files selected`
     },
     getValidationState({failed, valid = null }, input_var) {
+      // Only show if field is invalid' don't show check more if valid
       return !failed ? null : valid;
     },
+    // Old files methods; new bootstrap file upload hasn't been tested, so leaving until it has.
     fileclick(input_var) {
       this.$refs[input_var].click()
     },
