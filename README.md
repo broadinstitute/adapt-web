@@ -76,7 +76,7 @@ All the parts specific to Vue.
 The site wide stylesheet (written in SCSS) and images are in this folder.
 
 ##### *components*
-Contains the actual HTML/CSS/JS/Vue code. There are 4 components; each currently corresponds with a page.
+Contains the actual HTML/CSS/JS/Vue code. There are 5 components currently; 4 that corresponds with a page, 1 that corresponds with the header. I'm in the process of adding a "Assay" component that will be usable for visualizing results on the Designs and Results pages.
 
 The first section (`<template> ... </template>`) is the HTML template that Vue will insert data into.
 
@@ -85,7 +85,7 @@ The second section (everything in `<script> ... export default {...} </script>`)
 The optional third section (`<style scoped> ... </style>`) is CSS that will only affect this component.
 
 ##### pages
-Contains code to set up components into actual pages. Most pages are just 1 component for now, but that should change in the future (for example, the "Design" component should be usable on both the Designs page and the Results page for visualizing designs)
+Contains code to set up components into actual pages. I'll likely change the components that are only one page to be made directly in that page, rather than importing them.
 
 #### node_modules (only exists after installing Vue dependencies)
 Vue dependencies will be stored in this folder.
@@ -94,7 +94,7 @@ Vue dependencies will be stored in this folder.
 Contains the code that connects Vue to Django. It sets up URL routing for each page (`urls.py`) and the settings for the Django server (`setttings.py`).
 
 ### *api*
-Contains the API code-the database schema (*`models.py`*), as well as functions to define the various types of requests to the API (*`views.py`*--note, a "viewset" in `views.py` is a class that automatically builds the basic GET/POST/PUT etc. functions). `serializers.py` defines the fields needed to put an object into the database; `urls.py` sets up URL routing to each model; `admin.py` allows access to the models via the Django admin interface (which we shouldn't need, but is set up just in case); `apps.py` sets up the API as a app to be run by the django_backend.
+Contains the API code-the database schema (*`models.py`*), as well as functions to define the various types of requests to the API (*`views.py`*--note, a "viewset" in *`views.py`* is a class that automatically builds the basic GET/POST/PUT etc. functions). `serializers.py` defines the fields needed to put an object into the database; `urls.py` sets up URL routing to each model; `admin.py` allows access to the models via the Django admin interface (which we shouldn't need, but is set up just in case); `apps.py` sets up the API as a app to be run by the django_backend.
 
 ### templates
 These are HTML files that Vue inserts into. For the most part, it's just connection between Vue and Django, but the header is made in `base.html`.
