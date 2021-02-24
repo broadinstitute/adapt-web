@@ -1,7 +1,13 @@
 <template>
   <div id="app" class="mx-3 mt-4 mb-5">
-    <Header/>
-    <Design/>
+  <Header/>
+  <b-row class="mt-5">
+    <b-col cols=0 md=2></b-col>
+    <b-col>
+      <Design/>
+    </b-col>
+    <b-col cols=0 md=2></b-col>
+  </b-row>
   </div>
 </template>
 
@@ -14,8 +20,8 @@ const csrfToken = Cookies.get('csrftoken')
 export default {
   name: 'App',
   components: {
-    Header,
-    Design
+  Header,
+  Design
   }
 }
 </script>

@@ -1,9 +1,9 @@
 $font-family-sans-serif:    'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
 
-$brand-primary:             #000d54;
+$primary:                   #000d54;
+$secondary:                 #4f7fff;
 
-$link-color:                $brand-primary;
-$link-hover-color:          rgba($link-color, .6);
+$link-hover-color:          rgba($primary, .6);
 $link-hover-decoration:     none;
 
 
@@ -15,8 +15,8 @@ $link-hover-decoration:     none;
   --lilac: 173, 186, 255;
 
 /*  --navy: #000d54;
-  --violet: #5736ff;
-  --cyan: #49d8ff;
+  --violet: #5736ff; #4f7fff
+  --cyan: #49d8ff; #45e2ea
   --mint: #36ffbb;
   --lilac: #adbaff;
 */

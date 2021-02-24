@@ -1,7 +1,13 @@
 <template>
   <div id="app" class="mx-3 mt-4 mb-5">
-    <Header/>
-    <RunADAPT/>
+  <Header/>
+  <b-row class="mt-5">
+    <b-col cols=0 md=2></b-col>
+    <b-col>
+      <RunADAPT/>
+    </b-col>
+    <b-col cols=0 md=2></b-col>
+  </b-row>
   </div>
 </template>
 
@@ -12,8 +18,8 @@ import RunADAPT from '@/components/RunADAPT.vue'
 export default {
   name: 'App',
   components: {
-    Header,
-    RunADAPT
+  Header,
+  RunADAPT
   }
 }
 </script>

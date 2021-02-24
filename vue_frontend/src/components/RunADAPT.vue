@@ -7,18 +7,21 @@
           <!-- Section loop -->
           <b-form-group
             class="sec"
-            v-for="(sec, i) in Object.keys(inputs)"
+            v-for="sec in get_sub(inputs)"
             :label="(inputs[sec].label && !inputs[sec].collapsible) ? inputs[sec].label : ''"
-            :key="i"
+            label-size="lg"
+            label-class="font-weight-bold"
+            :key="inputs[sec].order"
             :id="sec"
           >
           <!-- Make collapsible section, if it is one -->
-          <a
+          <legend class="my-0"><a
             v-if="inputs[sec].collapsible"
             @click.prevent
             v-b-toggle
             :href="'#' + sec + '-toggle'"
-          >{{ inputs[sec].label }} <b-icon-chevron-down class="when-closed"/><b-icon-chevron-up class="when-open"/></a>
+            class="col-form-label-lg pt-0 font-weight-bold"
+          >{{ inputs[sec].label }} <b-icon-chevron-down class="when-closed"/><b-icon-chevron-up class="when-open"/></a></legend>
             <b-collapse
               :id="sec + '-toggle'"
               :visible="inputs[sec].collapsible ? false : true"
@@ -26,23 +29,24 @@
               <!-- Subsection loop -->
               <b-form-group
                 class="subsec"
-                v-for="(subsec, j) in get_sub(Object.keys(inputs[sec]))"
+                v-for="subsec in get_sub(inputs[sec])"
                 v-show="inputs[sec][subsec].show"
                 :label="inputs[sec][subsec].label ? inputs[sec][subsec].label : ''"
-                label-cols-lg=3
-                :key="j"
+                :label-cols-lg="inputs[sec][subsec].label ? 3 : 1"
+                label-class="font-weight-bold"
+                :key="inputs[sec][subsec].order"
                 :id="subsec"
               >
                 <div v-show="inputs[sec][subsec].show">
                   <!-- Field loop -->
                   <b-form-group
                     class="field"
-                    v-for="(input_var, k) in get_sub(Object.keys(inputs[sec][subsec]))"
-                    :key="k"
+                    v-for="input_var in get_sub(inputs[sec][subsec])"
+                    :key="inputs[sec][subsec][input_var].order"
                     :label="inputs[sec][subsec][input_var].label"
                     :label-for="input_var"
-                    label-cols-md=4
-                    content-cols-md=8
+                    label-cols-md=5
+                    content-cols-md=7
                     label-align=left
                     label-align-md=right
                   >
@@ -102,7 +106,7 @@
             </b-collapse>
           </b-form-group>
           <!-- submit button -->
-          <b-button type="submit" variant="primary">Submit</b-button>
+          <b-button pill block size="lg" type="submit" variant="secondary">Submit</b-button>
         </b-form>
       </ValidationObserver>
       <p v-if="status">{{ status }}</p>
@@ -273,11 +277,13 @@ export default {
       // an options type
       inputs: {
         inputtype: {
+          order: 0,
           label: 'Inputs',
           collapsible: false,
           inputchoices: {
             show: true,
             inputchoice: {
+              order: 0,
               label: 'Input Type',
               type: 'options',
               value: '',
@@ -289,15 +295,18 @@ export default {
             },
           },
           autoinput: {
+            order: 1,
             label: 'Auto Download from NCBI',
             show: false,
             taxid: {
+              order: 0,
               label: 'Taxonomic ID',
               type: 'number',
               value: '',
               rules: 'required_if:@inputchoice,auto-from-args',
             },
             segment: {
+              order: 1,
               label: 'Segment',
               type: 'text',
               value: '',
@@ -305,10 +314,12 @@ export default {
             },
           },
           fileinput: {
+            order: 2,
             label: 'Prealigned FASTA',
             show: false,
             fasta: {
-              label: 'FASTA',
+              order: 0,
+              label: 'FASTA Files',
               type: 'file',
               value: [],
               rules: 'required_if:@inputchoice,fasta',
@@ -316,11 +327,14 @@ export default {
           },
         },
         opts: {
+          order: 1,
           label: 'Settings',
           collapsible: false,
           all: {
+            order: 0,
             show: true,
             obj: {
+              order: 0,
               label: 'Objective',
               type: 'options',
               value: '',
@@ -331,6 +345,7 @@ export default {
               rules: 'required',
             },
             bestntargets: {
+              order: 1,
               label: 'Number of Assays',
               type: 'number',
               value: '',
@@ -339,13 +354,15 @@ export default {
           },
         },
         sp: {
+          order: 2,
           label: 'Specificity',
           collapsible: true,
           sp_file: {
-            label: 'FASTA',
+            order: 0,
             show: true,
             sp_fasta: {
-              label: 'FASTA',
+              order: 0,
+              label: 'FASTA Files',
               type: 'file',
               value: [],
               rules: '',
@@ -353,11 +370,14 @@ export default {
           },
         },
         advopts: {
+          order: 3,
           label: 'Advanced Options',
           collapsible: true,
           all: {
+            order: 0,
             show: true,
             gl: {
+              order: 0,
               label: 'Guide Length',
               type: 'number',
               value: '',
@@ -365,6 +385,7 @@ export default {
               rules: 'min_value:1|integer',
             },
             pl: {
+              order: 1,
               label: 'Primer Length',
               type: 'number',
               value: '',
@@ -372,6 +393,7 @@ export default {
               rules: 'min_value:1|integer',
             },
             pm: {
+              order: 2,
               label: 'Primer Mismatches',
               type: 'number',
               value: '',
@@ -379,6 +401,7 @@ export default {
               rules: 'min_value:0|integer',
             },
             pp: {
+              order: 3,
               label: 'Primer Coverage Fraction',
               type: 'number',
               value: '',
@@ -387,6 +410,7 @@ export default {
               rules: 'between:0,1|double',
             },
             cluster_threshold: {
+              order: 4,
               label: 'Cluster Threshold',
               type: 'number',
               value: '',
@@ -395,6 +419,7 @@ export default {
               rules: 'double'
             },
             max_primers_at_site: {
+              order: 5,
               label: 'Maximum Primers at Site',
               type: 'number',
               value: '',
@@ -402,6 +427,7 @@ export default {
               rules: 'min_value:1|integer',
             },
             max_target_length: {
+              order: 6,
               label: 'Maximum Amplicon Length',
               type: 'number',
               value: '',
@@ -410,9 +436,11 @@ export default {
             },
           },
           gc: {
+            order: 1,
             show: true,
             label: 'Percent GC Content Allowed in Primers',
             primer_gc_lo: {
+              order: 0,
               label: 'Low GC Percent Content in Primer',
               type: 'number',
               value: '',
@@ -421,6 +449,7 @@ export default {
               rules: 'required_if_less:@primer_gc_hi,0.35|max_value:@primer_gc_hi,High GC Percent Content in Primer|between:0,1|double',
             },
             primer_gc_hi: {
+              order: 1,
               label: 'High GC Percent Content in Primer',
               type: 'number',
               value: '',
@@ -430,9 +459,11 @@ export default {
             },
           },
           objw: {
+            order: 2,
             show: true,
             label: 'Objective Function Weights',
             objfnweights_a: {
+              order: 0,
               label: 'Penalty for Number of Primers',
               type: 'number',
               value: '',
@@ -441,6 +472,7 @@ export default {
               rules: 'double',
             },
             objfnweights_b: {
+              order: 1,
               label: 'Penalty for Amplicon Length',
               type: 'number',
               value: '',
@@ -450,9 +482,11 @@ export default {
             },
           },
           sp: {
+            order: 3,
             show: false,
             label: 'Specificity',
             idm: {
+              order: 0,
               label: 'Number of Mismatches to be Identical',
               type: 'number',
               value: '',
@@ -460,6 +494,7 @@ export default {
               rules: '',
             },
             idfrac: {
+              order: 1,
               label: 'Fraction of Group Hit to be Identical',
               type: 'number',
               value: '',
@@ -469,9 +504,11 @@ export default {
             },
           },
           minguides: {
+            order: 4,
             label: 'Minimize Guides',
             show: false,
             gm: {
+              order: 0,
               label: 'Guide Mismatches',
               type: 'number',
               value: '',
@@ -480,6 +517,7 @@ export default {
               rules: 'min_value:0|integer',
             },
             gp: {
+              order: 1,
               label: 'Guide Coverage Fraction',
               type: 'number',
               value: '',
@@ -489,9 +527,11 @@ export default {
             },
           },
           maxact: {
+            order: 5,
             label: 'Maximize Activity',
             show: false,
             soft_guide_constraint: {
+              order: 0,
               label: 'Soft Guide Constraint',
               type: 'number',
               value: '',
@@ -499,6 +539,7 @@ export default {
               rules: 'max_value:@hard_guide_constraint,Hard Guide Constraint|min_value:1|integer',
             },
             hard_guide_constraint: {
+              order: 1,
               label: 'Hard Guide Constraint',
               type: 'number',
               value: '',
@@ -589,10 +630,13 @@ export default {
       }
       return response
     },
-    get_sub(sec_keys) {
-      // Helper function to get children of section; possibly unnecessary
-      return sec_keys.filter(item => {
-        return item != 'label';
+    get_sub(sec) {
+      // Helper function to get children of section
+      // May not need filter
+      return Object.keys(sec).filter(item => {
+        return !(['order', 'label', 'collapsible', 'show'].includes(item));
+      }).sort((a,b) => {
+        return sec[a].order-sec[b].order
       })
     },
     formatNames(files) {
