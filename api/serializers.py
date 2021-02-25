@@ -53,7 +53,8 @@ class PrimerSerializer(serializers.ModelSerializer):
 
 class LeftPrimersSerializer(serializers.ModelSerializer):
     primers = PrimerSerializer(
-        many=True
+        many=True,
+        read_only=True
     )
     class Meta:
         model = LeftPrimers
@@ -62,7 +63,8 @@ class LeftPrimersSerializer(serializers.ModelSerializer):
 
 class RightPrimersSerializer(serializers.ModelSerializer):
     primers = PrimerSerializer(
-        many=True
+        many=True,
+        read_only=True
     )
     class Meta:
         model = RightPrimers
@@ -77,7 +79,8 @@ class crRNASerializer(serializers.ModelSerializer):
 
 class crRNASetSerializer(serializers.ModelSerializer):
     crRNAs = crRNASerializer(
-        many=True
+        many=True,
+        read_only=True
     )
     class Meta:
         model = crRNASet
@@ -85,9 +88,9 @@ class crRNASetSerializer(serializers.ModelSerializer):
 
 
 class AssaySerializer(serializers.ModelSerializer):
-    left_primers = LeftPrimersSerializer()
-    right_primers = RightPrimersSerializer()
-    crRNA_set = crRNASetSerializer()
+    left_primers = LeftPrimersSerializer(read_only=True)
+    right_primers = RightPrimersSerializer(read_only=True)
+    crRNA_set = crRNASetSerializer(read_only=True)
     class Meta:
         model = Assay
         fields = ('rank', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'crRNA_set')
@@ -95,7 +98,8 @@ class AssaySerializer(serializers.ModelSerializer):
 
 class TaxonSerializer(serializers.ModelSerializer):
     assays = AssaySerializer(
-        many=True
+        many=True,
+        read_only=True
     )
     family = serializers.SlugRelatedField(
         slug_field='latin_name',
