@@ -595,9 +595,9 @@ export default {
       // Relies on innermost input field names matching adapt_web.wdl's input variable names.
       this.status = "Loading..."
       let form_data = new FormData()
-      for (let sec of Object.keys(this.inputs)) {
-        for (let subsec of this.get_sub(Object.keys(this.inputs[sec]))) {
-          for (let input_var of this.get_sub(Object.keys(this.inputs[sec][subsec]))) {
+      for (let sec of this.get_sub(this.inputs)) {
+        for (let subsec of this.get_sub(this.inputs[sec])) {
+          for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
             if (this.inputs[sec][subsec][input_var].value != '') {
               if (input_var.includes('fasta')) {
                 for (let file of this.inputs[sec][subsec][input_var].value) {
@@ -611,7 +611,7 @@ export default {
         }
       }
 
-      let response = await fetch('/api/adaptruns/', {
+      let response = await fetch('/api/adaptrun/', {
         method: 'POST',
         headers: {
           "X-CSRFToken": csrfToken
