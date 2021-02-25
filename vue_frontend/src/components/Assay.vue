@@ -7,7 +7,6 @@
 
 <script>
 import * as d3 from "d3";
-import * as d3sB from "d3-scale-break";
 
 export default {
   name: 'Assay',
@@ -60,7 +59,7 @@ export default {
       //   .range([0, boundedWidth])
       //   .scope([0, .25], [.25, .75], [.75, 1]);
 
-      const xScale = d3sB
+      const xScale = d3
         .scaleLinear()
         .domain([0, 3000])
         .range([0, boundedWidth]);
