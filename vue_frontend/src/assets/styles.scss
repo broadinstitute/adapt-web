@@ -1,7 +1,8 @@
-$font-family-sans-serif:    'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+$font-family-sans-serif:    'Overpass', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+$input-btn-font-family:     'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
 
 $primary:                   #000d54;
-$secondary:                 #4f7fff;
+$secondary:                 #3C67DD;
 
 $link-hover-color:          rgba($primary, .6);
 $link-hover-decoration:     none;
@@ -22,6 +23,14 @@ $link-hover-decoration:     none;
 */
 }
 
+@import 'node_modules/bootstrap/scss/bootstrap.scss';
+@import 'node_modules/bootstrap-vue/src/index.scss';
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+ font-weight: bold
+}
+
+
 .header {
   text-align: center;
   align-items: center;
@@ -34,6 +43,7 @@ $link-hover-decoration:     none;
   padding-right: 4vw;
   display: inline;
   vertical-align: middle;
+  font-family: Rubik, Helvetica, Arial, sans-serif;
 }
 
 .title {
@@ -94,6 +104,3 @@ button, input[type=button] {
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
 }
-
-@import 'node_modules/bootstrap/scss/bootstrap.scss';
-@import 'node_modules/bootstrap-vue/src/index.scss';

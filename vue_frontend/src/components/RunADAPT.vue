@@ -8,20 +8,22 @@
           <b-form-group
             class="sec"
             v-for="sec in get_sub(inputs)"
-            :label="(inputs[sec].label && !inputs[sec].collapsible) ? inputs[sec].label : ''"
-            label-size="lg"
-            label-class="font-weight-bold"
             :key="inputs[sec].order"
             :id="sec"
           >
           <!-- Make collapsible section, if it is one -->
-          <legend class="my-0"><a
-            v-if="inputs[sec].collapsible"
-            @click.prevent
-            v-b-toggle
-            :href="'#' + sec + '-toggle'"
-            class="col-form-label-lg pt-0 font-weight-bold"
-          >{{ inputs[sec].label }} <b-icon-chevron-down class="when-closed"/><b-icon-chevron-up class="when-open"/></a></legend>
+          <legend class="my-0 col-form-label-lg pt-0 font-weight-bold"
+          >{{ inputs[sec].label }}
+            <a
+              v-if="inputs[sec].collapsible"
+              @click.prevent
+              v-b-toggle
+              :href="'#' + sec + '-toggle'"
+              class="col-form-label-lg pt-0 font-weight-bold"
+            >
+              <b-icon-chevron-down class="when-closed"/><b-icon-chevron-up class="when-open"/>
+            </a>
+          </legend>
             <b-collapse
               :id="sec + '-toggle'"
               :visible="inputs[sec].collapsible ? false : true"
@@ -106,7 +108,7 @@
             </b-collapse>
           </b-form-group>
           <!-- submit button -->
-          <b-button pill block size="lg" type="submit" variant="secondary">Submit</b-button>
+          <b-button pill block size="lg" type="submit" variant="secondary" class="font-weight-bold">Submit a Run</b-button>
         </b-form>
       </ValidationObserver>
       <p v-if="status">{{ status }}</p>
@@ -120,12 +122,12 @@ import {
   ValidationProvider,
   ValidationObserver,
   extend,
+  setInteractionMode
 } from 'vee-validate';
 import {
   required,
   integer,
 } from 'vee-validate/dist/rules';
-import { setInteractionMode } from 'vee-validate';
 const Cookies = require('js-cookie');
 // Needs CSRF for the server to accept the request
 const csrfToken = Cookies.get('csrftoken')
@@ -620,7 +622,13 @@ export default {
         let responsejson = await response.json()
         this.status = "Submitted!"
         this.runid = responsejson.cromwell_id
-        Cookies.set('runid', responsejson.cromwell_id)
+        let prev_runids = Cookies.get('runid')
+        if (prev_runids == null) {
+          Cookies.set('runid', this.runid)
+        }
+        else {
+          Cookies.set('runid', prev_runids + ',' + this.runid)
+        }
         Cookies.set('submitted', true)
         window.location.href = '/results'
       }
@@ -644,7 +652,7 @@ export default {
       return files.length === 1 ? files[0].name : `${files.length} files selected`
     },
     getValidationState({failed, valid = null }, input_var) {
-      // Only show if field is invalid' don't show check more if valid
+      // Only show if field is invalid; don't show if valid
       return !failed ? null : valid;
     },
     // Old files methods; new bootstrap file upload hasn't been tested, so leaving until it has.
