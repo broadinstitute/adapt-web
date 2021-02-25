@@ -9,18 +9,21 @@ $link-hover-decoration:     none;
 
 
 :root {
-  --navy: 0, 13, 84;
-  --violet: 87, 54, 255;
-  --cyan: 73, 216, 255;
-  --mint: 54, 255, 187;
-  --lilac: 173, 186, 255;
+  // --navy: 0, 13, 84;
+  // --violet: 87, 54, 255;
+  // --cyan: 73, 216, 255;
+  // --mint: 54, 255, 187;
+  // --lilac: 173, 186, 255;
 
-/*  --navy: #000d54;
-  --violet: #5736ff; #4f7fff
-  --cyan: #49d8ff; #45e2ea
+  --navy: #000d54;
+  // --violet: #5736ff;
+  // --violet: #4f7fff;
+  --violet: #3C67DD;
+  // --cyan: #49d8ff;
+  --cyan: #45e2ea;
   --mint: #36ffbb;
   --lilac: #adbaff;
-*/
+
 }
 
 @import 'node_modules/bootstrap/scss/bootstrap.scss';
