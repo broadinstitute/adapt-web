@@ -116,7 +116,7 @@ export default {
         Cookies.set('runid', prev_runids + ',' + this.runid)
       }
 
-      let response = await fetch('/api/adaptruns/' + this.runid + '/status', {
+      let response = await fetch('/api/adaptrun/' + this.runid + '/status', {
         headers: {
           "X-CSRFToken": csrfToken
         }
@@ -147,7 +147,7 @@ export default {
         Cookies.set('runid', prev_runids + ',' + this.runid)
       }
 
-      let response = await fetch('/api/adaptruns/' + this.runid + '/results', {
+      let response = await fetch('/api/adaptrun/' + this.runid + '/results', {
         headers: {
           "X-CSRFToken": csrfToken
         }
@@ -173,7 +173,7 @@ export default {
         Cookies.set('runid', prev_runids + ',' + this.runid)
       }
 
-      let response = await fetch('/api/adaptruns/' + this.runid + '/download', {
+      let response = await fetch('/api/adaptrun/' + this.runid + '/download', {
         headers: {
           "X-CSRFToken": csrfToken
         }
