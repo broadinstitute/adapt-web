@@ -53,7 +53,6 @@
           <span v-show="status">Status: {{ status }}</span>
         </b-form>
       </ValidationObserver>
-      <p>{{ resultjson }}</p>
     </div>
   </transition>
 </template>
@@ -82,7 +81,6 @@ export default {
       runids: [],
       runid: '',
       status: '',
-      resultjson: '',
       submitted: false,
     }
   },
@@ -153,7 +151,8 @@ export default {
         }
       })
       if (response.ok) {
-        this.resultjson = await response.json()
+        this.$root.$data.resultjson = await response.json()
+        this.$root.$emit('display-assays');
       } else {
         let msg = await response.text()
         alert(msg);
