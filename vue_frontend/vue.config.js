@@ -19,6 +19,13 @@ const pages =  {
   // template is inferred to be `public/subpage.html`
   // and falls back to `public/index.html` if not found.
   // Output filename is inferred to be `subpage.html`.
+  about: {
+    entry: './src/pages/About/main.js',
+    template: 'public/index.html',
+    filename: 'about.html',
+    title: 'About',
+    chunks: ['chunk-vendors', 'chunk-common', 'about']
+  },
   designs: {
     entry: './src/pages/Designs/main.js',
     template: 'public/index.html',
