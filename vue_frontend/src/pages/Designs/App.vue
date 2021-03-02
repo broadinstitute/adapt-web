@@ -14,8 +14,6 @@
 <script>
 import Header from '@/components/Header.vue'
 import Design from '@/components/Design.vue'
-const Cookies = require('js-cookie')
-const csrfToken = Cookies.get('csrftoken')
 
 export default {
   name: 'App',

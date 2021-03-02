@@ -69,7 +69,7 @@
                         drop-placeholder="Drop file here..."
                         accept=".fasta"
                         :aria-describedby="input_var + '-feedback'"
-                        :state="getValidationState(validationContext, inputs[sec][subsec][input_var].value)"
+                        :state="getValidationState(validationContext)"
                         multiple
                       ></b-form-file>
                       <b-form-input
@@ -80,7 +80,7 @@
                         :type="inputs[sec][subsec][input_var].type"
                         :step="inputs[sec][subsec][input_var].step"
                         :aria-describedby="input_var + '-feedback'"
-                        :state="getValidationState(validationContext, inputs[sec][subsec][input_var].value)"
+                        :state="getValidationState(validationContext)"
                       ></b-form-input>
                       <b-form-select
                         v-if="inputs[sec][subsec][input_var].type == 'options'"
@@ -88,7 +88,7 @@
                         :id="input_var"
                         :options="inputs[sec][subsec][input_var].options"
                         :aria-describedby="input_var + '-feedback'"
-                        :state="getValidationState(validationContext, inputs[sec][subsec][input_var].value)"
+                        :state="getValidationState(validationContext)"
                       >
                       </b-form-select>
                       <b-form-input
@@ -98,7 +98,7 @@
                         :type="inputs[sec][subsec][input_var].type"
                         :required="inputs[sec][subsec][input_var].required ? true : false"
                         :aria-describedby="input_var + '-feedback'"
-                        :state="getValidationState(validationContext, inputs[sec][subsec][input_var].value)"
+                        :state="getValidationState(validationContext)"
                       ></b-form-input>
                       <b-form-invalid-feedback :id="input_var + '-feedback'">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
                     </ValidationProvider>
@@ -215,7 +215,7 @@ export default {
       message: "The {_field_} must be an integer"
     });
     extend('double', {
-      validate(value, args) {
+      validate(value) {
         const regex = new RegExp(`^-?(\\d+\\.?\\d*|\\.\\d+)`);
         return Array.isArray(value) ? value.every(val => regex.test(String(val))) : regex.test(String(value));
       },
@@ -651,7 +651,7 @@ export default {
       // Produces the correct string to indicate file input
       return files.length === 1 ? files[0].name : `${files.length} files selected`
     },
-    getValidationState({failed, valid = null }, input_var) {
+    getValidationState({failed, valid = null }) {
       // Only show if field is invalid; don't show if valid
       return !failed ? null : valid;
     },

@@ -39,7 +39,7 @@
                     v-model="runid"
                     id="runid"
                     type="text"
-                    :state="getValidationState(validationContext, runid)"
+                    :state="getValidationState(validationContext)"
                     aria-describedby="runid-feedback"
                   ></b-form-input>
                   <b-form-invalid-feedback id="runid-feedback">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
@@ -101,7 +101,7 @@ export default {
     }
   },
   methods: {
-    async run_status(event) {
+    async run_status() {
       // Check the status of a job from backend
       if (!this.runids.includes(this.runid)) {
         this.runids.push(this.runid)
@@ -131,7 +131,7 @@ export default {
       }
       return response
     },
-    async display_results(event) {
+    async display_results() {
       // Get results JSON from backend
       // TODO do something with them
       if (!this.runids.includes(this.runid)) {
@@ -159,7 +159,7 @@ export default {
       }
       return response
     },
-    async get_results(event) {
+    async get_results() {
       // Download results as a TSV or ZIP from backend
       if (!this.runids.includes(this.runid)) {
         this.runids.push(this.runid)
@@ -204,7 +204,7 @@ export default {
       document.body.appendChild(link)
       link.click()
     },
-    getValidationState({failed, valid = null }, input_var) {
+    getValidationState({failed, valid = null }) {
       // Only show if field is invalid; don't show if valid
       return !failed ? null : valid;
     },
