@@ -48,7 +48,7 @@ class SubspeciesSerializer(serializers.HyperlinkedModelSerializer):
 class PrimerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Primer
-        fields = ('frac_bound', 'target')
+        fields = ('target', )
 
 
 class LeftPrimersSerializer(serializers.ModelSerializer):
@@ -71,29 +71,38 @@ class RightPrimersSerializer(serializers.ModelSerializer):
         fields = ('frac_bound', 'start_pos', 'primers')
 
 
-class crRNASerializer(serializers.ModelSerializer):
+class GuideSerializer(serializers.ModelSerializer):
+    guide_set = serializers.PrimaryKeyRelatedField(
+        queryset=GuideSet.objects.all()
+    )
     class Meta:
-        model = crRNA
-        fields = ('start_pos', 'frac_bound', 'expected_activity', 'target')
+        model = Guide
+        fields = ('guide_set', 'start_pos', 'expected_activity', 'target')
 
 
-class crRNASetSerializer(serializers.ModelSerializer):
-    crRNAs = crRNASerializer(
+class GuideSetSerializer(serializers.ModelSerializer):
+    guides = GuideSerializer(
         many=True,
         read_only=True
     )
+    assay = serializers.PrimaryKeyRelatedField(
+        queryset=Assay.objects.all()
+    )
     class Meta:
-        model = crRNASet
-        fields = ('frac_bound', 'expected_activity', 'median_activity', 'fifth_pctile_activity', 'crRNAs')
+        model = GuideSet
+        fields = ('assay', 'frac_bound', 'expected_activity', 'median_activity', 'fifth_pctile_activity', 'guides')
 
 
 class AssaySerializer(serializers.ModelSerializer):
     left_primers = LeftPrimersSerializer(read_only=True)
     right_primers = RightPrimersSerializer(read_only=True)
-    crRNA_set = crRNASetSerializer(read_only=True)
+    guide_set = GuideSetSerializer(read_only=True)
+    taxon = serializers.PrimaryKeyRelatedField(
+        queryset=Taxon.objects.all()
+    )
     class Meta:
         model = Assay
-        fields = ('rank', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'crRNA_set')
+        fields = ('taxon', 'rank', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'guide_set')
 
 
 class TaxonSerializer(serializers.ModelSerializer):

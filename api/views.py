@@ -212,9 +212,9 @@ class PrimerViewSet(viewsets.ModelViewSet):
     serializer_class = PrimerSerializer
 
 
-class crRNASetViewSet(viewsets.ModelViewSet):
+class GuideSetViewSet(viewsets.ModelViewSet):
     """
-    Produces the various API views for the crRNA Set Model
+    Produces the various API views for the Guide Set Model
 
     Abstracts the HTTP requests to the actions list, create, retrieve,
     update, partial_update, and destroy, which are inherited.
@@ -222,13 +222,13 @@ class crRNASetViewSet(viewsets.ModelViewSet):
     # These permission classes make sure only authenticated admin users can
     # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    queryset = crRNASet.objects.all()
-    serializer_class = crRNASetSerializer
+    queryset = GuideSet.objects.all()
+    serializer_class = GuideSetSerializer
 
 
-class crRNAViewSet(viewsets.ModelViewSet):
+class GuideViewSet(viewsets.ModelViewSet):
     """
-    Produces the various API views for the crRNA Model
+    Produces the various API views for the Guide Model
 
     Abstracts the HTTP requests to the actions list, create, retrieve,
     update, partial_update, and destroy, which are inherited.
@@ -236,8 +236,8 @@ class crRNAViewSet(viewsets.ModelViewSet):
     # These permission classes make sure only authenticated admin users can
     # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    queryset = crRNA.objects.all()
-    serializer_class = crRNASerializer
+    queryset = Guide.objects.all()
+    serializer_class = GuideSerializer
 
 
 class AssayViewSet(viewsets.ModelViewSet):
@@ -491,12 +491,59 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         if isinstance(response, list):
             output_files = [output_file.read().decode("utf-8") for output_file in response]
             content = {}
+
             for i, output_file in enumerate(output_files):
                 content[i] = {}
                 lines = output_file.splitlines()
                 headers = lines[0].split('\t')
                 for j, line in enumerate(lines[1:]):
-                    content[i][j] = {headers[k]: val for k,val in enumerate(line.split('\t'))}
+                    raw_content = {headers[k]: val for k,val in enumerate(line.split('\t'))}
+                    content[i][j] = {}
+                    content[i][j]["rank"] = j
+                    content[i][j]["objective_value"] = float(raw_content["objective-value"])
+                    content[i][j]["left_primers"] = {
+                        "frac_bound": float(raw_content["left-primer-frac-bound"]),
+                        "start_pos": int(raw_content["left-primer-start"])
+                    }
+                    content[i][j]["left_primers"]["primers"] = [
+                        {
+                            "target": target
+                        } \
+                    for target in raw_content["left-primer-target-sequences"].split(" ")]
+                    content[i][j]["right_primers"] = {
+                        "frac_bound": float(raw_content["right-primer-frac-bound"]),
+                        "start_pos": int(raw_content["right-primer-start"])
+                    }
+                    content[i][j]["right_primers"]["primers"] = [
+                        {
+                            "target": target
+                        } \
+                    for target in raw_content["right-primer-target-sequences"].split(" ")]
+                    content[i][j]["amplicon_start"] = int(raw_content["target-start"])
+                    content[i][j]["amplicon_end"] = int(raw_content["target-end"])
+                    content[i][j]["guide_set"] = {
+                        "frac_bound": float(raw_content["total-frac-bound-by-guides"]),
+                        "expected_activity": float(raw_content["guide-set-expected-activity"]),
+                        "median_activity": float(raw_content["guide-set-median-activity"]),
+                        "fifth_pctile_activity": float(raw_content["guide-set-5th-pctile-activity"])
+                    }
+                    start_poses = [
+                        [
+                            int(start_pos_i) for start_pos_i in start_pos[1:-1].split(", ")
+                        ] \
+                    for start_pos in raw_content["guide-target-sequence-positions"].split(" ")]
+                    expected_activities = [
+                        float(expected_activity) \
+                    for expected_activity in raw_content["guide-expected-activities"].split(" ")]
+                    targets = raw_content["left-primer-target-sequences"].split(" ")
+                    content[i][j]["guide_set"]["guides"] = [
+                        {
+                            "start_pos": start_poses[k],
+                            "expected_activity": expected_activities[k],
+                            "target": targets[k]
+                        } \
+                    for k in range(len(targets))]
+
             response = Response(content)
         return response
 

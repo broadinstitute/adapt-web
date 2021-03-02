@@ -69,7 +69,7 @@ class Species(models.Model):
         on_delete=models.CASCADE,
     )
     latin_name = models.CharField(
-        max_length=100,
+        max_length=300,
         blank=True
     )
     @property
@@ -99,7 +99,7 @@ class Subspecies(models.Model):
         on_delete=models.CASCADE,
     )
     latin_name = models.CharField(
-        max_length=100,
+        max_length=300,
         blank=True
     )
     @property
@@ -137,10 +137,6 @@ class RightPrimers(PrimerSet):
 
 
 class Primer(models.Model):
-    frac_bound = models.DecimalField(
-        max_digits=17,
-        decimal_places=16
-    )
     target = models.CharField(
         max_length = 100
     )
@@ -158,7 +154,7 @@ class Primer(models.Model):
     )
 
 
-class crRNASet(models.Model):
+class GuideSet(models.Model):
     frac_bound = models.DecimalField(
         max_digits=17,
         decimal_places=16
@@ -177,9 +173,9 @@ class crRNASet(models.Model):
     )
 
 
-class crRNA(models.Model):
-    crRNA_set = models.ForeignKey(crRNASet,
-        related_name='crRNAs',
+class Guide(models.Model):
+    guide_set = models.ForeignKey(GuideSet,
+        related_name='guides',
         on_delete=models.CASCADE,
         null=True,
         blank=True
@@ -187,11 +183,7 @@ class crRNA(models.Model):
     target = models.CharField(
         max_length = 100
     )
-    start_pos = models.PositiveIntegerField()
-    frac_bound = models.DecimalField(
-        max_digits=17,
-        decimal_places=16
-    )
+    start_pos = models.JSONField()
     expected_activity = models.DecimalField(
         max_digits=20,
         decimal_places=16
@@ -223,7 +215,7 @@ class Assay(models.Model):
     )
     amplicon_start = models.PositiveIntegerField()
     amplicon_end = models.PositiveIntegerField()
-    crRNA_set = models.OneToOneField(crRNASet,
+    guide_set = models.OneToOneField(GuideSet,
         on_delete=models.CASCADE,
         null=True,
         blank=True
