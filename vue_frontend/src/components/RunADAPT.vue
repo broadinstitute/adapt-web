@@ -14,7 +14,7 @@
           <!-- Make collapsible section, if it is one -->
           <legend class="my-0 col-form-label-lg pt-0 font-weight-bold"
           >{{ inputs[sec].label }}
-            <a
+            <b-link
               v-if="inputs[sec].collapsible"
               @click.prevent
               v-b-toggle
@@ -22,7 +22,7 @@
               class="col-form-label-lg pt-0 font-weight-bold"
             >
               <b-icon-chevron-down class="when-closed"/><b-icon-chevron-up class="when-open"/>
-            </a>
+            </b-link>
           </legend>
             <b-collapse
               :id="sec + '-toggle'"
@@ -35,7 +35,7 @@
                 v-show="inputs[sec][subsec].show"
                 :label="inputs[sec][subsec].label ? inputs[sec][subsec].label : ''"
                 :label-cols-lg="inputs[sec][subsec].label ? 3 : 1"
-                label-class="font-weight-bold"
+                label-class="h3"
                 :key="inputs[sec][subsec].order"
                 :id="subsec"
               >

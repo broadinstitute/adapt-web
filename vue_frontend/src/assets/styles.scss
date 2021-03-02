@@ -7,6 +7,10 @@ $secondary:                         #3C67DD;
 $link-color:                        $secondary;
 $link-hover-color:                  rgba($secondary, .6);
 
+$navbar-light-color:                rgba($primary, .7);
+$navbar-light-hover-color:          rgba($primary, .6);
+$navbar-light-active-color:         rgba($primary, .9);
+$navbar-light-disabled-color:       rgba($primary, .3);
 
 :root {
   // --navy: 0, 13, 84;
@@ -33,30 +37,27 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
  font-weight: bold
 }
 
-
-.header {
-  text-align: center;
-  align-items: center;
-  margin: auto;
-}
-
-.menu {
+.navbar {
   font-size: min(1.2em, 4vw);
-  padding-left: 4vw;
-  padding-right: 4vw;
-  display: inline;
-  vertical-align: middle;
-  font-family: Rubik, Helvetica, Arial, sans-serif;
+  font-family: $btn-font-family;
+  background-color: white;
 }
 
-.title {
-  padding-left: 4vw;
-  padding-right: 4vw;
-  font-size: min(4em, 13vw);
+.navbar-brand {
   font-weight: 500;
-  display: inline;
-  vertical-align: middle;
-  font-family: Rubik, Helvetica, Arial, sans-serif;
+  font-size: min(4rem, 13vw);
+}
+
+.navbar-light .navbar-toggler {
+  border-style: none;
+}
+
+.scroll-shade {
+  box-shadow: 0 1px 20px -1px rgba(0,0,0,.1);
+}
+
+body {
+  overscroll-behavior-y: none;
 }
 
 button, input[type=button] {
@@ -64,41 +65,9 @@ button, input[type=button] {
   transition: 0.3s;
 }
 
-.header a:hover, .header a:active {
-  transition: 0.3s;
-}
-
 .logo {
   height: 0.85em;
   padding-bottom: 0.15em;
-}
-
-.mobile {
-  display: none;
-}
-
-@media only screen and (max-width: 970px) {
-  /* For mobile phones: */
-  .desktop {
-    display: none;
-  }
-  .mobile {
-    display: block;
-  }
-  .menu {
-    text-align: right;
-  }
-  .header {
-    text-align: left;
-    display: flex;
-  }
-  .title {
-    flex: 1.5;
-    padding-right: 0;
-  }
-  .menuset {
-    flex: 1;
-  }
 }
 
 .fade-enter-active, .fade-leave-active {
