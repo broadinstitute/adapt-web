@@ -1,18 +1,24 @@
-$font-family-sans-serif:            'Overpass', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
-$btn-font-family:                   'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+$font-family-sans-serif:            'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+// $btn-font-family:                   'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
 
-$primary:                           #000D54;
+$dark:                              #000D54;
 $secondary:                         #3C67DD;
 $info:                              #dee2e6;
-$success:                           #36ffbb;
+$success:                           #006644;
 
 $link-color:                        $secondary;
 $link-hover-color:                  rgba($secondary, .6);
 
-$navbar-light-color:                rgba($primary, .7);
-$navbar-light-hover-color:          rgba($primary, .6);
-$navbar-light-active-color:         rgba($primary, .9);
-$navbar-light-disabled-color:       rgba($primary, .3);
+$navbar-light-color:                rgba($dark, .7);
+$navbar-light-hover-color:          rgba($dark, .6);
+$navbar-light-active-color:         rgba($dark, .9);
+$navbar-light-disabled-color:       rgba($dark, .3);
+
+$body-color:                        $dark;
+$list-group-color:                  rgba($dark, .6);
+$input-color:                       $dark;
+
+$footer-height:                     6rem;
 
 :root {
   // --navy: 0, 13, 84;
@@ -35,19 +41,39 @@ $navbar-light-disabled-color:       rgba($primary, .3);
 @import 'node_modules/bootstrap/scss/bootstrap.scss';
 @import 'node_modules/bootstrap-vue/src/index.scss';
 
-h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
- font-weight: bold
+* {
+  letter-spacing: .03em;
 }
 
-.navbar {
-  font-size: min(1.2em, 4vw);
-  font-family: $btn-font-family;
-  background-color: white;
+legend, .nav-link, button:not(.list-group-item), th > div, .h1, .h2, .h3, .h4, .h5, .h6, .modal-title {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+html {
+  position: relative;
+  min-height: 100vh;
+}
+
+#body {
+  padding-bottom: $footer-height;
+}
+
+.header, .footer {
+  font-size: min(0.95em, 4vw);
+  background-color: rgba(lighten($info, 10%), .95);
+}
+
+.footer {
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  height: $footer-height;
 }
 
 .navbar-brand {
-  font-weight: 500;
-  font-size: min(4rem, 13vw);
+  font-weight: 700;
+  font-size: min(3.5rem, 13vw);
 }
 
 .navbar-light .navbar-toggler {
@@ -56,6 +82,25 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 
 .scroll-shade {
   box-shadow: 0 1px 20px -1px rgba(0,0,0,.1);
+}
+
+.btn-group {
+  text-align: center;
+  display: block;
+}
+
+#submitted-modal .modal-content {
+  color: $success;
+  background-color: rgba(lighten($success, 75%), .95);
+  border: 0px;
+}
+
+#submitted-modal .modal-content .modal-header {
+  background-color: lighten($success, 75%);
+}
+
+.modal-footer {
+  border-top: 0px;
 }
 
 body {

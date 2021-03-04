@@ -1,24 +1,37 @@
 <template>
   <transition appear name="fade">
     <div class="results">
-      <div v-if="submitted">Job submitted!<br>
-      Your run ID is {{runid}}. Store this for future reference.<br>
-      Check below for status.</div>
+      <b-modal
+        id="submitted-modal"
+        size="md"
+        title="Job submitted!"
+        ok-only
+        ok-variant="success"
+        centered
+      >
+        <div class="b-toast-primary">
+          Your run ID is {{runid}}. Store this for future reference.<br>
+          Use this site to check for its status.
+        </div>
+      </b-modal>
       <ValidationObserver ref="status-form" v-slot="{ handleSubmit }">
         <b-form id="status-form">
           <!-- submit buttons -->
           <b-row>
-            <b-col cols=12 md=5>
-              <h4 v-show="runids.length">Previous Run IDs</h4>
+            <b-col cols=12 md=4>
+              <div class="h4 font-weight-bold" v-show="runids.length">Previous Runs</div>
               <b-list-group>
                 <b-list-group-item v-for="runid in runids" :key="runid" button v-on:click.prevent="set_runid(runid)">
                   {{ runid }}
                 </b-list-group-item>
               </b-list-group>
               <br>
-              <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="status_submit">Clear Run IDs</b-button>
+              <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="status_submit">Clear Run IDs</b-button>
               <br>
             </b-col>
+            <b-col cols=0 md=1>
+            </b-col>
+            <br>
             <b-col cols=12 md=7>
               <b-form-group
                 class="field"
@@ -26,7 +39,7 @@
                 label-for="runid"
                 label-align=left
                 label-align-md=right
-                label-class="h2"
+                label-class="h2 font-weight-bold"
               >
                 <ValidationProvider
                   vid="runid"
@@ -46,8 +59,8 @@
                 </ValidationProvider>
               </b-form-group>
               <b-button pill block v-on:click.prevent="handleSubmit(run_status)" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="status_submit">Get Status</b-button>
-              <b-button pill block v-on:click.prevent="handleSubmit(get_results)" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="download_submit">Download Results</b-button>
-              <b-button pill block v-on:click.prevent="handleSubmit(display_results)" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="display_submit">Display Results</b-button>
+              <b-button pill block v-on:click.prevent="handleSubmit(get_results)" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="download_submit">Download Results</b-button>
+              <b-button pill block v-on:click.prevent="handleSubmit(display_results)" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="display_submit">Display Results</b-button>
             </b-col>
           </b-row>
           <span v-show="status">Status: {{ status }}</span>
@@ -81,7 +94,6 @@ export default {
       runids: [],
       runid: '',
       status: '',
-      submitted: false,
     }
   },
   mounted () {
@@ -96,8 +108,8 @@ export default {
       this.runid = this.runids[this.runids.length - 1]
       if (Cookies.get('submitted') == 'true') {
         Cookies.remove('submitted')
-        this.submitted = true
-      }
+        this.$bvModal.show("submitted-modal")
+        }
     }
   },
   methods: {

@@ -2,7 +2,7 @@
   <transition appear name="fade">
     <div class="assay">
       {{result.rank + 1}}
-      <div class="visualization" :id="'visualization' + result.rank.toString()">
+      <div class="visualization" :id="'visualization-' + cluster + '-' + result.rank.toString()">
       </div>
     </div>
   </transition>
@@ -14,7 +14,8 @@ import * as d3 from "d3";
 export default {
   name: 'Assay',
   props: {
-    result: Object
+    result: Object,
+    cluster: String
   },
   data() {
     return {
@@ -41,7 +42,7 @@ export default {
       let boundedWidth = this.width - this.margin.left - this.margin.right
       let boundedHeight = this.height - this.margin.top - this.margin.bottom
       const svg = d3
-        .select("#visualization" + this.result.rank.toString())
+        .select('#visualization-' + cluster + '-' + result.rank.toString())
         .append("svg")
         .attr("viewBox", '0 0 ' + this.width.toString() + ' ' + this.height.toString())
         .append("g")

@@ -26,28 +26,28 @@
           <p v-for="guide in data.value" :key="guide.target">{{ guide.target }}</p>
         </template>
         <template #cell(show_details)="row">
-          <b-button size="sm" @click="row.toggleDetails" class="mr-2" pill>
-            {{ row.detailsShowing ? 'Hide' : 'Show'}} Details
+          <b-button size="sm" @click="row.toggleDetails" class="mr-2 font-weight-bold" pill>
+            {{ row.detailsShowing ? 'Hide' : 'Details'}}
           </b-button>
         </template>
         <template #row-details="row">
           <div class="p-3 table-info">
             <b-row class="mb-2">
               <b-col>
-                <b>Forward Primer Statistics:</b>
-                <b-table small :fields="fields_primer" :items="[row.item.left_primers]" responsive="sm">
+                <label :for="'fwd-primer-' + cluster_num + row.item.rank.toString()" class='h6'>Forward Primer Statistics:</label>
+                <b-table :id="'fwd-primer-' + cluster_num + row.item.rank.toString()" small :fields="fields_primer" :items="[row.item.left_primers]" responsive="sm">
                 </b-table>
               </b-col>
               <b-col>
-                <b>Reverse Primer Statistics:</b>
-                <b-table small :fields="fields_primer" :items="[row.item.right_primers]" responsive="sm">
+                <label :for="'rev-primer-' + cluster_num + row.item.rank.toString()" class='h6'>Reverse Primer Statistics:</label>
+                <b-table :id="'fwd-primer-' + cluster_num + row.item.rank.toString()" small :fields="fields_primer" :items="[row.item.right_primers]" responsive="sm">
                 </b-table>
               </b-col>
             </b-row>
             <b-row class="mb-2">
               <b-col>
-                <b>Spacer Statistics:</b>
-                <b-table small :fields="fields_guide" :items="[row.item.guide_set]" responsive="sm">
+                <label :for="'spacer-' + cluster_num + row.item.rank.toString()" class='h6'>Spacer Statistics:</label>
+                <b-table :id="'spacer-' + cluster_num + row.item.rank.toString()" small :fields="fields_guide" :items="[row.item.guide_set]" responsive="sm">
                 </b-table>
               </b-col>
             </b-row>
@@ -76,11 +76,10 @@
 export default {
   name: 'AssayTable',
   props: {
-    cluster: Array
+    cluster: Array,
+    cluster_num: String
   },
   data() {
-    // this.cluster[0]['_rowVariant'] = "info"
-    console.log(this.cluster)
     return {
       fields: [
         'rank',

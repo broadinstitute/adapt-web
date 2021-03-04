@@ -1,7 +1,10 @@
 <template>
-    <div class="header sticky-top">
-      <b-navbar toggleable="md" :sticky=true class="px-5 py-3" v-bind:class="{ 'scroll-shade': scroll }" :style="'opacity: ' + slowshow.toString() + '; transition: 0.3s;'">
-        <b-navbar-brand class="pl-2" href="/">AD<img v-if="prod" class="logo" @load="onLoad" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" @load="onLoad" src="@/assets/img/logo.png" alt="A">PT</b-navbar-brand>
+  <b-container fluid class="header sticky-top" :class="{ 'scroll-shade': scroll }" :style="'opacity: ' + slowshow.toString() + '; transition: 0.3s;'">
+    <b-row>
+      <b-col cols=0 md=2></b-col>
+      <b-col cols=12 md=8>
+      <b-navbar toggleable="lg" class="px-4 py-2">
+        <b-navbar-brand href="/">AD<img v-if="prod" class="logo" @load="onLoad" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" @load="onLoad" src="@/assets/img/logo.png" alt="A">PT</b-navbar-brand>
         <b-navbar-toggle target="nav-collapse">
         </b-navbar-toggle>
         <b-collapse id="nav-collapse" is-nav><b-navbar-nav :justified=true class="w-100 ml-auto pr-2">
@@ -12,7 +15,10 @@
         <b-nav-item href="/results">RESULTS</b-nav-item>
         </b-navbar-nav></b-collapse>
       </b-navbar>
-    </div>
+      </b-col>
+      <b-col cols=0 md=2></b-col>
+    </b-row>
+  </b-container>
 </template>
 
 <script>
@@ -28,7 +34,7 @@ export default {
   },
   computed: {
     scroll() {
-      return this.scrollY > 5;
+      return this.scrollY > 0;
     }
   },
   created () {

@@ -3,7 +3,7 @@
     <div class="runadapt">
       <!-- Form created dynamically with 3 loops - one for sections, one for subsections, one for the fields -->
       <ValidationObserver ref="form" v-slot="{ handleSubmit }">
-        <b-form id="full-form" @submit.stop.prevent="handleSubmit(adapt_run)" class="mx-3 px-3">
+        <b-form id="full-form" @submit.stop.prevent="handleSubmit(adapt_run)">
           <!-- Section loop -->
           <b-form-group
             class="sec"
@@ -34,23 +34,22 @@
                 v-for="subsec in get_sub(inputs[sec])"
                 v-show="inputs[sec][subsec].show"
                 :label="inputs[sec][subsec].label ? inputs[sec][subsec].label : ''"
-                :label-cols-lg="inputs[sec][subsec].label ? 3 : 1"
                 label-class="h3"
                 :key="inputs[sec][subsec].order"
                 :id="subsec"
               >
-                <div v-show="inputs[sec][subsec].show">
+                <b-form-row v-show="inputs[sec][subsec].show">
                   <!-- Field loop -->
-                  <b-form-group
-                    class="field"
+                  <b-col
                     v-for="input_var in get_sub(inputs[sec][subsec])"
                     :key="inputs[sec][subsec][input_var].order"
+                    :sm="inputs[sec][subsec][input_var].cols ? inputs[sec][subsec][input_var].cols : 12"
+                  >
+                  <b-form-group
+                    class="field"
                     :label="inputs[sec][subsec][input_var].label"
                     :label-for="input_var"
-                    label-cols-md=5
-                    content-cols-md=7
                     label-align=left
-                    label-align-md=right
                   >
                     <!-- ValidationProvider allows VeeValidate to put rules on a field -->
                     <ValidationProvider
@@ -67,7 +66,7 @@
                         :file-name-formatter="formatNames"
                         placeholder="Choose a file or drop it here..."
                         drop-placeholder="Drop file here..."
-                        accept=".fasta"
+                        accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln"
                         :aria-describedby="input_var + '-feedback'"
                         :state="getValidationState(validationContext)"
                         multiple
@@ -91,6 +90,16 @@
                         :state="getValidationState(validationContext)"
                       >
                       </b-form-select>
+                      <b-form-radio-group
+                        v-if="inputs[sec][subsec][input_var].type == 'radio'"
+                        v-model="inputs[sec][subsec][input_var].value"
+                        :id="input_var"
+                        :options="inputs[sec][subsec][input_var].options"
+                        :aria-describedby="input_var + '-feedback'"
+                        button-variant="outline-secondary"
+                        buttons
+                      >
+                      </b-form-radio-group>
                       <b-form-input
                         v-if="inputs[sec][subsec][input_var].type == 'text'"
                         v-model="inputs[sec][subsec][input_var].value"
@@ -100,15 +109,16 @@
                         :aria-describedby="input_var + '-feedback'"
                         :state="getValidationState(validationContext)"
                       ></b-form-input>
-                      <b-form-invalid-feedback :id="input_var + '-feedback'">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
+                      <b-form-invalid-feedback :id="input_var + '-feedback'" :state="getValidationState(validationContext)">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
                     </ValidationProvider>
                   </b-form-group>
-                </div>
+                  </b-col>
+                </b-form-row>
               </b-form-group>
             </b-collapse>
           </b-form-group>
           <!-- submit button -->
-          <b-button pill block size="lg" type="submit" variant="secondary" class="font-weight-bold">Submit a Run</b-button>
+          <b-button pill block size="lg" type="submit" variant="outline-secondary" class="font-weight-bold">Submit a Run</b-button>
         </b-form>
       </ValidationObserver>
       <p v-if="status">{{ status }}</p>
@@ -276,22 +286,22 @@ export default {
       // Subsections have an optional label and a true/false 'show' value that is set
       // depending on input choices
       // Fields have a label, a type, a value, rules to validate it, and options if it is
-      // an options type
+      // an options or radio type
       inputs: {
-        inputtype: {
+        opts: {
           order: 0,
-          label: 'Inputs',
+          label: 'Options',
           collapsible: false,
           inputchoices: {
             show: true,
             inputchoice: {
               order: 0,
               label: 'Input Type',
-              type: 'options',
+              type: 'radio',
               value: '',
               options: [
                 { value: 'fasta', text: 'Prealigned FASTA' },
-                { value: 'auto-from-args', text: 'Auto Download from NCBI via Taxonomic ID' },
+                { value: 'auto-from-args', text: 'Taxonomic ID' },
               ],
               rules: 'required',
             },
@@ -306,6 +316,7 @@ export default {
               type: 'number',
               value: '',
               rules: 'required_if:@inputchoice,auto-from-args',
+              cols: 6,
             },
             segment: {
               order: 1,
@@ -313,6 +324,7 @@ export default {
               type: 'text',
               value: '',
               rules: 'required_if:@inputchoice,auto-from-args',
+              cols: 6,
             },
           },
           fileinput: {
@@ -327,18 +339,13 @@ export default {
               rules: 'required_if:@inputchoice,fasta',
             },
           },
-        },
-        opts: {
-          order: 1,
-          label: 'Settings',
-          collapsible: false,
           all: {
-            order: 0,
+            order: 3,
             show: true,
             obj: {
               order: 0,
               label: 'Objective',
-              type: 'options',
+              type: 'radio',
               value: '',
               options: [
                 { value: 'maximize-activity', text: 'Maximize Activity' },
@@ -347,11 +354,12 @@ export default {
               rules: 'required',
             },
             bestntargets: {
-              order: 1,
+              order: 4,
               label: 'Number of Assays',
               type: 'number',
               value: '',
-              rules: 'between:1,20|integer|required',
+              placeholder: 10,
+              rules: 'between:1,20|integer',
             },
           },
         },
@@ -373,7 +381,7 @@ export default {
         },
         advopts: {
           order: 3,
-          label: 'Advanced Options',
+          label: 'Advanced',
           collapsible: true,
           all: {
             order: 0,
@@ -385,6 +393,7 @@ export default {
               value: '',
               placeholder: 28,
               rules: 'min_value:1|integer',
+              cols: 6,
             },
             pl: {
               order: 1,
@@ -393,32 +402,34 @@ export default {
               value: '',
               placeholder: 30,
               rules: 'min_value:1|integer',
+              cols: 6,
+            },
+            max_target_length: {
+              order: 2,
+              label: 'Maximum Amplicon Length',
+              type: 'number',
+              value: '',
+              placeholder: 250,
+              rules: 'amplicon|integer',
             },
             pm: {
-              order: 2,
+              order: 3,
               label: 'Primer Mismatches',
               type: 'number',
               value: '',
               placeholder: 3,
               rules: 'min_value:0|integer',
+              cols: 4,
             },
             pp: {
-              order: 3,
+              order: 4,
               label: 'Primer Coverage Fraction',
               type: 'number',
               value: '',
               placeholder: 0.98,
-              step: 0.00000001,
+              step: 0.01,
               rules: 'between:0,1|double',
-            },
-            cluster_threshold: {
-              order: 4,
-              label: 'Cluster Threshold',
-              type: 'number',
-              value: '',
-              placeholder: 0.3,
-              step: 0.00000001,
-              rules: 'double'
+              cols: 4,
             },
             max_primers_at_site: {
               order: 5,
@@ -427,14 +438,16 @@ export default {
               value: '',
               placeholder: 10,
               rules: 'min_value:1|integer',
+              cols: 4,
             },
-            max_target_length: {
+            cluster_threshold: {
               order: 6,
-              label: 'Maximum Amplicon Length',
+              label: 'Cluster Threshold',
               type: 'number',
               value: '',
-              placeholder: 250,
-              rules: 'amplicon|integer',
+              placeholder: 0.3,
+              step: 0.01,
+              rules: 'double'
             },
           },
           gc: {
@@ -447,8 +460,9 @@ export default {
               type: 'number',
               value: '',
               placeholder: 0.35,
-              step: 0.00000001,
+              step: 0.01,
               rules: 'required_if_less:@primer_gc_hi,0.35|max_value:@primer_gc_hi,High GC Percent Content in Primer|between:0,1|double',
+              cols: 6
             },
             primer_gc_hi: {
               order: 1,
@@ -456,8 +470,9 @@ export default {
               type: 'number',
               value: '',
               placeholder: 0.65,
-              step: 0.00000001,
+              step: 0.01,
               rules: 'required_if_greater:@primer_gc_lo,0.65|min_value:@primer_gc_lo,Low GC Percent Content in Primer|between:0,1|double',
+              cols: 6
             },
           },
           objw: {
@@ -470,8 +485,9 @@ export default {
               type: 'number',
               value: '',
               placeholder: 0.5,
-              step: 0.00000001,
+              step: 0.01,
               rules: 'double',
+              cols: 6
             },
             objfnweights_b: {
               order: 1,
@@ -479,8 +495,9 @@ export default {
               type: 'number',
               value: '',
               placeholder: 0.25,
-              step: 0.00000001,
+              step: 0.01,
               rules: 'double',
+              cols: 6
             },
           },
           sp: {
@@ -493,7 +510,8 @@ export default {
               type: 'number',
               value: '',
               placeholder: 4,
-              rules: '',
+              rules: 'min_value:0|integer',
+              cols: 6,
             },
             idfrac: {
               order: 1,
@@ -501,8 +519,9 @@ export default {
               type: 'number',
               value: '',
               placeholder: 0.01,
-              step: 0.00000001,
+              step: 0.01,
               rules: 'between:0,1|double',
+              cols: 6,
             },
           },
           minguides: {
@@ -515,8 +534,8 @@ export default {
               type: 'number',
               value: '',
               placeholder: 3,
-              step: 0.00000001,
               rules: 'min_value:0|integer',
+              cols: 6,
             },
             gp: {
               order: 1,
@@ -524,8 +543,9 @@ export default {
               type: 'number',
               value: '',
               placeholder: 0.98,
-              step: 0.00000001,
+              step: 0.01,
               rules: 'between:0,1|double',
+              cols: 6,
             },
           },
           maxact: {
@@ -539,6 +559,7 @@ export default {
               value: '',
               placeholder: 1,
               rules: 'max_value:@hard_guide_constraint,Hard Guide Constraint|min_value:1|integer',
+              cols: 6,
             },
             hard_guide_constraint: {
               order: 1,
@@ -547,6 +568,7 @@ export default {
               value: '',
               placeholder: 5,
               rules: 'required_if_greater:@soft_guide_constraint,5|min_value:@soft_guide_constraint,Soft Guide Constraint|integer',
+              cols: 6,
             },
           },
         },
@@ -561,7 +583,7 @@ export default {
   // Nested data cannot otherwise be accessed by watch
   computed: {
     inputchoiceval() {
-      return this.inputs.inputtype.inputchoices.inputchoice.value
+      return this.inputs.opts.inputchoices.inputchoice.value
     },
     objval() {
       return this.inputs.opts.all.obj.value
@@ -572,8 +594,8 @@ export default {
   },
   watch: {
     inputchoiceval(val) {
-      this.inputs.inputtype.autoinput.show = val == 'auto-from-args';
-      this.inputs.inputtype.fileinput.show = val == 'fasta';
+      this.inputs.opts.autoinput.show = val == 'auto-from-args';
+      this.inputs.opts.fileinput.show = val == 'fasta';
     },
     objval(val) {
       this.inputs.advopts.minguides.show = val == 'minimize-guides';
