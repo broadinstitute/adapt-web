@@ -41,6 +41,7 @@ $footer-height:                     6rem;
 @import 'node_modules/bootstrap/scss/bootstrap.scss';
 @import 'node_modules/bootstrap-vue/src/index.scss';
 
+// General Page Formatting
 * {
   letter-spacing: .03em;
 }
@@ -55,20 +56,23 @@ html {
   min-height: 100vh;
 }
 
-#body {
-  padding-bottom: $footer-height;
+body {
+  overscroll-behavior-y: none;
 }
+
+// Fade Transitions
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
+}
+
+// Header/Body/Footer Formatting
 
 .header, .footer {
   font-size: min(0.95em, 4vw);
   background-color: rgba(lighten($info, 10%), .95);
-}
-
-.footer {
-  position: absolute;
-  bottom: 0px;
-  width: 100%;
-  height: $footer-height;
 }
 
 .navbar-brand {
@@ -84,11 +88,29 @@ html {
   box-shadow: 0 1px 20px -1px rgba(0,0,0,.1);
 }
 
+#body {
+  padding-bottom: $footer-height;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  height: $footer-height;
+}
+
+// Part Specific - Buttons
+button, input[type=button] {
+  border-width: 0;
+  transition: 0.3s;
+}
+
 .btn-group {
   text-align: center;
   display: block;
 }
 
+// Part Specific - Submitted Modal
 #submitted-modal .modal-content {
   color: $success;
   background-color: rgba(lighten($success, 75%), .95);
@@ -99,27 +121,12 @@ html {
   background-color: lighten($success, 75%);
 }
 
-.modal-footer {
+#submitted-modal .modal-footer {
   border-top: 0px;
 }
 
-body {
-  overscroll-behavior-y: none;
-}
-
-button, input[type=button] {
-  border-width: 0;
-  transition: 0.3s;
-}
-
+// Part Specific - Logo
 .logo {
   height: 0.85em;
   padding-bottom: 0.15em;
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity .5s;
-}
-.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-  opacity: 0;
 }

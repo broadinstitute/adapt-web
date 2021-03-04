@@ -220,6 +220,7 @@ class Assay(models.Model):
         null=True,
         blank=True
     )
+    created = models.DateField()
 
     class Meta:
         ordering = ['taxon__taxid', 'rank']

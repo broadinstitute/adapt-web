@@ -1,11 +1,11 @@
 <template>
   <transition appear name="fade">
-    <div class="home" style="text-align: center;">
-      <div style="font-size: 8rem; font-weight: bold">AD<img v-if="prod" class="logo" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" src="@/assets/img/logo.png" alt="A">PT</div>
-      <p style="font-size: 1.5rem;">Activity-informed Design with All-inclusive Patrolling of Targets</p>
+    <div class="home">
+      <div class="jumbo d-none d-sm-block">AD<img v-if="prod" class="logo" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" src="@/assets/img/logo.png" alt="A">PT</div>
+      <p class="subtitle">Activity-informed Design with All-inclusive Patrolling of Targets</p>
       <b-button-group>
         <b-button variant="outline-secondary" href="/about">About ADAPT</b-button>
-        <b-button variant="outline-secondary" href="/designs">Premade Diagnostic Assays</b-button>
+        <b-button variant="outline-secondary" href="/designs">Premade Assays</b-button>
         <b-button variant="outline-secondary" href="/run">Run ADAPT</b-button>
         <b-button variant="outline-secondary" href="/results">See Results</b-button>
       </b-button-group>
@@ -31,8 +31,17 @@ export default {
 </script>
 
 <style scoped>
-.home{
-  text-align: left;
+.home {
+  text-align: center;
+}
+
+.jumbo {
+  font-size: min(15vw, 8rem);
+  font-weight: bold;
+}
+
+.subtitle {
+  font-size: min(6vw, 1.5rem);
 }
 
 </style>

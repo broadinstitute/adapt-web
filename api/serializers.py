@@ -102,7 +102,7 @@ class AssaySerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = Assay
-        fields = ('taxon', 'rank', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'guide_set')
+        fields = ('taxon', 'rank', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'guide_set', 'created')
 
 
 class TaxonSerializer(serializers.ModelSerializer):
