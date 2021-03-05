@@ -270,6 +270,18 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
     queryset = ADAPTRun.objects.all()
     serializer_class = ADAPTRunSerializer
 
+    @staticmethod
+    def _replace_spaces(filename):
+        return filename.replace(' ', '_')
+
+    @staticmethod
+    def _check_fasta(filename):
+        filetypes = [".fasta", ".fa", ".fna", ".ffn", ".faa", ".frn", ".aln"]
+        for filetype in filetypes:
+            if filename.endswith(filetype):
+                return True
+        return False
+
     def _getresults(self, request, *args, **kwargs):
         """
         Helper function for download and results
@@ -378,10 +390,10 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 input_files = []
                 for i, input_file in enumerate(request.FILES.getlist('fasta[]')):
                     # TODO more file validation
-                    if input_file.name[-6:] != ".fasta":
+                    if ADAPTRunViewSet._check_fasta(input_file.name):
                         content = {'Input Error': "Please only select FASTA files as input."}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    key = "%s/in_%i_%s"%(S3_id, i, input_file.name)
+                    key = "%s/in_%i_%s"%(S3_id, i, ADAPTRunViewSet._replace_spaces(input_file.name))
                     S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
                     input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
                 workflowInputs["adapt_web.adapt.fasta"] = input_files
@@ -401,10 +413,10 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 sp_files = []
                 for i, sp_file in enumerate(request.FILES.getlist('specificity_fasta[]')):
                     # TODO more file validation
-                    if sp_file.name[-6:] != ".fasta":
+                    if ADAPTRunViewSet._check_fasta(sp_file.name):
                         content = {'Input Error': "Please only select FASTA files as input."}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    key = "%s/sp_%i_%s"%(S3_id, i, sp_file.name)
+                    key = "%s/sp_%i_%s"%(S3_id, i, ADAPTRunViewSet._replace_spaces(sp_file.name))
                     S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_file)
                     sp_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
                 workflowInputs["adapt_web.adapt.specificity_fasta"] = sp_files
