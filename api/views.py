@@ -4,10 +4,11 @@ import zipfile
 import uuid
 import boto3
 import sys
+import xml.etree.ElementTree as ET
 from io import BytesIO
 from botocore.exceptions import ClientError
 
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse, FileResponse, Http404
 from django.core.files import File
 from django.views.decorators.csrf import csrf_exempt
@@ -22,9 +23,11 @@ from rest_framework.reverse import reverse
 
 from .serializers import *
 from .models import *
+from .permissions import AdminPermissionOrReadOnly
 
 SERVER_URL = "https://ip-10-0-16-250.ec2.internal/api/workflows/v1"
 WORKFLOW_URL = "https://raw.githubusercontent.com/broadinstitute/adapt-pipes/main/adapt_web.wdl"
+NCBI_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 
 QUEUE_ARN = "arn:aws:batch:us-east-1:194065838422:job-queue/default-Adapt-Cromwell-54-Core"
 IMAGE = "quay.io/broadinstitute/adaptcloud"
@@ -70,6 +73,52 @@ FLOAT_OPT_INPUT_VARS = [
     'penalty_strength',
 ]
 OPTIONAL_INPUT_VARS = STR_OPT_INPUT_VARS + INT_OPT_INPUT_VARS + FLOAT_OPT_INPUT_VARS
+LINEAGE_RANKS = ['family', 'genus', 'species', 'subspecies']
+
+
+def _metadata(cromwell_id):
+    try:
+        cromwell_response = requests.get("%s/%s/metadata" %(SERVER_URL, request.data.id), verify=False)
+    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+        requests.exceptions.Timeout):
+        content = {'Connection Error': "Unable to connect to our servers. "
+            "Try again in a few minutes. If it still doesn't work, "
+            "contact %s." %CONTACT}
+        return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+    return cromwell_response.json()
+
+
+def _files(s3_file_paths):
+    output_files = []
+    try:
+        # in outputs, there should just be 1 output variable (<wdl name>.guides),
+        # which contains a dictionary of key file number, value file
+        S3 = boto3.client("s3",
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+        for s3_file_path in s3_file_paths:
+            if s3_file_path.startswith("s3://"):
+                folders = s3_file_path.split("/")
+                key = "/".join(folders[3:])
+                bucket = folders[2]
+            else:
+                content = {'Server Error': "Output file path incorrectly formatted. "
+                "Please contact %s with your run ID." %CONTACT}
+                return Response(content, status=httpstatus.HTTP_502_BAD_GATEWAY)
+            output_files.append(S3.get_object(Bucket = bucket, Key = key)["Body"])
+    except ClientError as e:
+        if e.response['Error']['Code'] == "NoSuchKey":
+            # This would only be possible if Cromwell didn't upload to S3 properly
+            # or if S3 lost data
+            content = {'Server Error': "Unable to find output files. "
+            "Please contact %s with your run ID." %CONTACT}
+            return Response(content, status=httpstatus.HTTP_502_BAD_GATEWAY)
+        else:
+            content = {'Connection Error': "Unable to connect to our file storage. "
+                "Try again in a few minutes. If it still doesn't work, "
+                "contact %s." %CONTACT}
+            return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+    return output_files
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -249,9 +298,160 @@ class AssayViewSet(viewsets.ModelViewSet):
     """
     # These permission classes make sure only authenticated admin users can
     # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    permission_classes = [AdminPermissionOrReadOnly]
     serializer_class = AssaySerializer
     queryset = Assay.objects.all()
+
+
+    @action(detail=False, methods=['post'])
+    def database_update(self, request, *args, **kwargs):
+        """
+        Updates the database given a job ID from Cromwell
+
+        """
+        
+        # Call Cromwell server
+        metadata_response = _metadata(request.data["id"])
+        if isinstance(metadata_response, Response):
+            return metadata_response
+
+        # Get file paths for S3
+        s3_file_paths = metadata_response["outputs"]["parallel_adapt.guides"]
+        # Parse taxa information and make taxa for those that do not exist in database
+        taxa_file_path = metadata_response["outputs"]["parallel_adapt.taxa_file"]
+        start_time = metadata_response["start"][:10]
+        taxa_file = _files([taxa_file_path])
+        if isinstance(taxa_file, Response):
+            return taxa_file
+        taxa_lines = taxa_file[0].read().decode("utf-8").splitlines()
+        taxa_headers = taxa_lines[0].split('\t')
+        taxa = [{taxa_headers[i]: val \
+            for i, val in enumerate(taxa_line.split('\t'))} \
+            for taxa_line in taxa_lines[1:]]
+        objs = metadata_response["inputs"]["parallel_adapt.objs"]
+        sps = metadata_response["inputs"]["parallel_adapt.sps"]
+
+        def save_by_rank(taxid, name, rank, parent=None):
+            taxon_serializer = TaxonSerializer(data={'taxid': taxid})
+            taxon_serializer.is_valid(raise_exception=True)
+            taxon_obj = taxon_serializer.save()
+            data = {'taxon': taxid, 'latin_name': name}
+            if parent:
+                data["parent"] = parent.pk
+            if rank == 'subspecies':
+                serializer = SubspeciesSerializer(data=data)
+            elif rank == 'species':
+                serializer = SpeciesSerializer(data=data)
+            elif rank == 'genus':
+                serializer = GenusSerializer(data=data)
+            elif rank == 'family':
+                serializer = FamilySerializer(data=data)
+            else:
+                raise ValueError('The rank %s is not built into the database structure')
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return taxon_obj
+
+        for i, sp in enumerate(sps):
+            for j, obj in enumerate(objs):
+                for k, taxon in enumerate(taxa):
+                    try:
+                        taxon_obj = get_object_or_404(Taxon, pk=int(taxon["taxid"]))
+                    except Http404: 
+                        params = {'db': 'taxonomy', 'id': int(taxon['taxid'])}
+                        tax_xml = requests.get(NCBI_URL, params=params).text
+                        # print(tax_xml)
+                        # a = b/0
+                        tax_ET = ET.fromstring(tax_xml)[0]
+                        # NOTE this is based on the current model we're using in the spreadsheet. 
+                        # Could/should generalize spreadsheet
+                        tax_name = taxon['species']
+                        tax_rank = tax_ET.find('Rank').text
+                        lineage = tax_ET.find('LineageEx')
+                        parent = None
+                        for ancestor in lineage.findall('Taxon'):
+                            ancestor_id = ancestor.find('TaxId').text
+                            ancestor_name = ancestor.find('ScientificName').text
+                            ancestor_rank = ancestor.find('Rank').text
+                            if ancestor_rank in LINEAGE_RANKS:
+                                parent = save_by_rank(ancestor_id, ancestor_name, ancestor_rank, parent=parent)
+                        taxon_obj = save_by_rank(taxon['taxid'], tax_name, tax_rank, parent=parent)
+                    output_files = [output_file.read().decode("utf-8") for output_file in _files(s3_file_paths[i][j][k])]
+                    content = {}
+
+                    for i, output_file in enumerate(output_files):
+                        content[i] = {}
+                        lines = output_file.splitlines()
+                        headers = lines[0].split('\t')
+                        for j, line in enumerate(lines[1:]):
+                            raw_content = {headers[k]: val for k,val in enumerate(line.split('\t'))}
+
+                            assay_data = {
+                                "left_primers": {
+                                    "frac_bound": float(raw_content["left-primer-frac-bound"]),
+                                    "start_pos": int(raw_content["left-primer-start"])
+                                },
+                                "right_primers": {
+                                    "frac_bound": float(raw_content["right-primer-frac-bound"]),
+                                    "start_pos": int(raw_content["right-primer-start"])
+                                },
+                                "guide_set": {
+                                    "frac_bound": float(raw_content["total-frac-bound-by-guides"]),
+                                    "expected_activity": float(raw_content["guide-set-expected-activity"]),
+                                    "median_activity": float(raw_content["guide-set-median-activity"]),
+                                    "fifth_pctile_activity": float(raw_content["guide-set-5th-pctile-activity"])
+                                },
+                                'taxon': taxon['taxid'],
+                                'rank': j,
+                                'objective_value': float(raw_content["objective-value"]),
+                                'amplicon_start': int(raw_content["target-start"]), 
+                                'amplicon_end': int(raw_content["target-end"]), 
+                                'created': start_time,
+                                'specific': sp,
+                                'objective': obj
+                            }
+                            assay = AssaySerializer(data=assay_data)
+                            assay.is_valid(raise_exception=True)
+                            assay_obj = assay.save()
+
+                            for target in raw_content["left-primer-target-sequences"].split(" "):
+                                primer_data = {
+                                    "target": target,
+                                    "left_primers": assay_obj.left_primers
+                                }
+                                primer = PrimerSerializer(data=primer_data)
+                                primer.is_valid(raise_exception=True)
+                                primer.save()
+
+                            for target in raw_content["right-primer-target-sequences"].split(" "):
+                                primer_data = {
+                                    "target": target,
+                                    "right_primers": assay_obj.right_primers
+                                }
+                                primer = PrimerSerializer(data=primer_data)
+                                primer.is_valid(raise_exception=True)
+                                primer.save()
+
+                            start_poses = [
+                                [
+                                    int(start_pos_i) for start_pos_i in start_pos[1:-1].split(", ")
+                                ] \
+                            for start_pos in raw_content["guide-target-sequence-positions"].split(" ")]
+                            expected_activities = [
+                                float(expected_activity) \
+                            for expected_activity in raw_content["guide-expected-activities"].split(" ")]
+
+                            for k, target in enumerate(raw_content["left-primer-target-sequences"].split(" ")):
+                                guide_data = {
+                                    "start_pos": start_poses[k],
+                                    "expected_activity": expected_activities[k],
+                                    "target": target,
+                                    "guide_set": assay_obj.guide_set.pk
+                                }
+                                guide = GuideSerializer(data=guide_data)
+                                guide.is_valid(raise_exception=True)
+                                guide.save()
+        return Response({"id": request.data["id"]}, status=httpstatus.HTTP_201_CREATED)
 
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):
@@ -289,48 +489,14 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         # Check status of run
         self.status(request, *args, **kwargs)
         adaptrun = self.get_object()
-        output_files = []
         # Only get results if job succeeded
         if adaptrun.status in SUCCESSFUL_STATES:
             # Call Cromwell server
-            try:
-                cromwell_response = requests.get("%s/%s/outputs" %(SERVER_URL,adaptrun.cromwell_id), verify=False)
-            except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout):
-                content = {'Connection Error': "Unable to connect to our servers. "
-                    "Try again in a few minutes. If it still doesn't work, "
-                    "contact %s." %CONTACT}
-                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
-            cromwell_json = cromwell_response.json()
-            try:
-                # in outputs, there should just be 1 output variable (<wdl name>.guides),
-                # which contains a dictionary of key file number, value file
-                S3 = boto3.client("s3",
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-                s3_file_paths = list(cromwell_json["outputs"].values())[0]
-                for s3_file_path in s3_file_paths:
-                    if s3_file_path[:5] == "s3://":
-                        folders = s3_file_path.split("/")
-                        key = "/".join(folders[3:])
-                        bucket = folders[2]
-                    else:
-                        content = {'Server Error': "Output file path incorrectly formatted. "
-                        "Please contact %s with your run ID." %CONTACT}
-                        return Response(content, status=httpstatus.HTTP_502_BAD_GATEWAY)
-                    output_files.append(S3.get_object(Bucket = bucket, Key = key)["Body"])
-            except ClientError as e:
-                if e.response['Error']['Code'] == "NoSuchKey":
-                    # This would only be possible if Cromwell didn't upload to S3 properly
-                    # or if S3 lost data
-                    content = {'Server Error': "Unable to find output files. "
-                    "Please contact %s with your run ID." %CONTACT}
-                    return Response(content, status=httpstatus.HTTP_502_BAD_GATEWAY)
-                else:
-                    content = {'Connection Error': "Unable to connect to our file storage. "
-                        "Try again in a few minutes. If it still doesn't work, "
-                        "contact %s." %CONTACT}
-                    return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+            metadata_response = _metadata(adaptrun.cromwell_id)
+            if isinstance(metadata_response, Response):
+                return metadata_response
+            # Download files from S3
+            return _files(metadata_response["outputs"]["adapt_web.guides"])
 
         elif adaptrun.status in FAILED_STATES:
             # TODO give reasons that the job might fail
@@ -346,8 +512,6 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 "hours on large datasets. You may check your job status "
                 "at the status API endpoint."}
             return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-
-        return output_files
 
     def create(self, request, format=None):
         """
@@ -453,13 +617,9 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
 
         # Set up and save run to the web server database
         serializer = ADAPTRunSerializer(data=adaptrun_info)
-        if serializer.is_valid():
-            serializer.save()
-            rsp = Response(serializer.data, status=httpstatus.HTTP_201_CREATED)
-        else:
-            # This should never happen, since the inputs are set only after a
-            # successful submission to Cromwell
-            rsp = Response(serializer.errors, status=httpstatus.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        rsp = Response(serializer.data, status=httpstatus.HTTP_201_CREATED)
         return rsp
 
     @action(detail=True)

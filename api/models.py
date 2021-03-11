@@ -18,16 +18,16 @@ class Family(models.Model):
     latin_name = models.CharField(
         max_length=100
     )
-    @property
-    def lineage_names(self):
-        return [
-            (self.latin_name, self.taxon.taxid),
-        ]
+
     @property
     def lineage(self):
-        return [
-            self,
-        ]
+        node = self
+        line = []
+        line.append(node)
+        while hasattr(node, parent):
+            node = node.parent
+            line.append(node)
+        return line
 
 
 class Genus(models.Model):
@@ -37,25 +37,24 @@ class Genus(models.Model):
         on_delete=models.CASCADE,
         primary_key=True
     )
-    family = models.ForeignKey(Family,
+    parent = models.ForeignKey(Taxon,
         on_delete=models.CASCADE,
+        related_name="genus_children"
     )
     latin_name = models.CharField(
         max_length=100,
         blank=True
     )
-    @property
-    def lineage_names(self):
-        return [
-            (self.family.latin_name, self.family.taxon.taxid),
-            (self.latin_name, self.taxon.taxid),
-        ]
+
     @property
     def lineage(self):
-        return [
-            self.family,
-            self,
-        ]
+        node = self
+        line = []
+        line.append(node)
+        while hasattr(node, parent):
+            node = node.parent
+            line.append(node)
+        return line
 
 
 class Species(models.Model):
@@ -65,27 +64,24 @@ class Species(models.Model):
         on_delete=models.CASCADE,
         primary_key=True
     )
-    genus = models.ForeignKey(Genus,
+    parent = models.ForeignKey(Taxon,
         on_delete=models.CASCADE,
+        related_name="species_children"
     )
     latin_name = models.CharField(
         max_length=300,
         blank=True
     )
-    @property
-    def lineage_names(self):
-        return [
-            (self.genus.family.latin_name, self.genus.family.taxon.taxid),
-            (self.genus.latin_name, self.genus.taxon.taxid),
-            (self.latin_name, self.taxon.taxid),
-        ]
+
     @property
     def lineage(self):
-        return [
-            self.genus.family,
-            self.genus,
-            self,
-        ]
+        node = self
+        line = []
+        line.append(node)
+        while hasattr(node, parent):
+            node = node.parent
+            line.append(node)
+        return line
 
 
 class Subspecies(models.Model):
@@ -95,29 +91,24 @@ class Subspecies(models.Model):
         on_delete=models.CASCADE,
         primary_key=True
     )
-    species = models.ForeignKey(Species,
+    parent = models.ForeignKey(Taxon,
         on_delete=models.CASCADE,
+        related_name="subspecies_children"
     )
     latin_name = models.CharField(
         max_length=300,
         blank=True
     )
-    @property
-    def lineage_names(self):
-        return [
-            (self.species.genus.family.latin_name, self.species.genus.family.taxon.taxid),
-            (self.species.genus.latin_name, self.species.genus.taxon.taxid),
-            (self.species.latin_name, self.species.taxon.taxid),
-            (self.latin_name, self.taxon.taxid),
-        ]
+
     @property
     def lineage(self):
-        return [
-            self.species.genus.family,
-            self.species.genus,
-            self.species,
-            self,
-        ]
+        node = self
+        line = []
+        line.append(node)
+        while hasattr(node, parent):
+            node = node.parent
+            line.append(node)
+        return line
 
 
 class PrimerSet(models.Model):
@@ -196,6 +187,10 @@ class Guide(models.Model):
 class Assay(models.Model):
     '''Defines base model for an assay for a virus
     '''
+    OBJ_CHOICES = [
+        ('maximize-activity', 'maximize-activity'),
+        ('minimize-guides', 'minimize-guides'),
+    ]
     taxon = models.ForeignKey(Taxon,
         related_name='assays',
         on_delete=models.CASCADE
@@ -221,6 +216,11 @@ class Assay(models.Model):
         blank=True
     )
     created = models.DateField()
+    specific = models.BooleanField()
+    objective = models.CharField(
+        max_length=17,
+        choices=OBJ_CHOICES,
+    )
 
     class Meta:
         ordering = ['taxon__taxid', 'rank']
