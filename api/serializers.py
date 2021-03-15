@@ -9,49 +9,18 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username')
 
 
-class FamilySerializer(serializers.ModelSerializer):
+class TaxonRankSerializer(serializers.HyperlinkedModelSerializer):
     taxon = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all()
-    )
-    class Meta:
-        model = Family
-        fields = ('taxon', 'latin_name')
-
-
-class GenusSerializer(serializers.HyperlinkedModelSerializer):
-    taxon = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all()
+        read_only=True
     )
     parent = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all()
+        queryset=TaxonRank.objects.all(),
+        allow_null=True,
+        required=False
     )
     class Meta:
-        model = Genus
-        fields = ('taxon', 'parent', 'latin_name')
-
-
-class SpeciesSerializer(serializers.HyperlinkedModelSerializer):
-    taxon = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all()
-    )
-    parent = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all()
-    )
-    class Meta:
-        model = Species
-        fields = ('taxon', 'parent', 'latin_name')
-
-
-class SubspeciesSerializer(serializers.HyperlinkedModelSerializer):
-    taxon = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all()
-    )
-    parent = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all()
-    )
-    class Meta:
-        model = Subspecies
-        fields = ('taxon', 'parent', 'latin_name')
+        model = TaxonRank
+        fields = ('pk', 'taxon', 'latin_name', 'rank', 'parent', 'num_children')
 
 
 class PrimerSerializer(serializers.ModelSerializer):
@@ -113,12 +82,15 @@ class AssaySerializer(serializers.ModelSerializer):
     left_primers = LeftPrimersSerializer()
     right_primers = RightPrimersSerializer()
     guide_set = GuideSetSerializer()
-    taxon = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all()
+    taxonrank = serializers.SlugRelatedField(
+        slug_field='latin_name',
+        queryset=TaxonRank.objects.all(),
+        allow_null=True,
+        required=False
     )
     class Meta:
         model = Assay
-        fields = ('taxon', 'rank', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'guide_set', 'created', 'specific', 'objective')
+        fields = ('taxonrank', 'rank', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'guide_set', 'created', 'specific', 'objective')
 
     def create(self, validated_data):
         left_primers_data = validated_data.pop('left_primers')
@@ -136,37 +108,21 @@ class AssaySerializer(serializers.ModelSerializer):
 
 
 class TaxonSerializer(serializers.ModelSerializer):
-    assays = AssaySerializer(
-        many=True,
-        read_only=True
-    )
-    family = serializers.SlugRelatedField(
-        slug_field='latin_name',
-        queryset=Family.objects.all(),
-        allow_null=True,
-        required=False
-    )
-    genus = serializers.SlugRelatedField(
-        slug_field='latin_name',
-        queryset=Genus.objects.all(),
-        allow_null=True,
-        required=False
-    )
-    species = serializers.SlugRelatedField(
-        slug_field='latin_name',
-        queryset=Species.objects.all(),
-        allow_null=True,
-        required=False
-    )
-    subspecies = serializers.SlugRelatedField(
-        slug_field='latin_name',
-        queryset=Subspecies.objects.all(),
-        allow_null=True,
-        required=False
-    )
+    taxonrank = TaxonRankSerializer()
     class Meta:
         model = Taxon
-        fields = ('taxid', 'family', 'genus', 'species', 'subspecies', 'assays')
+        fields = ('taxid', 'taxonrank')
+
+    def create(self, validated_data):
+        taxonrank_data = validated_data.pop('taxonrank')
+        try:
+            taxonrank = TaxonRank.objects.get(latin_name=taxonrank_data['latin_name'], rank=taxonrank_data['rank'])
+        except TaxonRank.DoesNotExist:
+            taxonrank = TaxonRank.objects.create(**taxonrank_data)
+
+        taxon = Taxon.objects.create(taxonrank=taxonrank, **validated_data)
+
+        return taxon
 
 
 class ADAPTRunSerializer(serializers.HyperlinkedModelSerializer):

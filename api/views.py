@@ -144,13 +144,23 @@ class TaxonViewSet(viewsets.ModelViewSet):
     # These permission classes make sure only authenticated admin users can
     # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    queryset = Taxon.objects.all()
     serializer_class = TaxonSerializer
 
+    def get_queryset(self):
+        taxids = self.request.query_params.get('taxid')
+        if not taxids:
+            return Taxon.objects.all()
+        taxids = taxids.split(',')
+        taxids_qs = Taxon.objects.filter(taxid=taxids[0])
+        if len(taxids) > 1:
+            for taxid in parents[1:]:
+                taxids_qs = taxids_qs.union(Taxon.objects.filter(taxid=taxid))
+        return taxids_qs
 
-class FamilyViewSet(viewsets.ModelViewSet):
+
+class TaxonRankViewSet(viewsets.ModelViewSet):
     """
-    Produces the various API views for the Family Model
+    Produces the various API views for the TaxonRank Model
 
     Abstracts the HTTP requests to the actions list, create, retrieve,
     update, partial_update, and destroy, which are inherited.
@@ -158,65 +168,25 @@ class FamilyViewSet(viewsets.ModelViewSet):
     # These permission classes make sure only authenticated admin users can
     # edit this model
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    queryset = Family.objects.all()
-    serializer_class = FamilySerializer
-
-
-class GenusViewSet(viewsets.ModelViewSet):
-    """
-    Produces the various API views for the Genus Model
-
-    Abstracts the HTTP requests to the actions list, create, retrieve,
-    update, partial_update, and destroy, which are inherited.
-    """
-    # These permission classes make sure only authenticated admin users can
-    # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    serializer_class = GenusSerializer
+    queryset = TaxonRank.objects.all()
+    serializer_class = TaxonRankSerializer
 
     def get_queryset(self):
-        family = self.request.query_params.get('family')
-        if not family:
-            return Genus.objects.all()
-        return Genus.objects.filter(family__taxon__taxid=family)
-
-
-class SpeciesViewSet(viewsets.ModelViewSet):
-    """
-    Produces the various API views for the Species Model
-
-    Abstracts the HTTP requests to the actions list, create, retrieve,
-    update, partial_update, and destroy, which are inherited.
-    """
-    # These permission classes make sure only authenticated admin users can
-    # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    serializer_class = SpeciesSerializer
-
-    def get_queryset(self):
-        genus = self.request.query_params.get('genus')
-        if not genus:
-            return Species.objects.all()
-        return Species.objects.filter(genus__taxon__taxid=genus)
-
-
-class SubspeciesViewSet(viewsets.ModelViewSet):
-    """
-    Produces the various API views for the Subspecies Model
-
-    Abstracts the HTTP requests to the actions list, create, retrieve,
-    update, partial_update, and destroy, which are inherited.
-    """
-    # These permission classes make sure only authenticated admin users can
-    # edit this model
-    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
-    serializer_class = SubspeciesSerializer
-
-    def get_queryset(self):
-        species = self.request.query_params.get('species')
-        if not species:
-            return Subspecies.objects.all()
-        return Subspecies.objects.filter(species__taxon__taxid=species)
+        parents = self.request.query_params.get('parent')
+        if not parents:
+            return TaxonRank.objects.all()
+        parents = parents.split(',')
+        if parents[0] == 'null':
+            parents_qs = TaxonRank.objects.filter(parent__isnull=True)
+        else:
+            parents_qs = TaxonRank.objects.filter(parent=parents[0])
+        if len(parents) > 1:
+            for parent in parents[1:]:
+                if parent == 'null':
+                    parents_qs = parents_qs.union(TaxonRank.objects.filter(parent__taxid__isnull=True))
+                else:
+                    parents_qs = parents_qs.union(TaxonRank.objects.filter(parent__taxid=parent))
+        return parents_qs
 
 
 class LeftPrimersViewSet(viewsets.ModelViewSet):
@@ -332,31 +302,22 @@ class AssayViewSet(viewsets.ModelViewSet):
         sps = metadata_response["inputs"]["parallel_adapt.sps"]
 
         def save_by_rank(taxid, name, rank, parent=None):
-            taxon_serializer = TaxonSerializer(data={'taxid': taxid})
-            taxon_serializer.is_valid(raise_exception=True)
-            taxon_obj = taxon_serializer.save()
-            data = {'taxon': taxid, 'latin_name': name}
+            if rank not in LINEAGE_RANKS:
+                raise ValueError('The rank %s is not built into the database structure' %rank)
+            data = {'taxid': taxid, 'taxonrank': {'latin_name': name, 'rank': rank}}
             if parent:
-                data["parent"] = parent.pk
-            if rank == 'subspecies':
-                serializer = SubspeciesSerializer(data=data)
-            elif rank == 'species':
-                serializer = SpeciesSerializer(data=data)
-            elif rank == 'genus':
-                serializer = GenusSerializer(data=data)
-            elif rank == 'family':
-                serializer = FamilySerializer(data=data)
-            else:
-                raise ValueError('The rank %s is not built into the database structure')
+                data['taxonrank']['parent'] = parent.pk
+            serializer = TaxonSerializer(data=data)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return taxon_obj
+            taxon = serializer.save()
+            return taxon.taxonrank
 
         for i, sp in enumerate(sps):
             for j, obj in enumerate(objs):
                 for k, taxon in enumerate(taxa):
                     try:
                         taxon_obj = get_object_or_404(Taxon, pk=int(taxon["taxid"]))
+                        taxonrank_obj = taxon_obj.taxonrank
                     except Http404: 
                         params = {'db': 'taxonomy', 'id': int(taxon['taxid'])}
                         tax_xml = requests.get(NCBI_URL, params=params).text
@@ -375,7 +336,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                             ancestor_rank = ancestor.find('Rank').text
                             if ancestor_rank in LINEAGE_RANKS:
                                 parent = save_by_rank(ancestor_id, ancestor_name, ancestor_rank, parent=parent)
-                        taxon_obj = save_by_rank(taxon['taxid'], tax_name, tax_rank, parent=parent)
+                        taxonrank_obj = save_by_rank(taxon['taxid'], tax_name, tax_rank, parent=parent)
                     output_files = [output_file.read().decode("utf-8") for output_file in _files(s3_file_paths[i][j][k])]
                     content = {}
 
@@ -401,7 +362,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                                     "median_activity": float(raw_content["guide-set-median-activity"]),
                                     "fifth_pctile_activity": float(raw_content["guide-set-5th-pctile-activity"])
                                 },
-                                'taxon': taxon['taxid'],
+                                'taxonrank': taxonrank_obj.latin_name,
                                 'rank': j,
                                 'objective_value': float(raw_content["objective-value"]),
                                 'amplicon_start': int(raw_content["target-start"]), 

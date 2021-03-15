@@ -1,114 +1,53 @@
 from django.db import models
 
+
+class TaxonRank(models.Model):
+    '''Defines base model for all viral genuses with premade designs
+    '''
+    RANK_CHOICES = [
+        ('family', 'family'),
+        ('genus', 'genus'),
+        ('species', 'species'),
+        ('subspecies', 'subspecies'),
+    ]
+    parent = models.ForeignKey('self',
+        on_delete=models.CASCADE,
+        related_name="children",
+        null=True,
+        blank=True
+    )
+    latin_name = models.CharField(
+        max_length=100,
+    )
+    rank = models.CharField(
+        max_length=10,
+        choices=RANK_CHOICES,
+    )
+
+    @property
+    def lineage(self):
+        node = self
+        line = []
+        line.append(node)
+        while node.parent:
+            node = node.parent
+            line.append(node)
+        return line
+
+    @property
+    def num_children(self):
+        return len(self.children.all())
+
+
 class Taxon(models.Model):
     '''Defines base model for all viral taxonomies with premade designs
     '''
     taxid = models.PositiveIntegerField(
         primary_key=True
     )
-
-
-class Family(models.Model):
-    '''Defines base model for all viral families with premade designs
-    '''
-    taxon = models.OneToOneField(Taxon,
-        on_delete=models.CASCADE,
-        primary_key=True
+    taxonrank = models.ForeignKey(TaxonRank,
+        on_delete=models.CASCADE
     )
-    latin_name = models.CharField(
-        max_length=100
-    )
-
-    @property
-    def lineage(self):
-        node = self
-        line = []
-        line.append(node)
-        while hasattr(node, parent):
-            node = node.parent
-            line.append(node)
-        return line
-
-
-class Genus(models.Model):
-    '''Defines base model for all viral genuses with premade designs
-    '''
-    taxon = models.OneToOneField(Taxon,
-        on_delete=models.CASCADE,
-        primary_key=True
-    )
-    parent = models.ForeignKey(Taxon,
-        on_delete=models.CASCADE,
-        related_name="genus_children"
-    )
-    latin_name = models.CharField(
-        max_length=100,
-        blank=True
-    )
-
-    @property
-    def lineage(self):
-        node = self
-        line = []
-        line.append(node)
-        while hasattr(node, parent):
-            node = node.parent
-            line.append(node)
-        return line
-
-
-class Species(models.Model):
-    '''Defines base model for all viral species with premade designs
-    '''
-    taxon = models.OneToOneField(Taxon,
-        on_delete=models.CASCADE,
-        primary_key=True
-    )
-    parent = models.ForeignKey(Taxon,
-        on_delete=models.CASCADE,
-        related_name="species_children"
-    )
-    latin_name = models.CharField(
-        max_length=300,
-        blank=True
-    )
-
-    @property
-    def lineage(self):
-        node = self
-        line = []
-        line.append(node)
-        while hasattr(node, parent):
-            node = node.parent
-            line.append(node)
-        return line
-
-
-class Subspecies(models.Model):
-    '''Defines base model for all viral subspecies with premade designs
-    '''
-    taxon = models.OneToOneField(Taxon,
-        on_delete=models.CASCADE,
-        primary_key=True
-    )
-    parent = models.ForeignKey(Taxon,
-        on_delete=models.CASCADE,
-        related_name="subspecies_children"
-    )
-    latin_name = models.CharField(
-        max_length=300,
-        blank=True
-    )
-
-    @property
-    def lineage(self):
-        node = self
-        line = []
-        line.append(node)
-        while hasattr(node, parent):
-            node = node.parent
-            line.append(node)
-        return line
 
 
 class PrimerSet(models.Model):
@@ -191,7 +130,7 @@ class Assay(models.Model):
         ('maximize-activity', 'maximize-activity'),
         ('minimize-guides', 'minimize-guides'),
     ]
-    taxon = models.ForeignKey(Taxon,
+    taxonrank = models.ForeignKey(TaxonRank,
         related_name='assays',
         on_delete=models.CASCADE
     )
@@ -223,7 +162,7 @@ class Assay(models.Model):
     )
 
     class Meta:
-        ordering = ['taxon__taxid', 'rank']
+        ordering = ['taxonrank__taxon__taxid', 'rank']
 
 
 class ADAPTRun(models.Model):
