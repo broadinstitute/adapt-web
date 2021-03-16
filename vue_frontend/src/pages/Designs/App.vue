@@ -6,17 +6,34 @@
       <b-col cols=0 md=2></b-col>
       <b-col cols=12 md=8>
         <transition appear name="fade">
-          <div class="pb-4 px-3"><b-button pill block v-on:click.prevent="display" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="display_submit" :disabled="selectedDesigns.length==0">Display Assay Designs</b-button></div>
+        <b-row class="mb-2 px-3">
+          <b-col cols=12 md=6>
+            <div class="pb-2"><b-button pill block v-on:click.prevent="display('table')" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="display_submit" :disabled="selectedDesigns.length==0">Display Assays</b-button></div>
+          </b-col>
+          <b-col cols=12 md=6>
+            <div class="pb-2"><b-button pill block v-on:click.prevent="display('viz')" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="display_submit" :disabled="selectedDesigns.length==0">Visualize Assays</b-button></div>
+          </b-col>
+        </b-row>
         </transition>
         <transition appear name="fade">
           <Design class="px-3" parent="pknull"></Design>
         </transition>
-        <b-modal id="assay-modal" size="xl" title="Assay Options" hide-footer class="">
+        <b-modal id="assaytable-modal" size="xl" title="Assay Options" hide-footer class="">
           <div id="clusters" v-if="resulttable" :key="updated">
             <div v-for="taxon_and_name in selectedDesigns" :key="taxon_and_name[0]">
               <h2>{{ taxon_and_name[1] }}</h2>
               <div v-for="(cluster, index) in resulttable[taxon_and_name[0]]" :key="index">
                 <AssayTable :cluster="cluster" :cluster_id="taxon_and_name[0] + index"/>
+              </div>
+            </div>
+          </div>
+        </b-modal>
+        <b-modal id="assayviz-modal" size="xl" title="Assay Options" hide-footer class="">
+          <div id="clusters" v-if="resulttable" :key="updated">
+            <div v-for="taxon_and_name in selectedDesigns" :key="taxon_and_name[0]">
+              <h2>{{ taxon_and_name[1] }}</h2>
+              <div v-for="(cluster, index) in resulttable[taxon_and_name[0]]" :key="index">
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="taxon_and_name[0] + index"/>
               </div>
             </div>
           </div>
@@ -34,6 +51,7 @@ import Vue from 'vue'
 import Header from '@/components/Header.vue'
 import Design from '@/components/Design.vue'
 import AssayTable from '@/components/AssayTable.vue'
+import Assay from '@/components/Assay.vue'
 import Footer from '@/components/Footer.vue'
 const Cookies = require('js-cookie')
 // Needs CSRF for the server to accept the request
@@ -45,6 +63,7 @@ export default {
     Header,
     Design,
     AssayTable,
+    Assay,
     Footer
   },
   data() {
@@ -56,7 +75,7 @@ export default {
     }
   },
   methods : {
-    async display() {
+    async display(type) {
       var vm = this
       vm.resulttable = {}
       for (var taxon_and_name of vm.selectedDesigns) {
@@ -88,7 +107,7 @@ export default {
         }
       }
       vm.updated += 1
-      this.$bvModal.show("assay-modal")
+      this.$bvModal.show("assay" + type + "-modal")
     }
   }
 }

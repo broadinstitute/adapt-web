@@ -279,7 +279,7 @@ class AssayViewSet(viewsets.ModelViewSet):
         Updates the database given a job ID from Cromwell
 
         """
-        
+
         # Call Cromwell server
         metadata_response = _metadata(request.data["id"])
         if isinstance(metadata_response, Response):
@@ -318,13 +318,11 @@ class AssayViewSet(viewsets.ModelViewSet):
                     try:
                         taxon_obj = get_object_or_404(Taxon, pk=int(taxon["taxid"]))
                         taxonrank_obj = taxon_obj.taxonrank
-                    except Http404: 
+                    except Http404:
                         params = {'db': 'taxonomy', 'id': int(taxon['taxid'])}
                         tax_xml = requests.get(NCBI_URL, params=params).text
-                        # print(tax_xml)
-                        # a = b/0
                         tax_ET = ET.fromstring(tax_xml)[0]
-                        # NOTE this is based on the current model we're using in the spreadsheet. 
+                        # NOTE this is based on the current model we're using in the spreadsheet.
                         # Could/should generalize spreadsheet
                         tax_name = taxon['species']
                         tax_rank = tax_ET.find('Rank').text
@@ -364,8 +362,8 @@ class AssayViewSet(viewsets.ModelViewSet):
                                 'rank': j,
                                 'cluster': i,
                                 'objective_value': float(raw_content["objective-value"]),
-                                'amplicon_start': int(raw_content["target-start"]), 
-                                'amplicon_end': int(raw_content["target-end"]), 
+                                'amplicon_start': int(raw_content["target-start"]),
+                                'amplicon_end': int(raw_content["target-end"]),
                                 'created': start_time,
                                 'specific': sp,
                                 'objective': obj
@@ -377,7 +375,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                             for target in raw_content["left-primer-target-sequences"].split(" "):
                                 primer_data = {
                                     "target": target,
-                                    "left_primers": assay_obj.left_primers
+                                    "left_primer_set": assay_obj.left_primers.pk
                                 }
                                 primer = PrimerSerializer(data=primer_data)
                                 primer.is_valid(raise_exception=True)
@@ -386,7 +384,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                             for target in raw_content["right-primer-target-sequences"].split(" "):
                                 primer_data = {
                                     "target": target,
-                                    "right_primers": assay_obj.right_primers
+                                    "right_primer_set": assay_obj.right_primers.pk
                                 }
                                 primer = PrimerSerializer(data=primer_data)
                                 primer.is_valid(raise_exception=True)
@@ -422,7 +420,7 @@ class AssayViewSet(viewsets.ModelViewSet):
         elif cluster:
             return Assay.objects.filter(cluster=cluster)
         return Assay.objects.all()
-        
+
 
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):

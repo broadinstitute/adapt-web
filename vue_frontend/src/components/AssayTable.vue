@@ -16,17 +16,11 @@
           <b>Reverse:</b>
           <p v-for="primer in data.item.right_primers.primers" :key="primer.target">{{ primer.target }}</p>
         </template>
-        <!-- <template #cell(left_primers.primers)="data">
-          <p v-for="primer in data.value" :key="primer.target">{{ primer.target }}</p>
-        </template>
-        <template #cell(right_primers.primers)="data">
-          <p v-for="primer in data.value" :key="primer.target">{{ primer.target }}</p>
-        </template> -->
         <template #cell(guide_set.guides)="data">
           <p v-for="guide in data.value" :key="guide.target">{{ guide.target }}</p>
         </template>
         <template #cell(show_details)="row">
-          <b-button size="sm" @click="row.toggleDetails" class="mr-2 font-weight-bold" pill>
+          <b-button size="sm" @click="row.toggleDetails" class="mr-2 font-weight-bold" pill variant="outline-secondary">
             {{ row.detailsShowing ? 'Hide' : 'Details'}}
           </b-button>
         </template>
@@ -52,20 +46,6 @@
               </b-col>
             </b-row>
           </div>
-
-          <!-- <b-card>
-            <b-row class="mb-2">
-              <b-col sm="3" class="text-sm-right"><b>Forward Primer Start:</b></b-col>
-              <b-col>{{ row.item.age }}</b-col>
-            </b-row>
-
-            <b-row class="mb-2">
-              <b-col sm="3" class="text-sm-right"><b>Reverse Primer Start:</b></b-col>
-              <b-col>{{ row.item.isActive }}</b-col>
-            </b-row>
-
-            <b-button size="sm" @click="row.toggleDetails">Hide Details</b-button>
-          </b-card> -->
         </template>
       </b-table>
     </div>

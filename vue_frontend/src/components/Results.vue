@@ -61,6 +61,7 @@
               <b-button pill block v-on:click.prevent="handleSubmit(run_status)" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="status_submit">Get Status</b-button>
               <b-button pill block v-on:click.prevent="handleSubmit(get_results)" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="download_submit">Download Results</b-button>
               <b-button pill block v-on:click.prevent="handleSubmit(display_results)" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="display_submit">Display Results</b-button>
+              <b-button pill block v-on:click.prevent="handleSubmit(visualize_results)" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="visualize_submit">Visualize Results</b-button>
             </b-col>
           </b-row>
           <span v-show="status">Status: {{ status }}</span>
@@ -143,9 +144,8 @@ export default {
       }
       return response
     },
-    async display_results() {
+    async show_results() {
       // Get results JSON from backend
-      // TODO do something with them
       if (!this.runids.includes(this.runid)) {
         this.runids.push(this.runid)
       }
@@ -164,12 +164,23 @@ export default {
       })
       if (response.ok) {
         this.$root.$data.resultjson = await response.json()
-        this.$root.$emit('display-assays');
       } else {
         let msg = await response.text()
         alert(msg);
       }
       return response
+    },
+    async display_results() {
+      let response = await this.show_results();
+      if (response.ok) {
+        this.$root.$emit('display-assays');
+      }
+    },
+    async visualize_results() {
+      let response = await this.show_results();
+      if (response.ok) {
+        this.$root.$emit('visualize-assays');
+      }
     },
     async get_results() {
       // Download results as a TSV or ZIP from backend

@@ -656,7 +656,7 @@ export default {
       }
       else {
         // TODO better error handling
-        this.status = "Submission Error"
+        this.status = await response.text()
       }
       return response
     },

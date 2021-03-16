@@ -11,7 +11,7 @@
         <b-nav-item disabled href=""></b-nav-item>
         <b-nav-item href="/about">ABOUT</b-nav-item>
         <b-nav-item href="/designs">ASSAYS</b-nav-item>
-        <b-nav-item href="/run">RUN</b-nav-item>
+        <b-nav-item href="/">RUN</b-nav-item>
         <b-nav-item href="/results">RESULTS</b-nav-item>
         </b-navbar-nav></b-collapse>
       </b-navbar>

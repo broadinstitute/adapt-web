@@ -5,6 +5,7 @@ $dark:                              #000D54;
 $secondary:                         #3C67DD;
 $info:                              #dee2e6;
 $success:                           #006644;
+$danger:                            #ff365b;
 
 $link-color:                        $secondary;
 $link-hover-color:                  rgba($secondary, .6);
@@ -35,7 +36,9 @@ $footer-height:                     6rem;
   --cyan: #45e2ea;
   --mint: #36ffbb;
   --lilac: #adbaff;
-
+  --red: #ff365b;
+  --orange: #fd7825;
+  --lemon: #f2ff36;
 }
 
 @import 'node_modules/bootstrap/scss/bootstrap.scss';
@@ -109,6 +112,15 @@ button, input[type=button] {
   display: block;
 }
 
+.btn-group > .btn:not(:last-child):not(.dropdown-toggle),
+.btn-group > .btn-group:not(:last-child) > .btn,
+.btn-group > .btn:not(:first-child),
+.btn-group > .btn-group:not(:first-child) > .btn {
+  border-radius: 0.25rem;
+  margin: 5px 4px 5px 4px;
+  min-width: 12rem;
+}
+
 // Part Specific - Submitted Modal
 #submitted-modal .modal-content {
   color: $success;
@@ -131,7 +143,7 @@ button, input[type=button] {
 }
 
 .not-collapsed .arrow {
-  transform: rotate(180deg); 
+  transform: rotate(180deg);
 }
 .family {
   font-size: 2.5rem;
@@ -168,6 +180,6 @@ button, input[type=button] {
 }
 
 .taxon:hover {
-  color: $body-color; 
+  color: $body-color;
   text-decoration: none;
 }
