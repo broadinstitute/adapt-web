@@ -9,7 +9,7 @@
         <b-modal id="assay-modal" size="xl" title="Assay Options" hide-footer class="">
           <div id="clusters" v-if="resulttable" :key="updated">
             <div v-for="cluster in Object.keys(resulttable)" :key="cluster">
-              <AssayTable :cluster="resulttable[cluster]" :cluster_num="cluster"/>
+              <AssayTable :cluster="resulttable[cluster]" :cluster_id="cluster"/>
               <!-- <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster="cluster"/> -->
             </div>
           </div>

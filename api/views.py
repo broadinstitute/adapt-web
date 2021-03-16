@@ -338,10 +338,8 @@ class AssayViewSet(viewsets.ModelViewSet):
                                 parent = save_by_rank(ancestor_id, ancestor_name, ancestor_rank, parent=parent)
                         taxonrank_obj = save_by_rank(taxon['taxid'], tax_name, tax_rank, parent=parent)
                     output_files = [output_file.read().decode("utf-8") for output_file in _files(s3_file_paths[i][j][k])]
-                    content = {}
 
                     for i, output_file in enumerate(output_files):
-                        content[i] = {}
                         lines = output_file.splitlines()
                         headers = lines[0].split('\t')
                         for j, line in enumerate(lines[1:]):
@@ -362,8 +360,9 @@ class AssayViewSet(viewsets.ModelViewSet):
                                     "median_activity": float(raw_content["guide-set-median-activity"]),
                                     "fifth_pctile_activity": float(raw_content["guide-set-5th-pctile-activity"])
                                 },
-                                'taxonrank': taxonrank_obj.latin_name,
+                                'taxonrank': taxonrank_obj.pk,
                                 'rank': j,
+                                'cluster': i,
                                 'objective_value': float(raw_content["objective-value"]),
                                 'amplicon_start': int(raw_content["target-start"]), 
                                 'amplicon_end': int(raw_content["target-end"]), 
@@ -394,9 +393,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                                 primer.save()
 
                             start_poses = [
-                                [
-                                    int(start_pos_i) for start_pos_i in start_pos[1:-1].split(", ")
-                                ] \
+                                [int(start_pos_i) for start_pos_i in start_pos[1:-1].split(", ")] \
                             for start_pos in raw_content["guide-target-sequence-positions"].split(" ")]
                             expected_activities = [
                                 float(expected_activity) \
@@ -413,6 +410,19 @@ class AssayViewSet(viewsets.ModelViewSet):
                                 guide.is_valid(raise_exception=True)
                                 guide.save()
         return Response({"id": request.data["id"]}, status=httpstatus.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        taxonrank = self.request.query_params.get('taxonrank')
+        cluster = self.request.query_params.get('cluster')
+        if taxonrank:
+            if cluster:
+                return Assay.objects.filter(taxonrank=taxonrank, cluster=cluster)
+            else:
+                return Assay.objects.filter(taxonrank=taxonrank)
+        elif cluster:
+            return Assay.objects.filter(cluster=cluster)
+        return Assay.objects.all()
+        
 
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):

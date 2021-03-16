@@ -69,7 +69,6 @@ body {
 }
 
 // Header/Body/Footer Formatting
-
 .header, .footer {
   font-size: min(0.95em, 4vw);
   background-color: rgba(lighten($info, 10%), .95);
@@ -125,8 +124,50 @@ button, input[type=button] {
   border-top: 0px;
 }
 
-// Part Specific - Logo
+// Part Specific - Misc
 .logo {
   height: 0.85em;
   padding-bottom: 0.15em;
+}
+
+.not-collapsed .arrow {
+  transform: rotate(180deg); 
+}
+.family {
+  font-size: 2.5rem;
+}
+.genus {
+  font-size: 2rem;
+}
+.species {
+  font-size: 1.5rem;
+}
+.subspecies {
+  font-size: 1rem;
+}
+
+.selected {
+  background-color: rgba(lighten($success, 60%), .5);
+}
+
+.selectable, .arrow {
+  transition: 0.3s;
+  line-height: 1.55;
+}
+
+.selectable:hover, .selectable:focus {
+  background-color: rgba(lighten($success, 60%), .25);
+}
+
+.selected:hover, .selected:focus {
+  background-color: rgba(lighten($success, 60%), .75);
+}
+
+.taxon {
+  color: $body-color;
+}
+
+.taxon:hover {
+  color: $body-color; 
+  text-decoration: none;
 }

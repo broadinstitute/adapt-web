@@ -9,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username')
 
 
-class TaxonRankSerializer(serializers.HyperlinkedModelSerializer):
+class TaxonRankSerializer(serializers.ModelSerializer):
     taxon = serializers.PrimaryKeyRelatedField(
         read_only=True
     )
@@ -20,7 +20,7 @@ class TaxonRankSerializer(serializers.HyperlinkedModelSerializer):
     )
     class Meta:
         model = TaxonRank
-        fields = ('pk', 'taxon', 'latin_name', 'rank', 'parent', 'num_children')
+        fields = ('pk', 'taxon', 'latin_name', 'rank', 'parent', 'num_children', 'any_assays')
 
 
 class PrimerSerializer(serializers.ModelSerializer):
@@ -82,15 +82,14 @@ class AssaySerializer(serializers.ModelSerializer):
     left_primers = LeftPrimersSerializer()
     right_primers = RightPrimersSerializer()
     guide_set = GuideSetSerializer()
-    taxonrank = serializers.SlugRelatedField(
-        slug_field='latin_name',
+    taxonrank = serializers.PrimaryKeyRelatedField(
         queryset=TaxonRank.objects.all(),
         allow_null=True,
         required=False
     )
     class Meta:
         model = Assay
-        fields = ('taxonrank', 'rank', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'guide_set', 'created', 'specific', 'objective')
+        fields = ('taxonrank', 'rank', 'cluster', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'guide_set', 'created', 'specific', 'objective')
 
     def create(self, validated_data):
         left_primers_data = validated_data.pop('left_primers')

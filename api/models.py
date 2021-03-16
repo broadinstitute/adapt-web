@@ -17,7 +17,7 @@ class TaxonRank(models.Model):
         blank=True
     )
     latin_name = models.CharField(
-        max_length=100,
+        max_length=100
     )
     rank = models.CharField(
         max_length=10,
@@ -37,6 +37,10 @@ class TaxonRank(models.Model):
     @property
     def num_children(self):
         return len(self.children.all())
+
+    @property
+    def any_assays(self):
+        return self.assays.all().exists()
 
 
 class Taxon(models.Model):
@@ -135,6 +139,7 @@ class Assay(models.Model):
         on_delete=models.CASCADE
     )
     rank = models.PositiveSmallIntegerField()
+    cluster = models.PositiveSmallIntegerField(default=0)
     objective_value = models.DecimalField(
         max_digits=20,
         decimal_places=16
