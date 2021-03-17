@@ -78,7 +78,7 @@ LINEAGE_RANKS = ['family', 'genus', 'species', 'subspecies']
 
 def _metadata(cromwell_id):
     try:
-        cromwell_response = requests.get("%s/%s/metadata" %(SERVER_URL, request.data.id), verify=False)
+        cromwell_response = requests.get("%s/%s/metadata" %(SERVER_URL, cromwell_id), verify=False)
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
         requests.exceptions.Timeout):
         content = {'Connection Error': "Unable to connect to our servers. "
