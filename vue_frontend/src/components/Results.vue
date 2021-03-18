@@ -16,7 +16,6 @@
       </b-modal>
       <ValidationObserver ref="status-form" v-slot="{ handleSubmit }">
         <b-form id="status-form">
-          <!-- submit buttons -->
           <b-row>
             <b-col cols=12 md=4>
               <div class="h4 font-weight-bold" v-show="runids.length">Previous Runs</div>
@@ -26,7 +25,7 @@
                 </b-list-group-item>
               </b-list-group>
               <br>
-              <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="status_submit">Clear Run IDs</b-button>
+              <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="button" variant="outline-secondary" class="font-weight-bold" name="clear-ids">Clear Run IDs</b-button>
               <br>
             </b-col>
             <b-col cols=0 md=1>
@@ -59,9 +58,9 @@
                 </ValidationProvider>
               </b-form-group>
               <b-button pill block v-on:click.prevent="handleSubmit(run_status)" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="status_submit">Get Status</b-button>
-              <b-button pill block v-on:click.prevent="handleSubmit(get_results)" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="download_submit">Download Results</b-button>
-              <b-button pill block v-on:click.prevent="handleSubmit(display_results)" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="display_submit">Display Results</b-button>
-              <b-button pill block v-on:click.prevent="handleSubmit(visualize_results)" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="visualize_submit">Visualize Results</b-button>
+              <b-button pill block v-on:click.prevent="handleSubmit(get_results)" size="lg" type="button" variant="outline-secondary" class="font-weight-bold" name="download_submit">Download Results</b-button>
+              <b-button pill block v-on:click.prevent="handleSubmit(display_results)" size="lg" type="button" variant="outline-secondary" class="font-weight-bold" name="display_submit">Display Results</b-button>
+              <b-button pill block v-on:click.prevent="handleSubmit(visualize_results)" size="lg" type="button" variant="outline-secondary" class="font-weight-bold" name="visualize_submit">Visualize Results</b-button>
             </b-col>
           </b-row>
           <span v-show="status">Status: {{ status }}</span>
