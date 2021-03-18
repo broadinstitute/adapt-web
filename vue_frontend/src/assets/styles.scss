@@ -54,6 +54,11 @@ legend, .nav-link, button:not(.list-group-item), th > div, .h1, .h2, .h3, .h4, .
   text-transform: uppercase;
 }
 
+th > div {
+  font-weight: 500;
+}
+
+
 html {
   position: relative;
   min-height: 100vh;
@@ -145,17 +150,24 @@ button, input[type=button] {
 .not-collapsed .arrow {
   transform: rotate(180deg);
 }
-.family {
+
+.f-1, .family {
   font-size: 2.5rem;
 }
-.genus {
+
+.f-2, .genus {
   font-size: 2rem;
 }
-.species {
+
+.f-3, .species {
   font-size: 1.5rem;
 }
-.subspecies {
+
+.f-4, .subspecies {
   font-size: 1rem;
+}
+.f-5 {
+  font-size: 0.8rem;
 }
 
 .selected {

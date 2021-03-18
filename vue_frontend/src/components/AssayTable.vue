@@ -6,14 +6,13 @@
           {{ data.value + 1 }}
         </template>
         <template #cell(amplicon)="data">
-          <b>Start:</b> {{ data.item.amplicon_start }}
-          <br>
-          <b>End:</b> {{ data.item.amplicon_end }}
+          <h6>Start:</h6> {{ data.item.amplicon_start }}
+          <h6>End:</h6> {{ data.item.amplicon_end }}
         </template>
         <template #cell(primers)="data">
-          <b>Forward:</b>
+          <h6>Forward:</h6>
           <p v-for="primer in data.item.left_primers.primers" :key="primer.target">{{ primer.target }}</p>
-          <b>Reverse:</b>
+          <h6>Reverse:</h6>
           <p v-for="primer in data.item.right_primers.primers" :key="primer.target">{{ primer.target }}</p>
         </template>
         <template #cell(guide_set.guides)="data">

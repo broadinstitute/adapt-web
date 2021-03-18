@@ -127,4 +127,4 @@ class TaxonSerializer(serializers.ModelSerializer):
 class ADAPTRunSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ADAPTRun
-        fields = ('cromwell_id', 'workflowInputs', 'status', 'submit_time')
+        fields = ('cromwell_id', 'form_inputs', 'status', 'submit_time')

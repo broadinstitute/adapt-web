@@ -2,8 +2,8 @@
   <transition appear name="fade">
     <div class="runadapt">
       <!-- Form created dynamically with 3 loops - one for sections, one for subsections, one for the fields -->
-      <ValidationObserver ref="form" v-slot="{ handleSubmit }">
-        <b-form id="full-form" @submit.stop.prevent="handleSubmit(adapt_run)">
+      <ValidationObserver ref="full-form" v-slot="{ handleSubmit }" slim>
+        <b-form id="full-form">
           <!-- Section loop -->
           <b-form-group
             class="sec"
@@ -36,7 +36,7 @@
                 :label="inputs[sec][subsec].label ? inputs[sec][subsec].label : ''"
                 label-class="h3"
                 :key="inputs[sec][subsec].order"
-                :id="subsec"
+                :id="sec + '-' + subsec"
               >
                 <b-form-row v-show="inputs[sec][subsec].show">
                   <!-- Field loop -->
@@ -53,10 +53,12 @@
                   >
                     <!-- ValidationProvider allows VeeValidate to put rules on a field -->
                     <ValidationProvider
+                      v-if="inputs[sec][subsec][input_var].type != 'multi'"
                       :vid="input_var"
                       :rules="inputs[sec][subsec][input_var].rules"
                       v-slot="validationContext"
                       :name="inputs[sec][subsec][input_var].label"
+                      mode="eager"
                     >
                       <!-- v-if only produces the input depending on the type -->
                       <b-form-file
@@ -64,8 +66,8 @@
                         v-model="inputs[sec][subsec][input_var].value"
                         :id="input_var"
                         :file-name-formatter="formatNames"
-                        placeholder="Choose a file or drop it here..."
-                        drop-placeholder="Drop file here..."
+                        placeholder="Choose files or drop them here..."
+                        drop-placeholder="Drop files here..."
                         accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln"
                         :aria-describedby="input_var + '-feedback'"
                         :state="getValidationState(validationContext)"
@@ -103,14 +105,63 @@
                       <b-form-input
                         v-if="inputs[sec][subsec][input_var].type == 'text'"
                         v-model="inputs[sec][subsec][input_var].value"
+                        :placeholder="inputs[sec][subsec][input_var].placeholder ? inputs[sec][subsec][input_var].placeholder.toString() : ''"
                         :id="input_var"
                         :type="inputs[sec][subsec][input_var].type"
-                        :required="inputs[sec][subsec][input_var].required ? true : false"
                         :aria-describedby="input_var + '-feedback'"
                         :state="getValidationState(validationContext)"
                       ></b-form-input>
                       <b-form-invalid-feedback :id="input_var + '-feedback'" :state="getValidationState(validationContext)">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
                     </ValidationProvider>
+                    <b-form
+                      v-if="inputs[sec][subsec][input_var].type == 'multi'"
+                      :id="input_var"
+                    >
+                      <b-form-row>
+                        <b-col>
+                          <b-form-row>
+                          <b-col
+                            v-for="part in get_sub(inputs[sec][subsec][input_var])"
+                            :key="input_var + '-' + part"
+                            :sm="inputs[sec][subsec][input_var][part].cols ? inputs[sec][subsec][input_var][part].cols : 12"
+                          >
+                            <b-form-group
+                              :key="input_var + '-' + part + '0'"
+                              :label="inputs[sec][subsec][input_var][part].label"
+                              :label-for="input_var + '-' + part"
+                              label-class="f-5"
+                              label-align=left
+                            >
+                              <b-form-input
+                                :key="input_var + '-' + part + '2'"
+                                v-model="inputs[sec][subsec][input_var][part].value"
+                                :id="input_var + '-' + part"
+                                :type="inputs[sec][subsec][input_var][part].type"
+                                :placeholder="inputs[sec][subsec][input_var][part].placeholder"
+                                :aria-describedby="input_var + '-' + part + '-feedback'"
+                                :state="inputs[sec][subsec][input_var][part].valid"
+                              ></b-form-input>
+                            </b-form-group>
+                          </b-col>
+                          </b-form-row>
+                        </b-col>
+                        <b-col sm=1 align-self="center" class="text-center">
+                          <b-button pill v-on:click.prevent="updateList(sec, subsec, input_var)" variant="success" class="font-weight-bold"><b-icon-plus aria-label="Add" font-scale="2"></b-icon-plus></b-button>
+                        </b-col>
+                      </b-form-row>
+                      <template v-for="part in get_sub(inputs[sec][subsec][input_var])">
+                        <b-form-invalid-feedback v-if="inputs[sec][subsec][input_var][part].valid==false" :key="inputs[sec][subsec][input_var][part].valid" :id="input_var + '-' + part + '-feedback'" :state="inputs[sec][subsec][input_var][part].valid">
+                          The {{ inputs[sec][subsec][input_var][part].label }} is required
+                        </b-form-invalid-feedback>
+                      </template>
+                      <div v-show="!checkEmpty(inputs[sec][subsec][input_var].value)">
+                        <b-table :items="inputs[sec][subsec][input_var].value" :fields="createFields(sec, subsec, input_var)">
+                          <template #cell(delete)="data">
+                            <b-button pill v-on:click.prevent="deleteRow(inputs[sec][subsec][input_var].value, data.index)" variant="outline-danger" class="font-weight-bold"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
+                          </template>
+                        </b-table>
+                      </div>
+                    </b-form>
                   </b-form-group>
                   </b-col>
                 </b-form-row>
@@ -118,7 +169,7 @@
             </b-collapse>
           </b-form-group>
           <!-- submit button -->
-          <b-button pill block size="lg" type="submit" variant="outline-secondary" class="font-weight-bold">Submit a Run</b-button>
+          <b-button pill block v-on:click.prevent="clearMultiParts().then(handleSubmit(adapt_run))" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold">Submit a Run</b-button>
         </b-form>
       </ValidationObserver>
       <p v-if="status">{{ status }}</p>
@@ -323,7 +374,8 @@ export default {
               label: 'Segment',
               type: 'text',
               value: '',
-              rules: 'required_if:@inputchoice,auto-from-args',
+              placeholder: 'None',
+              rules: '',
               cols: 6,
             },
           },
@@ -357,7 +409,7 @@ export default {
               order: 4,
               label: 'Number of Assays',
               type: 'number',
-              value: '',
+              value: 10,
               placeholder: 10,
               rules: 'between:1,20|integer',
             },
@@ -367,7 +419,7 @@ export default {
           order: 2,
           label: 'Specificity',
           collapsible: true,
-          sp_file: {
+          all: {
             order: 0,
             show: true,
             sp_fasta: {
@@ -376,6 +428,31 @@ export default {
               type: 'file',
               value: [],
               rules: '',
+            },
+            sp_taxa: {
+              order: 1,
+              label: 'Taxa',
+              type: 'multi',
+              value: [],
+              rules: '',
+              taxid: {
+                order: 0,
+                label: 'Taxonomic ID',
+                type: 'number',
+                value: '',
+                rules: 'required',
+                valid: null,
+                cols: 6,
+              },
+              segment: {
+                order: 1,
+                label: 'Segment',
+                type: 'text',
+                value: '',
+                placeholder: 'None',
+                rules: '',
+                cols: 6,
+              }
             },
           },
         },
@@ -589,7 +666,10 @@ export default {
       return this.inputs.opts.all.obj.value
     },
     spval() {
-      return !this.checkEmpty(this.inputs.sp.sp_file.sp_fasta.value)
+      return !this.checkEmpty(this.inputs.sp.all.sp_fasta.value)
+    },
+    sptaxidval() {
+      return !this.checkEmpty(this.inputs.sp.all.sp_taxa.taxid.value)
     }
   },
   watch: {
@@ -603,7 +683,12 @@ export default {
     },
     spval(val) {
       this.inputs.advopts.sp.show = val
-    }
+    },
+    sptaxidval(val) {
+      if (val) {
+        this.inputs.sp.all.sp_taxa.taxid.valid = null
+      }
+    },
   },
   methods: {
     checkEmpty(val) {
@@ -611,6 +696,10 @@ export default {
       return (Array.isArray(val) && val.length === 0) ||
              [false, null, undefined].includes(val) ||
              !String(val).trim().length
+    },
+    async clearMultiParts() {
+      this.inputs.sp.all.sp_taxa.taxid.valid = null;
+      return true;
     },
     async adapt_run() {
       // Handles submission
@@ -620,11 +709,13 @@ export default {
       for (let sec of this.get_sub(this.inputs)) {
         for (let subsec of this.get_sub(this.inputs[sec])) {
           for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
-            if (this.inputs[sec][subsec][input_var].value != '') {
+            if (!this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
               if (input_var.includes('fasta')) {
                 for (let file of this.inputs[sec][subsec][input_var].value) {
                   form_data.append(input_var + '[]', file, file.name);
                 }
+              } else if (input_var=='sp_taxa') {
+                form_data.append(input_var, JSON.stringify(this.inputs[sec][subsec][input_var].value));
               } else {
                 form_data.append(input_var, this.inputs[sec][subsec][input_var].value)
               }
@@ -662,9 +753,8 @@ export default {
     },
     get_sub(sec) {
       // Helper function to get children of section
-      // May not need filter
       return Object.keys(sec).filter(item => {
-        return !(['order', 'label', 'collapsible', 'show'].includes(item));
+        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields'].includes(item));
       }).sort((a,b) => {
         return sec[a].order-sec[b].order
       })
@@ -677,13 +767,51 @@ export default {
       // Only show if field is invalid; don't show if valid
       return !failed ? null : valid;
     },
-    // Old files methods; new bootstrap file upload hasn't been tested, so leaving until it has.
-    fileclick(input_var) {
-      this.$refs[input_var].click()
+    getGeneralValidationState(errors, failed) {
+      return !failed? null : (errors? false : null)
     },
-    handleFilesUpload(sec, subsec, input_var){
-      console.log(input_var)
+    handleFilesUpload(sec, subsec, input_var) {
       this.inputs[sec][subsec][input_var].value = this.$refs[input_var].files;
+    },
+    multiValidate(sec, subsec, input_var) {
+      for (let part of this.get_sub(this.inputs[sec][subsec][input_var])) {
+        if (this.inputs[sec][subsec][input_var][part].rules.includes('required')) {
+          if (this.checkEmpty(this.inputs[sec][subsec][input_var][part].value)) {
+            this.inputs[sec][subsec][input_var][part].valid = false;
+            return false
+          }
+        }
+      }
+      return true
+    },
+    async updateList(sec, subsec, input_var) {
+      if (this.multiValidate(sec, subsec, input_var)) {
+        let obj = {}
+        for (let part of this.get_sub(this.inputs[sec][subsec][input_var])) {
+          if (this.inputs[sec][subsec][input_var][part].value) {
+            obj[part] = this.inputs[sec][subsec][input_var][part].value;
+          }
+          else {
+            obj[part] = this.inputs[sec][subsec][input_var][part].placeholder;
+          }
+          this.inputs[sec][subsec][input_var][part].value = '';
+        }
+        this.inputs[sec][subsec][input_var].value.push(obj);
+      }
+    },
+    createFields(sec, subsec, input_var) {
+      let fields = [];
+      for (let part of this.get_sub(this.inputs[sec][subsec][input_var])) {
+        fields.push({
+          key: part,
+          label: this.inputs[sec][subsec][input_var][part].label,
+        });
+      }
+      fields.push({key: 'delete', label: '', tdClass: 'text-right', thClass: ''});
+      return fields;
+    },
+    deleteRow(table, index) {
+      table.splice(index, 1);
     },
   },
 }

@@ -177,7 +177,7 @@ class ADAPTRun(models.Model):
         max_length=100,
         primary_key=True
     )
-    workflowInputs = models.JSONField()
+    form_inputs = models.JSONField()
     status = models.CharField(
         max_length=100,
         default="Submitted"

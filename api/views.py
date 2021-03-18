@@ -1,6 +1,8 @@
 import requests
 import json
+import csv
 import zipfile
+import tempfile
 import uuid
 import boto3
 import sys
@@ -288,7 +290,7 @@ class AssayViewSet(viewsets.ModelViewSet):
         # Get file paths for S3
         s3_file_paths = metadata_response["outputs"]["parallel_adapt.guides"]
         # Parse taxa information and make taxa for those that do not exist in database
-        taxa_file_path = metadata_response["outputs"]["parallel_adapt.taxa_file"]
+        taxa_file_path = metadata_response["outputs"]["parallel_adapt.output_taxa_file"]
         start_time = metadata_response["start"][:10]
         taxa_file = _files([taxa_file_path])
         if isinstance(taxa_file, Response):
@@ -444,10 +446,10 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         return filename.replace(' ', '_')
 
     @staticmethod
-    def _check_fasta(filename):
+    def _check_fasta(file):
         filetypes = [".fasta", ".fa", ".fna", ".ffn", ".faa", ".frn", ".aln"]
         for filetype in filetypes:
-            if filename.endswith(filetype):
+            if file.name.endswith(filetype):
                 return True
         return False
 
@@ -511,25 +513,16 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         for optional_input_var in FLOAT_OPT_INPUT_VARS:
             if optional_input_var in request.data:
                 workflowInputs["adapt_web.adapt.%s" %optional_input_var] = float(request.data[optional_input_var])
-        # If there are files in the request, upload to our S3 bucket, labeled with a unique identifier
-        # We don't have Cromwell's unique identifier, so make a different one (will be stored)
-        S3_id = uuid.uuid4()
-        if 'fasta[]' in request.FILES:
+
+        if 'sp_taxa' in request.data or ('fasta[]' in request.FILES or 'sp_fasta[]' in request.FILES):
+            # If there are files in the request, upload to our S3 bucket, labeled with a unique identifier
+            # We don't have Cromwell's unique identifier, so make a different one (will be stored)
+            S3_id = uuid.uuid4()
             try:
                 # Connect to S3 and upload file
                 S3 = boto3.client("s3",
                     aws_access_key_id=AWS_ACCESS_KEY_ID,
                     aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-                input_files = []
-                for i, input_file in enumerate(request.FILES.getlist('fasta[]')):
-                    # TODO more file validation
-                    if not ADAPTRunViewSet._check_fasta(input_file.name):
-                        content = {'Input Error': "Please only select FASTA files as input."}
-                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    key = "%s/in_%i_%s"%(S3_id, i, ADAPTRunViewSet._replace_spaces(input_file.name))
-                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
-                    input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
-                workflowInputs["adapt_web.adapt.fasta"] = input_files
             except ClientError as e:
                 # TODO: could add more specific errors?
                 content = {'Connection Error': "Unable to connect to our file storage. "
@@ -537,27 +530,40 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     "contact %s." %CONTACT}
                 return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
 
-        # TODO: deduplicate this code; nearly identical to above
-        if 'specificity_fasta[]' in request.FILES:
-            try:
-                S3 = boto3.client("s3",
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+            if 'sp_taxa' in request.data:
+                decoder = json.JSONDecoder()
+                sp_taxa_list = decoder.decode(request.data['sp_taxa'])
+                headers = sp_taxa_list[0].keys()
+                key = "%s/sp_tx.tsv"%(S3_id)
+                sp_taxon_str = ""
+                for sp_taxon in sp_taxa_list:
+                    sp_taxon_str += "%s\t%s\n" %(sp_taxon['taxid'], sp_taxon['segment'])
+                sp_taxa_file = sp_taxon_str.encode('utf-8')
+                S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_taxa_file)
+                workflowInputs["adapt_web.adapt.specificity_taxa"] = key
+
+            if 'fasta[]' in request.FILES:
+                input_files = []
+                for i, input_file in enumerate(request.FILES.getlist('fasta[]')):
+                    if not ADAPTRunViewSet._check_fasta(input_file):
+                        content = {'Input Error': "Please only select FASTAs for input files."}
+                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+                    key = "%s/in_%i_%s"%(S3_id, i, ADAPTRunViewSet._replace_spaces(input_file.name))
+                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
+                    input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
+                workflowInputs["adapt_web.adapt.fasta"] = input_files
+
+            # TODO: deduplicate this code; nearly identical to above
+            if 'sp_fasta[]' in request.FILES:
                 sp_files = []
-                for i, sp_file in enumerate(request.FILES.getlist('specificity_fasta[]')):
-                    # TODO more file validation
-                    if not ADAPTRunViewSet._check_fasta(sp_file.name):
-                        content = {'Input Error': "Please only select FASTA files as input."}
+                for i, sp_file in enumerate(request.FILES.getlist('sp_fasta[]')):
+                    if not ADAPTRunViewSet._check_fasta(sp_file):
+                        content = {'Input Error': "Please only select FASTAs for specificity files."}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
                     key = "%s/sp_%i_%s"%(S3_id, i, ADAPTRunViewSet._replace_spaces(sp_file.name))
                     S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_file)
                     sp_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
                 workflowInputs["adapt_web.adapt.specificity_fasta"] = sp_files
-            except ClientError as e:
-                content = {'Connection Error': "Unable to connect to our file storage. "
-                    "Try again in a few minutes. If it still doesn't work, "
-                    "contact %s." %CONTACT}
-                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
 
         # Send to Cromwell; note that request requires input to be sent via "files"
         #   in order to send a JSON within a JSON
@@ -575,13 +581,10 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
 
         cromwell_json = cromwell_response.json()
-        # Don't store confidential information on our AWS account in the web server database;
-        # do store the cromwell ID
-        del workflowInputs["adapt_web.adapt.queueArn"]
         adaptrun_info = {
             # If Cromwell submission was unsuccessful, this will cause an error
             "cromwell_id": cromwell_json["id"],
-            "workflowInputs": workflowInputs,
+            "form_inputs": request.data,
         }
 
         # Set up and save run to the web server database
