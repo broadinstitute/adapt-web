@@ -29,9 +29,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
-    "52.22.166.32",
-    "34.231.167.163",
-    "23.21.232.223"
+    "23.21.232.223",
+    "adapt-playground.sabetilab.org"
 ]
 
 
@@ -87,7 +86,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication'
-    ]
+    ],
+    'EXCEPTION_HANDLER': 'api.utils.custom_exception_handler'
 }
 
 # Database

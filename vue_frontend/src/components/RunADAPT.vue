@@ -1,9 +1,10 @@
 <template>
   <transition appear name="fade">
     <div class="runadapt">
+      <Modal :success='false' :title='errortitle' :msg='errormsg'></Modal>
       <!-- Form created dynamically with 3 loops - one for sections, one for subsections, one for the fields -->
       <ValidationObserver ref="full-form" v-slot="{ handleSubmit }" slim>
-        <b-form id="full-form">
+        <b-form id="full-form" :disabled="loading">
           <!-- Section loop -->
           <b-form-group
             class="sec"
@@ -47,6 +48,7 @@
                   >
                   <b-form-group
                     class="field"
+                    v-show="inputs[sec][subsec][input_var].hide? false : true"
                     :label="inputs[sec][subsec][input_var].label"
                     :label-for="input_var"
                     label-align=left
@@ -71,8 +73,19 @@
                         accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln"
                         :aria-describedby="input_var + '-feedback'"
                         :state="getValidationState(validationContext)"
+                        @change="validationContext.validate"
                         multiple
+                        :disabled="loading"
                       ></b-form-file>
+                      <b-form-checkbox-group
+                        v-if="inputs[sec][subsec][input_var].type == 'checkbox'"
+                        v-model="inputs[sec][subsec][input_var].value"
+                        :id="input_var"
+                        :options="inputs[sec][subsec][input_var].fields"
+                        :disabled="loading"
+                        switches
+                        stacked
+                      >{{ inputs[sec][subsec][input_var].label }}</b-form-checkbox-group>
                       <b-form-input
                         v-if="inputs[sec][subsec][input_var].type == 'number'"
                         v-model="inputs[sec][subsec][input_var].value"
@@ -82,6 +95,7 @@
                         :step="inputs[sec][subsec][input_var].step"
                         :aria-describedby="input_var + '-feedback'"
                         :state="getValidationState(validationContext)"
+                        :disabled="loading"
                       ></b-form-input>
                       <b-form-select
                         v-if="inputs[sec][subsec][input_var].type == 'options'"
@@ -90,6 +104,7 @@
                         :options="inputs[sec][subsec][input_var].options"
                         :aria-describedby="input_var + '-feedback'"
                         :state="getValidationState(validationContext)"
+                        :disabled="loading"
                       >
                       </b-form-select>
                       <b-form-radio-group
@@ -100,6 +115,7 @@
                         :aria-describedby="input_var + '-feedback'"
                         button-variant="outline-secondary"
                         buttons
+                        :disabled="loading"
                       >
                       </b-form-radio-group>
                       <b-form-input
@@ -110,6 +126,7 @@
                         :type="inputs[sec][subsec][input_var].type"
                         :aria-describedby="input_var + '-feedback'"
                         :state="getValidationState(validationContext)"
+                        :disabled="loading"
                       ></b-form-input>
                       <b-form-invalid-feedback :id="input_var + '-feedback'" :state="getValidationState(validationContext)">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
                     </ValidationProvider>
@@ -126,38 +143,57 @@
                             :sm="inputs[sec][subsec][input_var][part].cols ? inputs[sec][subsec][input_var][part].cols : 12"
                           >
                             <b-form-group
-                              :key="input_var + '-' + part + '0'"
                               :label="inputs[sec][subsec][input_var][part].label"
                               :label-for="input_var + '-' + part"
+                              v-show="inputs[sec][subsec][input_var][part].hide? false : true"
                               label-class="f-5"
                               label-align=left
                             >
                               <b-form-input
-                                :key="input_var + '-' + part + '2'"
+                                v-if="inputs[sec][subsec][input_var][part].type == 'number'"
+                                v-model="inputs[sec][subsec][input_var][part].value"
+                                :id="input_var"
+                                :type="inputs[sec][subsec][input_var][part].type"
+                                :step="inputs[sec][subsec][input_var][part].step"
+                                :aria-describedby="input_var + '-' + part + '-feedback'"
+                                :state="inputs[sec][subsec][input_var][part].valid"
+                                :disabled="loading"
+                              ></b-form-input>
+                              <b-form-input
+                                v-if="inputs[sec][subsec][input_var][part].type == 'text'"
                                 v-model="inputs[sec][subsec][input_var][part].value"
                                 :id="input_var + '-' + part"
                                 :type="inputs[sec][subsec][input_var][part].type"
                                 :placeholder="inputs[sec][subsec][input_var][part].placeholder"
                                 :aria-describedby="input_var + '-' + part + '-feedback'"
                                 :state="inputs[sec][subsec][input_var][part].valid"
+                                :disabled="loading"
                               ></b-form-input>
+                              <b-form-checkbox-group
+                                v-if="inputs[sec][subsec][input_var][part].type == 'checkbox'"
+                                v-model="inputs[sec][subsec][input_var][part].value"
+                                :id="input_var + '-' + part"
+                                :options="inputs[sec][subsec][input_var][part].fields"
+                                :disabled="loading"
+                                switches
+                                stacked
+                              >{{ inputs[sec][subsec][input_var][part].label }}</b-form-checkbox-group>
+                              <b-form-invalid-feedback v-if="inputs[sec][subsec][input_var][part].valid==false" :key="inputs[sec][subsec][input_var][part].valid" :id="input_var + '-' + part + '-feedback'" :state="inputs[sec][subsec][input_var][part].valid">
+                                The {{ inputs[sec][subsec][input_var][part].label }} is required
+                              </b-form-invalid-feedback>
                             </b-form-group>
                           </b-col>
                           </b-form-row>
                         </b-col>
-                        <b-col sm=1 align-self="center" class="text-center">
-                          <b-button pill v-on:click.prevent="updateList(sec, subsec, input_var)" variant="success" class="font-weight-bold"><b-icon-plus aria-label="Add" font-scale="2"></b-icon-plus></b-button>
+                        <b-col sm=1 align-self="center" class="text-right">
+                          <b-button pill v-on:click.prevent="updateList(sec, subsec, input_var)" variant="success" class="font-weight-bold add" :disabled="loading"><b-icon-plus aria-label="Add" font-scale="1.75"></b-icon-plus></b-button>
                         </b-col>
                       </b-form-row>
-                      <template v-for="part in get_sub(inputs[sec][subsec][input_var])">
-                        <b-form-invalid-feedback v-if="inputs[sec][subsec][input_var][part].valid==false" :key="inputs[sec][subsec][input_var][part].valid" :id="input_var + '-' + part + '-feedback'" :state="inputs[sec][subsec][input_var][part].valid">
-                          The {{ inputs[sec][subsec][input_var][part].label }} is required
-                        </b-form-invalid-feedback>
-                      </template>
                       <div v-show="!checkEmpty(inputs[sec][subsec][input_var].value)">
-                        <b-table :items="inputs[sec][subsec][input_var].value" :fields="createFields(sec, subsec, input_var)">
+                        <br>
+                        <b-table :items="inputs[sec][subsec][input_var].value" :fields="createFields(sec, subsec, input_var)" small>
                           <template #cell(delete)="data">
-                            <b-button pill v-on:click.prevent="deleteRow(inputs[sec][subsec][input_var].value, data.index)" variant="outline-danger" class="font-weight-bold"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
+                            <b-button pill v-on:click.prevent="deleteRow(inputs[sec][subsec][input_var].value, data.index)" variant="outline-danger" class="font-weight-bold delete" :disabled="loading"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
                           </template>
                         </b-table>
                       </div>
@@ -169,11 +205,17 @@
             </b-collapse>
           </b-form-group>
           <!-- submit button -->
-          <b-button pill block v-on:click.prevent="clearMultiParts().then(handleSubmit(adapt_run))" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold">Submit a Run</b-button>
+          <b-overlay
+            :show="loading"
+            rounded="pill"
+            opacity="0.7"
+            blur="5px"
+            spinner-variant="secondary"
+          >
+            <b-button pill block v-on:click.prevent="clearMultiParts().then(handleSubmit(adapt_run))" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" :disabled="loading">Submit a Run</b-button>
+          </b-overlay>
         </b-form>
       </ValidationObserver>
-      <p v-if="status">{{ status }}</p>
-      <p v-if="runid">{{ "Run ID: " + runid }}</p>
     </div>
   </transition>
 </template>
@@ -189,15 +231,17 @@ import {
   required,
   integer,
 } from 'vee-validate/dist/rules';
+import Modal from '@/components/Modal.vue'
 const Cookies = require('js-cookie');
 // Needs CSRF for the server to accept the request
-const csrfToken = Cookies.get('csrftoken')
+const csrfToken = Cookies.get('csrftoken');
 
 export default {
   name: 'RunADAPT',
   components: {
     ValidationProvider,
-    ValidationObserver
+    ValidationObserver,
+    Modal
   },
   mounted () {
     // Makes VeeValidate check only on change events if the field is untouched or valid,
@@ -205,6 +249,7 @@ export default {
     setInteractionMode('eager');
     // Direct reference to checkEmpty needed for extend to access it within validate
     let checkEmpty = this.checkEmpty
+    let vm = this
     // 'extend' creates rules for validation. In theory VeeValidate should come with many
     // of these preimplemented (such as 'required' and 'integer'), but preimplemented versions
     // don't work for anything with named parameters for some reason
@@ -317,17 +362,17 @@ export default {
     // Specific rule for amplicon length
     extend('amplicon', {
       validate(value) {
-        let primer_length = this.inputs.advopts.all.pl.placeholder
-        if (this.inputs.advopts.all.pl.value) {
-          primer_length = this.inputs.advopts.all.pl.value
+        let primer_length = vm.inputs.advopts.all.pl.placeholder
+        if (vm.inputs.advopts.all.pl.value) {
+          primer_length = vm.inputs.advopts.all.pl.value
         }
-        let guide_length = this.inputs.advopts.all.gl.placeholder
-        if (this.inputs.advopts.all.gl.value) {
-          guide_length = this.inputs.advopts.all.gl.value
+        let guide_length = vm.inputs.advopts.all.gl.placeholder
+        if (vm.inputs.advopts.all.gl.value) {
+          guide_length = vm.inputs.advopts.all.gl.value
         }
-        return value >= 2*primer_length + guide_length;
+        return (value >= primer_length & value >= guide_length);
       },
-      message: "The {_field_} must be greater than or equal to double the primer length plus the guide length",
+      message: "The {_field_} must be greater than the primer length and the guide length",
     });
   },
   data () {
@@ -355,6 +400,7 @@ export default {
                 { value: 'auto-from-args', text: 'Taxonomic ID' },
               ],
               rules: 'required',
+              exclude: true,
             },
           },
           autoinput: {
@@ -366,17 +412,26 @@ export default {
               label: 'Taxonomic ID',
               type: 'number',
               value: '',
-              rules: 'required_if:@inputchoice,auto-from-args',
-              cols: 6,
+              rules: 'required_if:@inputchoice,auto-from-args|min_value:0',
+              cols: 12,
             },
             segment: {
               order: 1,
+              hide: true,
               label: 'Segment',
               type: 'text',
               value: '',
-              placeholder: 'None',
+              rules: 'required_if:@segmented,true',
+              cols: 0,
+            },
+            segmented: {
+              order: 2,
+              type: 'checkbox',
+              value: [],
+              fields: [{ text: 'Segmented Genome', value: true }],
               rules: '',
               cols: 6,
+              exclude: true,
             },
           },
           fileinput: {
@@ -442,17 +497,27 @@ export default {
                 value: '',
                 rules: 'required',
                 valid: null,
-                cols: 6,
+                cols: 12,
               },
               segment: {
                 order: 1,
+                hide: true,
                 label: 'Segment',
                 type: 'text',
                 value: '',
-                placeholder: 'None',
+                valid: null,
+                rules: '',
+                cols: 0,
+              },
+              segmented: {
+                order: 2,
+                type: 'checkbox',
+                value: [],
+                fields: [{ text: 'Segmented Genome', value: true }],
                 rules: '',
                 cols: 6,
-              }
+                exclude: true,
+              },
             },
           },
         },
@@ -650,8 +715,9 @@ export default {
           },
         },
       },
-      runid: '',
-      status: '',
+      loading: false,
+      errortitle: '',
+      errormsg: '',
     }
   },
   // computed and watch are used to show certain sections of the form dependent on input choices
@@ -670,6 +736,15 @@ export default {
     },
     sptaxidval() {
       return !this.checkEmpty(this.inputs.sp.all.sp_taxa.taxid.value)
+    },
+    segmentedval() {
+      return this.inputs.opts.autoinput.segmented.value.length
+    },
+    spsegmentedval() {
+      return this.inputs.sp.all.sp_taxa.segmented.value.length
+    },
+    spsegmentval() {
+      return (this.spsegmentedval & this.checkEmpty(this.inputs.sp.all.sp_taxa.segment.value))
     }
   },
   watch: {
@@ -689,6 +764,22 @@ export default {
         this.inputs.sp.all.sp_taxa.taxid.valid = null
       }
     },
+    spsegmentval(val) {
+      this.inputs.sp.all.sp_taxa.segment.rules = val? 'required' : ''
+      if (!val) {
+        this.inputs.sp.all.sp_taxa.segment.valid = null
+      }
+    },
+    segmentedval(val) {
+      this.inputs.opts.autoinput.segment.hide = !val
+      this.inputs.opts.autoinput.segment.cols = val? 6 : 0
+      this.inputs.opts.autoinput.taxid.cols = val? 6 : 12
+    },
+    spsegmentedval(val) {
+      this.inputs.sp.all.sp_taxa.segment.hide = !val
+      this.inputs.sp.all.sp_taxa.segment.cols = val? 6 : 0
+      this.inputs.sp.all.sp_taxa.taxid.cols = val? 6 : 12
+    },
   },
   methods: {
     checkEmpty(val) {
@@ -699,12 +790,13 @@ export default {
     },
     async clearMultiParts() {
       this.inputs.sp.all.sp_taxa.taxid.valid = null;
+      this.inputs.sp.all.sp_taxa.segment.valid = null;
       return true;
     },
     async adapt_run() {
       // Handles submission
       // Relies on innermost input field names matching adapt_web.wdl's input variable names.
-      this.status = "Loading..."
+      this.loading = true
       let form_data = new FormData()
       for (let sec of this.get_sub(this.inputs)) {
         for (let subsec of this.get_sub(this.inputs[sec])) {
@@ -716,7 +808,7 @@ export default {
                 }
               } else if (input_var=='sp_taxa') {
                 form_data.append(input_var, JSON.stringify(this.inputs[sec][subsec][input_var].value));
-              } else {
+              } else if (!this.inputs[sec][subsec][input_var].exclude){
                 form_data.append(input_var, this.inputs[sec][subsec][input_var].value)
               }
             }
@@ -731,30 +823,39 @@ export default {
         },
         body: form_data,
       })
+
       if (response.ok) {
         let responsejson = await response.json()
-        this.status = "Submitted!"
-        this.runid = responsejson.cromwell_id
         let prev_runids = Cookies.get('runid')
         if (prev_runids == null) {
-          Cookies.set('runid', this.runid)
+          Cookies.set('runid', responsejson.cromwell_id)
         }
         else {
-          Cookies.set('runid', prev_runids + ',' + this.runid)
+          Cookies.set('runid', prev_runids + ',' + responsejson.cromwell_id)
         }
         Cookies.set('submitted', true)
         window.location.href = '/results'
       }
       else {
-        // TODO better error handling
-        this.status = await response.text()
+        let contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          let responsejson = await response.json()
+          this.errortitle = Object.keys(responsejson)[0]
+          this.errormsg = responsejson[this.errortitle]
+        }
+        else {
+          this.errortitle = 'Error'
+          this.errormsg = await response.text()
+        }
+        this.$bvModal.show("error-modal")
       }
+      this.loading = false
       return response
     },
     get_sub(sec) {
       // Helper function to get children of section
       return Object.keys(sec).filter(item => {
-        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields'].includes(item));
+        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields', 'exclude', 'hide'].includes(item));
       }).sort((a,b) => {
         return sec[a].order-sec[b].order
       })
@@ -770,15 +871,14 @@ export default {
     getGeneralValidationState(errors, failed) {
       return !failed? null : (errors? false : null)
     },
-    handleFilesUpload(sec, subsec, input_var) {
-      this.inputs[sec][subsec][input_var].value = this.$refs[input_var].files;
-    },
     multiValidate(sec, subsec, input_var) {
       for (let part of this.get_sub(this.inputs[sec][subsec][input_var])) {
-        if (this.inputs[sec][subsec][input_var][part].rules.includes('required')) {
-          if (this.checkEmpty(this.inputs[sec][subsec][input_var][part].value)) {
-            this.inputs[sec][subsec][input_var][part].valid = false;
-            return false
+        if (!this.inputs[sec][subsec][input_var][part].hide) {
+          if (this.inputs[sec][subsec][input_var][part].rules.includes('required')) {
+            if (this.checkEmpty(this.inputs[sec][subsec][input_var][part].value)) {
+              this.inputs[sec][subsec][input_var][part].valid = false;
+              return false
+            }
           }
         }
       }
@@ -788,13 +888,15 @@ export default {
       if (this.multiValidate(sec, subsec, input_var)) {
         let obj = {}
         for (let part of this.get_sub(this.inputs[sec][subsec][input_var])) {
-          if (this.inputs[sec][subsec][input_var][part].value) {
-            obj[part] = this.inputs[sec][subsec][input_var][part].value;
+          if (!this.inputs[sec][subsec][input_var][part].exclude) {
+            if (this.inputs[sec][subsec][input_var][part].value) {
+              obj[part] = this.inputs[sec][subsec][input_var][part].value;
+            }
+            else {
+              obj[part] = this.inputs[sec][subsec][input_var][part].placeholder;
+            }
+            this.inputs[sec][subsec][input_var][part].value = '';
           }
-          else {
-            obj[part] = this.inputs[sec][subsec][input_var][part].placeholder;
-          }
-          this.inputs[sec][subsec][input_var][part].value = '';
         }
         this.inputs[sec][subsec][input_var].value.push(obj);
       }
@@ -802,12 +904,16 @@ export default {
     createFields(sec, subsec, input_var) {
       let fields = [];
       for (let part of this.get_sub(this.inputs[sec][subsec][input_var])) {
-        fields.push({
-          key: part,
-          label: this.inputs[sec][subsec][input_var][part].label,
-        });
+        if (!this.inputs[sec][subsec][input_var][part].exclude) {
+          fields.push({
+            key: part,
+            label: this.inputs[sec][subsec][input_var][part].label,
+            thClass: 'f-5',
+            thStyle: 'width: 45.8333%; padding: 5px'
+          });
+        }
       }
-      fields.push({key: 'delete', label: '', tdClass: 'text-right', thClass: ''});
+      fields.push({key: 'delete', label: '', tdClass: 'text-right delete-col', thStyle: 'width: 8.333%; padding: 5px'});
       return fields;
     },
     deleteRow(table, index) {

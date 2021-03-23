@@ -1,27 +1,17 @@
 <template>
   <transition appear name="fade">
     <div class="results">
-      <b-modal
-        id="submitted-modal"
-        size="md"
-        title="Job submitted!"
-        ok-only
-        ok-variant="success"
-        centered
-      >
-        <div class="b-toast-primary">
-          Your run ID is {{runid}}. Store this for future reference.<br>
-          Use this site to check for its status.
-        </div>
-      </b-modal>
+      <Modal :success='true' title='Job Submitted!' :msg='submittedmsg'></Modal>
+      <Modal :success='false' :title='errortitle' :msg='errormsg'></Modal>
       <ValidationObserver ref="status-form" v-slot="{ handleSubmit }">
         <b-form id="status-form">
           <b-row>
             <b-col cols=12 md=4>
               <div class="h4 font-weight-bold" v-show="runids.length">Previous Runs</div>
               <b-list-group>
-                <b-list-group-item v-for="runid in runids" :key="runid" button v-on:click.prevent="set_runid(runid)">
+                <b-list-group-item v-for="(runid, index) in runids" :key="runid" button v-on:click.prevent.stop.self="setRunID(runid)">
                   {{ runid }}
+                  <b-button pill v-on:click.prevent="deleteRunID(index)" variant="outline-danger" class="font-weight-bold" style="float: right;"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
                 </b-list-group-item>
               </b-list-group>
               <br>
@@ -82,18 +72,27 @@ import {
 import {
   required,
 } from 'vee-validate/dist/rules';
+import Modal from '@/components/Modal.vue'
 
 export default {
   name: 'Results',
   components: {
     ValidationObserver,
     ValidationProvider,
+    Modal,
   },
   data () {
     return {
       runids: [],
       runid: '',
       status: '',
+      errortitle: '',
+      errormsg: '',
+    }
+  },
+  computed: {
+    submittedmsg() {
+      return 'Your run ID is <b>' + this.runid + '</b>. Store this for future reference.<br>Use this site to check for its status.'
     }
   },
   mounted () {
@@ -108,7 +107,7 @@ export default {
       this.runid = this.runids[this.runids.length - 1]
       if (Cookies.get('submitted') == 'true') {
         Cookies.remove('submitted')
-        this.$bvModal.show("submitted-modal")
+        this.$bvModal.show("success-modal")
         }
     }
   },
@@ -138,8 +137,17 @@ export default {
         }))
         this.status = response.data.status
       } else {
-        let msg = await response.text()
-        alert(msg);
+        let contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          let responsejson = await response.json()
+          this.errortitle = Object.keys(responsejson)[0]
+          this.errormsg = responsejson[this.errortitle]
+        }
+        else {
+          this.errortitle = 'Error'
+          this.errormsg = await response.text()
+        }
+        this.$bvModal.show("error-modal")
       }
       return response
     },
@@ -164,8 +172,10 @@ export default {
       if (response.ok) {
         this.$root.$data.resultjson = await response.json()
       } else {
-        let msg = await response.text()
-        alert(msg);
+        let responsejson = await response.json()
+        this.errortitle = Object.keys(responsejson)[0]
+        this.errormsg = responsejson[this.errortitle]
+        this.$bvModal.show("error-modal")
       }
       return response
     },
@@ -202,8 +212,10 @@ export default {
       if (response.ok) {
           this.download_file(response)
       } else {
-        let msg = await response.text()
-        alert(msg);
+        let responsejson = await response.json()
+        this.errortitle = Object.keys(responsejson)[0]
+        this.errormsg = responsejson[this.errortitle]
+        this.$bvModal.show("error-modal")
       }
 
       return response
@@ -221,7 +233,6 @@ export default {
         .find(n => n.includes('filename='))
         .replace('filename=', '')
         .trim()
-      console.log(filename)
       link.setAttribute('download', filename)
       document.body.appendChild(link)
       link.click()
@@ -235,9 +246,17 @@ export default {
       this.runids=[]
       this.runid=''
     },
-    set_runid(runid) {
+    setRunID(runid) {
       this.runid = runid
-    }
+    },
+    deleteRunID(index) {
+      this.runids.splice(index, 1);
+      if (this.runids.length > 0) {
+        Cookies.set('runid', this.runids.join())
+      } else {
+        Cookies.remove('runid')
+      }
+    },
   }
 }
 </script>
