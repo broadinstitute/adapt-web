@@ -20,9 +20,8 @@
               @click.prevent
               v-b-toggle
               :href="'#' + sec + '-toggle'"
-              class="col-form-label-lg pt-0 font-weight-bold"
             >
-              <b-icon-chevron-down class="when-closed"/><b-icon-chevron-up class="when-open"/>
+              <b-icon-chevron-down class="arrow" :aria-label="'Toggle ' + inputs[sec].label"/>
             </b-link>
           </legend>
             <b-collapse
@@ -39,168 +38,174 @@
                 :key="inputs[sec][subsec].order"
                 :id="sec + '-' + subsec"
               >
-                <b-form-row v-show="inputs[sec][subsec].show">
+                <b-form-row
+                  v-show="inputs[sec][subsec].show"
+                  v-if="inputs[sec][subsec].type != 'multi'"
+                >
                   <!-- Field loop -->
                   <b-col
                     v-for="input_var in get_sub(inputs[sec][subsec])"
                     :key="inputs[sec][subsec][input_var].order"
                     :sm="inputs[sec][subsec][input_var].cols ? inputs[sec][subsec][input_var].cols : 12"
                   >
-                  <b-form-group
-                    class="field"
-                    v-show="inputs[sec][subsec][input_var].hide? false : true"
-                    :label="inputs[sec][subsec][input_var].label"
-                    :label-for="input_var"
-                    label-align=left
-                  >
-                    <!-- ValidationProvider allows VeeValidate to put rules on a field -->
-                    <ValidationProvider
-                      v-if="inputs[sec][subsec][input_var].type != 'multi'"
-                      :vid="input_var"
-                      :rules="inputs[sec][subsec][input_var].rules"
-                      v-slot="validationContext"
-                      :name="inputs[sec][subsec][input_var].label"
-                      mode="eager"
+                    <b-form-group
+                      class="field"
+                      v-show="inputs[sec][subsec][input_var].show == false? false : true"
+                      :label="inputs[sec][subsec][input_var].label"
+                      :label-for="input_var"
+                      label-align=left
                     >
-                      <!-- v-if only produces the input depending on the type -->
-                      <b-form-file
-                        v-if="inputs[sec][subsec][input_var].type == 'file'"
-                        v-model="inputs[sec][subsec][input_var].value"
-                        :id="input_var"
-                        :file-name-formatter="formatNames"
-                        placeholder="Choose files or drop them here..."
-                        drop-placeholder="Drop files here..."
-                        accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln"
-                        :aria-describedby="input_var + '-feedback'"
-                        :state="getValidationState(validationContext)"
-                        @change="validationContext.validate"
-                        multiple
-                        :disabled="loading"
-                      ></b-form-file>
-                      <b-form-checkbox-group
-                        v-if="inputs[sec][subsec][input_var].type == 'checkbox'"
-                        v-model="inputs[sec][subsec][input_var].value"
-                        :id="input_var"
-                        :options="inputs[sec][subsec][input_var].fields"
-                        :disabled="loading"
-                        switches
-                        stacked
-                      >{{ inputs[sec][subsec][input_var].label }}</b-form-checkbox-group>
-                      <b-form-input
-                        v-if="inputs[sec][subsec][input_var].type == 'number'"
-                        v-model="inputs[sec][subsec][input_var].value"
-                        :placeholder="inputs[sec][subsec][input_var].placeholder ? inputs[sec][subsec][input_var].placeholder.toString() : ''"
-                        :id="input_var"
-                        :type="inputs[sec][subsec][input_var].type"
-                        :step="inputs[sec][subsec][input_var].step"
-                        :aria-describedby="input_var + '-feedback'"
-                        :state="getValidationState(validationContext)"
-                        :disabled="loading"
-                      ></b-form-input>
-                      <b-form-select
-                        v-if="inputs[sec][subsec][input_var].type == 'options'"
-                        v-model="inputs[sec][subsec][input_var].value"
-                        :id="input_var"
-                        :options="inputs[sec][subsec][input_var].options"
-                        :aria-describedby="input_var + '-feedback'"
-                        :state="getValidationState(validationContext)"
-                        :disabled="loading"
+                      <!-- ValidationProvider allows VeeValidate to put rules on a field -->
+                      <ValidationProvider
+                        :vid="input_var"
+                        :rules="inputs[sec][subsec][input_var].rules"
+                        v-slot="validationContext"
+                        :name="inputs[sec][subsec][input_var].label"
+                        mode="eager"
                       >
-                      </b-form-select>
-                      <b-form-radio-group
-                        v-if="inputs[sec][subsec][input_var].type == 'radio'"
-                        v-model="inputs[sec][subsec][input_var].value"
-                        :id="input_var"
-                        :options="inputs[sec][subsec][input_var].options"
-                        :aria-describedby="input_var + '-feedback'"
-                        button-variant="outline-secondary"
-                        buttons
-                        :disabled="loading"
-                      >
-                      </b-form-radio-group>
-                      <b-form-input
-                        v-if="inputs[sec][subsec][input_var].type == 'text'"
-                        v-model="inputs[sec][subsec][input_var].value"
-                        :placeholder="inputs[sec][subsec][input_var].placeholder ? inputs[sec][subsec][input_var].placeholder.toString() : ''"
-                        :id="input_var"
-                        :type="inputs[sec][subsec][input_var].type"
-                        :aria-describedby="input_var + '-feedback'"
-                        :state="getValidationState(validationContext)"
-                        :disabled="loading"
-                      ></b-form-input>
-                      <b-form-invalid-feedback :id="input_var + '-feedback'" :state="getValidationState(validationContext)">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
-                    </ValidationProvider>
-                    <b-form
-                      v-if="inputs[sec][subsec][input_var].type == 'multi'"
-                      :id="input_var"
-                    >
-                      <b-form-row>
-                        <b-col>
-                          <b-form-row>
-                          <b-col
-                            v-for="part in get_sub(inputs[sec][subsec][input_var])"
-                            :key="input_var + '-' + part"
-                            :sm="inputs[sec][subsec][input_var][part].cols ? inputs[sec][subsec][input_var][part].cols : 12"
-                          >
-                            <b-form-group
-                              :label="inputs[sec][subsec][input_var][part].label"
-                              :label-for="input_var + '-' + part"
-                              v-show="inputs[sec][subsec][input_var][part].hide? false : true"
-                              label-class="f-5"
-                              label-align=left
-                            >
-                              <b-form-input
-                                v-if="inputs[sec][subsec][input_var][part].type == 'number'"
-                                v-model="inputs[sec][subsec][input_var][part].value"
-                                :id="input_var"
-                                :type="inputs[sec][subsec][input_var][part].type"
-                                :step="inputs[sec][subsec][input_var][part].step"
-                                :aria-describedby="input_var + '-' + part + '-feedback'"
-                                :state="inputs[sec][subsec][input_var][part].valid"
-                                :disabled="loading"
-                              ></b-form-input>
-                              <b-form-input
-                                v-if="inputs[sec][subsec][input_var][part].type == 'text'"
-                                v-model="inputs[sec][subsec][input_var][part].value"
-                                :id="input_var + '-' + part"
-                                :type="inputs[sec][subsec][input_var][part].type"
-                                :placeholder="inputs[sec][subsec][input_var][part].placeholder"
-                                :aria-describedby="input_var + '-' + part + '-feedback'"
-                                :state="inputs[sec][subsec][input_var][part].valid"
-                                :disabled="loading"
-                              ></b-form-input>
-                              <b-form-checkbox-group
-                                v-if="inputs[sec][subsec][input_var][part].type == 'checkbox'"
-                                v-model="inputs[sec][subsec][input_var][part].value"
-                                :id="input_var + '-' + part"
-                                :options="inputs[sec][subsec][input_var][part].fields"
-                                :disabled="loading"
-                                switches
-                                stacked
-                              >{{ inputs[sec][subsec][input_var][part].label }}</b-form-checkbox-group>
-                              <b-form-invalid-feedback v-if="inputs[sec][subsec][input_var][part].valid==false" :key="inputs[sec][subsec][input_var][part].valid" :id="input_var + '-' + part + '-feedback'" :state="inputs[sec][subsec][input_var][part].valid">
-                                The {{ inputs[sec][subsec][input_var][part].label }} is required
-                              </b-form-invalid-feedback>
-                            </b-form-group>
-                          </b-col>
-                          </b-form-row>
-                        </b-col>
-                        <b-col sm=1 align-self="center" class="text-right">
-                          <b-button pill v-on:click.prevent="updateList(sec, subsec, input_var)" variant="success" class="font-weight-bold add" :disabled="loading"><b-icon-plus aria-label="Add" font-scale="1.75"></b-icon-plus></b-button>
-                        </b-col>
-                      </b-form-row>
-                      <div v-show="!checkEmpty(inputs[sec][subsec][input_var].value)">
-                        <br>
-                        <b-table :items="inputs[sec][subsec][input_var].value" :fields="createFields(sec, subsec, input_var)" small>
-                          <template #cell(delete)="data">
-                            <b-button pill v-on:click.prevent="deleteRow(inputs[sec][subsec][input_var].value, data.index)" variant="outline-danger" class="font-weight-bold delete" :disabled="loading"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
-                          </template>
-                        </b-table>
-                      </div>
-                    </b-form>
-                  </b-form-group>
+                        <!-- v-if only produces the input depending on the type -->
+                        <b-form-file
+                          v-if="inputs[sec][subsec][input_var].type == 'file'"
+                          v-model="inputs[sec][subsec][input_var].value"
+                          :id="input_var"
+                          :file-name-formatter="formatNames"
+                          placeholder="Choose files or drop them here..."
+                          drop-placeholder="Drop files here..."
+                          accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln"
+                          :aria-describedby="input_var + '-feedback'"
+                          :state="getValidationState(validationContext)"
+                          @change="validationContext.validate"
+                          multiple
+                          :disabled="loading"
+                        ></b-form-file>
+                        <b-form-checkbox-group
+                          v-if="inputs[sec][subsec][input_var].type == 'checkbox'"
+                          v-model="inputs[sec][subsec][input_var].value"
+                          :id="input_var"
+                          :options="inputs[sec][subsec][input_var].fields"
+                          :disabled="loading"
+                          switches
+                          class="text-center"
+                        >{{ inputs[sec][subsec][input_var].label }}</b-form-checkbox-group>
+                        <b-form-input
+                          v-if="inputs[sec][subsec][input_var].type == 'number'"
+                          v-model="inputs[sec][subsec][input_var].value"
+                          :placeholder="inputs[sec][subsec][input_var].placeholder ? inputs[sec][subsec][input_var].placeholder.toString() : ''"
+                          :id="input_var"
+                          :type="inputs[sec][subsec][input_var].type"
+                          :step="inputs[sec][subsec][input_var].step"
+                          :aria-describedby="input_var + '-feedback'"
+                          :state="getValidationState(validationContext)"
+                          :disabled="loading"
+                        ></b-form-input>
+                        <b-form-select
+                          v-if="inputs[sec][subsec][input_var].type == 'options'"
+                          v-model="inputs[sec][subsec][input_var].value"
+                          :id="input_var"
+                          :options="inputs[sec][subsec][input_var].options"
+                          :aria-describedby="input_var + '-feedback'"
+                          :state="getValidationState(validationContext)"
+                          :disabled="loading"
+                        >
+                        </b-form-select>
+                        <b-form-radio-group
+                          v-if="inputs[sec][subsec][input_var].type == 'radio'"
+                          v-model="inputs[sec][subsec][input_var].value"
+                          :id="input_var"
+                          :options="inputs[sec][subsec][input_var].options"
+                          :aria-describedby="input_var + '-feedback'"
+                          button-variant="outline-secondary"
+                          buttons
+                          :disabled="loading"
+                        >
+                        </b-form-radio-group>
+                        <b-form-input
+                          v-if="inputs[sec][subsec][input_var].type == 'text'"
+                          v-model="inputs[sec][subsec][input_var].value"
+                          :placeholder="inputs[sec][subsec][input_var].placeholder ? inputs[sec][subsec][input_var].placeholder.toString() : ''"
+                          :id="input_var"
+                          :type="inputs[sec][subsec][input_var].type"
+                          :aria-describedby="input_var + '-feedback'"
+                          :state="getValidationState(validationContext)"
+                          :disabled="loading"
+                        ></b-form-input>
+                        <b-form-invalid-feedback :id="input_var + '-feedback'" :state="getValidationState(validationContext)">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
+                      </ValidationProvider>
+                    </b-form-group>
                   </b-col>
                 </b-form-row>
+                <b-form
+                  :id="subsec"
+                  v-show="inputs[sec][subsec].show"
+                  v-if="inputs[sec][subsec].type == 'multi'"
+                >
+                  <b-form-row>
+                    <b-col sm=11>
+                      <b-form-row>
+                        <b-col
+                          v-for="input_var in get_sub(inputs[sec][subsec])"
+                          :key="subsec + '-' + input_var"
+                          :sm="inputs[sec][subsec][input_var].cols ? inputs[sec][subsec][input_var].cols : 12"
+                        >
+                          <b-form-group
+                            :label="inputs[sec][subsec][input_var].label"
+                            :label-for="subsec + '-' + input_var"
+                            v-show="inputs[sec][subsec][input_var].show == false? false : true"
+                            label-align=left
+                          >
+                            <b-form-input
+                              v-if="inputs[sec][subsec][input_var].type == 'number'"
+                              v-model="inputs[sec][subsec][input_var].value"
+                              :id="subsec + '-' + input_var"
+                              :type="inputs[sec][subsec][input_var].type"
+                              :step="inputs[sec][subsec][input_var].step"
+                              :aria-describedby="subsec + '-' + input_var + '-feedback'"
+                              :state="inputs[sec][subsec][input_var].valid"
+                              :disabled="loading"
+                            ></b-form-input>
+                            <b-form-input
+                              v-if="inputs[sec][subsec][input_var].type == 'text'"
+                              v-model="inputs[sec][subsec][input_var].value"
+                              :id="subsec + '-' + input_var"
+                              :type="inputs[sec][subsec][input_var].type"
+                              :placeholder="inputs[sec][subsec][input_var].placeholder"
+                              :aria-describedby="subsec + '-' + input_var + '-feedback'"
+                              :state="inputs[sec][subsec][input_var].valid"
+                              :disabled="loading"
+                            ></b-form-input>
+                            <b-form-checkbox-group
+                              v-if="inputs[sec][subsec][input_var].type == 'checkbox'"
+                              v-model="inputs[sec][subsec][input_var].value"
+                              :id="subsec + '-' + input_var"
+                              :options="inputs[sec][subsec][input_var].fields"
+                              :disabled="loading"
+                              switches
+                            >{{ inputs[sec][subsec][input_var].label }}</b-form-checkbox-group>
+                            <b-form-invalid-feedback
+                              v-if="inputs[sec][subsec][input_var].valid==false"
+                              :key="inputs[sec][subsec][input_var].valid"
+                              :id="subsec + '-' + input_var + '-feedback'"
+                              :state="inputs[sec][subsec][input_var].valid"
+                            >
+                              The {{ inputs[sec][subsec][input_var].label }} is required
+                            </b-form-invalid-feedback>
+                          </b-form-group>
+                        </b-col>
+                      </b-form-row>
+                    </b-col>
+                    <b-col sm=1 cols=4 class="mx-auto mt-sm-4">
+                      <b-button pill v-on:click.prevent="updateList(sec, subsec)" variant="success" class="font-weight-bold add" :disabled="loading"><b-icon-plus aria-label="Add" font-scale="1.5"></b-icon-plus></b-button>
+                    </b-col>
+                  </b-form-row>
+                  <div v-show="!checkEmpty(inputs[sec][subsec].value)">
+                    <br>
+                    <b-table :items="inputs[sec][subsec].value" :fields="createFields(sec, subsec)" small>
+                      <template #cell(delete)="data">
+                        <b-button pill v-on:click.prevent="deleteRow(inputs[sec][subsec].value, data.index)" variant="outline-danger" class="font-weight-bold delete" :disabled="loading"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
+                      </template>
+                    </b-table>
+                  </div>
+                </b-form>
               </b-form-group>
             </b-collapse>
           </b-form-group>
@@ -257,13 +262,17 @@ export default {
       ...required,
       message: "The {_field_} is required"
     });
-    // Sets field to ge required if another field (args[0]) is a value (args[1:])
+    // Sets field to be required if another field (args[0]) is/has any of the values (args[1:])
     extend('required_if', {
       computesRequired: true,
       validate(value, args) {
         let required;
         if (args.length > 1) {
-          required = args.slice(1).includes(String(args[0]).trim());
+          if (Array.isArray(args[0])) {
+            required = args.slice(1).some((arg) => args[0].includes(arg));
+          } else {
+            required = args.slice(1).includes(String(args[0]).trim());
+          }
         } else {
           required = !checkEmpty(args[0]);
         }
@@ -417,7 +426,7 @@ export default {
             },
             segment: {
               order: 1,
-              hide: true,
+              show: false,
               label: 'Segment',
               type: 'text',
               value: '',
@@ -430,7 +439,7 @@ export default {
               value: [],
               fields: [{ text: 'Segmented Genome', value: true }],
               rules: '',
-              cols: 6,
+              cols: 12,
               exclude: true,
             },
           },
@@ -473,51 +482,67 @@ export default {
         sp: {
           order: 2,
           label: 'Specificity',
-          collapsible: true,
+          collapsible: false,
           all: {
             order: 0,
             show: true,
+            sp_types: {
+              order: 2,
+              type: 'checkbox',
+              value: [],
+              fields: [
+                { text: 'FASTAs', value: 'sp_fasta' },
+                { text: 'Taxa', value: 'sp_taxa' }
+              ],
+              rules: '',
+              cols: 12,
+              exclude: true,
+            },
+          },
+          sp_fasta: {
+            order: 1,
+            show: false,
             sp_fasta: {
               order: 0,
-              label: 'FASTA Files',
               type: 'file',
+              label: 'FASTA Files',
               value: [],
-              rules: '',
+              rules: 'required_if:@sp_types,sp_fasta',
             },
-            sp_taxa: {
+          },
+          sp_taxa: {
+            order: 2,
+            show: false,
+            type: 'multi',
+            value: [],
+            rules: 'required_if:@sp_types,sp_taxa',
+            taxid: {
+              order: 0,
+              label: 'Taxonomic ID',
+              type: 'number',
+              value: '',
+              rules: 'required',
+              valid: null,
+              cols: 12,
+            },
+            segment: {
               order: 1,
-              label: 'Taxa',
-              type: 'multi',
-              value: [],
+              show: false,
+              label: 'Segment',
+              type: 'text',
+              value: '',
+              valid: null,
               rules: '',
-              taxid: {
-                order: 0,
-                label: 'Taxonomic ID',
-                type: 'number',
-                value: '',
-                rules: 'required',
-                valid: null,
-                cols: 12,
-              },
-              segment: {
-                order: 1,
-                hide: true,
-                label: 'Segment',
-                type: 'text',
-                value: '',
-                valid: null,
-                rules: '',
-                cols: 0,
-              },
-              segmented: {
-                order: 2,
-                type: 'checkbox',
-                value: [],
-                fields: [{ text: 'Segmented Genome', value: true }],
-                rules: '',
-                cols: 6,
-                exclude: true,
-              },
+              cols: 0,
+            },
+            segmented: {
+              order: 2,
+              type: 'checkbox',
+              value: [],
+              fields: [{ text: 'Segmented Genome', value: true }],
+              rules: '',
+              cols: 12,
+              exclude: true,
             },
           },
         },
@@ -732,19 +757,19 @@ export default {
       return this.inputs.opts.all.obj.value
     },
     spval() {
-      return !this.checkEmpty(this.inputs.sp.all.sp_fasta.value)
+      return this.inputs.sp.all.sp_types.value
     },
     sptaxidval() {
-      return !this.checkEmpty(this.inputs.sp.all.sp_taxa.taxid.value)
+      return !this.checkEmpty(this.inputs.sp.sp_taxa.taxid.value)
     },
     segmentedval() {
       return this.inputs.opts.autoinput.segmented.value.length
     },
     spsegmentedval() {
-      return this.inputs.sp.all.sp_taxa.segmented.value.length
+      return this.inputs.sp.sp_taxa.segmented.value.length
     },
     spsegmentval() {
-      return (this.spsegmentedval & this.checkEmpty(this.inputs.sp.all.sp_taxa.segment.value))
+      return (this.spsegmentedval & this.checkEmpty(this.inputs.sp.sp_taxa.segment.value))
     }
   },
   watch: {
@@ -757,28 +782,30 @@ export default {
       this.inputs.advopts.maxact.show = val == 'maximize-activity';
     },
     spval(val) {
-      this.inputs.advopts.sp.show = val
+      this.inputs.advopts.sp.show = (val.length > 0)
+      this.inputs.sp.sp_fasta.show = val.includes('sp_fasta')
+      this.inputs.sp.sp_taxa.show = val.includes('sp_taxa')
     },
     sptaxidval(val) {
       if (val) {
-        this.inputs.sp.all.sp_taxa.taxid.valid = null
+        this.inputs.sp.sp_taxa.taxid.valid = null
       }
     },
     spsegmentval(val) {
-      this.inputs.sp.all.sp_taxa.segment.rules = val? 'required' : ''
+      this.inputs.sp.sp_taxa.segment.rules = val? 'required' : ''
       if (!val) {
-        this.inputs.sp.all.sp_taxa.segment.valid = null
+        this.inputs.sp.sp_taxa.segment.valid = null
       }
     },
     segmentedval(val) {
-      this.inputs.opts.autoinput.segment.hide = !val
+      this.inputs.opts.autoinput.segment.show = val
       this.inputs.opts.autoinput.segment.cols = val? 6 : 0
       this.inputs.opts.autoinput.taxid.cols = val? 6 : 12
     },
     spsegmentedval(val) {
-      this.inputs.sp.all.sp_taxa.segment.hide = !val
-      this.inputs.sp.all.sp_taxa.segment.cols = val? 6 : 0
-      this.inputs.sp.all.sp_taxa.taxid.cols = val? 6 : 12
+      this.inputs.sp.sp_taxa.segment.show = val
+      this.inputs.sp.sp_taxa.segment.cols = val? 6 : 0
+      this.inputs.sp.sp_taxa.taxid.cols = val? 6 : 12
     },
   },
   methods: {
@@ -789,8 +816,8 @@ export default {
              !String(val).trim().length
     },
     async clearMultiParts() {
-      this.inputs.sp.all.sp_taxa.taxid.valid = null;
-      this.inputs.sp.all.sp_taxa.segment.valid = null;
+      this.inputs.sp.sp_taxa.taxid.valid = null;
+      this.inputs.sp.sp_taxa.segment.valid = null;
       return true;
     },
     async adapt_run() {
@@ -800,16 +827,20 @@ export default {
       let form_data = new FormData()
       for (let sec of this.get_sub(this.inputs)) {
         for (let subsec of this.get_sub(this.inputs[sec])) {
-          for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
-            if (!this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
-              if (input_var.includes('fasta')) {
-                for (let file of this.inputs[sec][subsec][input_var].value) {
-                  form_data.append(input_var + '[]', file, file.name);
+          if (this.inputs[sec][subsec].show != false) {
+            if (this.inputs[sec][subsec].type == 'multi') {
+              form_data.append(subsec, JSON.stringify(this.inputs[sec][subsec].value));
+            } else {
+              for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
+                if (this.inputs[sec][subsec][input_var].show != false & !this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
+                  if (input_var.includes('fasta')) {
+                    for (let file of this.inputs[sec][subsec][input_var].value) {
+                      form_data.append(input_var + '[]', file, file.name);
+                    }
+                  } else if (!this.inputs[sec][subsec][input_var].exclude){
+                    form_data.append(input_var, this.inputs[sec][subsec][input_var].value)
+                  }
                 }
-              } else if (input_var=='sp_taxa') {
-                form_data.append(input_var, JSON.stringify(this.inputs[sec][subsec][input_var].value));
-              } else if (!this.inputs[sec][subsec][input_var].exclude){
-                form_data.append(input_var, this.inputs[sec][subsec][input_var].value)
               }
             }
           }
@@ -855,7 +886,7 @@ export default {
     get_sub(sec) {
       // Helper function to get children of section
       return Object.keys(sec).filter(item => {
-        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields', 'exclude', 'hide'].includes(item));
+        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields', 'exclude'].includes(item));
       }).sort((a,b) => {
         return sec[a].order-sec[b].order
       })
@@ -871,12 +902,12 @@ export default {
     getGeneralValidationState(errors, failed) {
       return !failed? null : (errors? false : null)
     },
-    multiValidate(sec, subsec, input_var) {
-      for (let part of this.get_sub(this.inputs[sec][subsec][input_var])) {
-        if (!this.inputs[sec][subsec][input_var][part].hide) {
-          if (this.inputs[sec][subsec][input_var][part].rules.includes('required')) {
-            if (this.checkEmpty(this.inputs[sec][subsec][input_var][part].value)) {
-              this.inputs[sec][subsec][input_var][part].valid = false;
+    multiValidate(sec, subsec) {
+      for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
+        if (this.inputs[sec][subsec][input_var].show != false) {
+          if (this.inputs[sec][subsec][input_var].rules.includes('required')) {
+            if (this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
+              this.inputs[sec][subsec][input_var].valid = false;
               return false
             }
           }
@@ -884,30 +915,30 @@ export default {
       }
       return true
     },
-    async updateList(sec, subsec, input_var) {
-      if (this.multiValidate(sec, subsec, input_var)) {
+    async updateList(sec, subsec) {
+      if (this.multiValidate(sec, subsec)) {
         let obj = {}
-        for (let part of this.get_sub(this.inputs[sec][subsec][input_var])) {
-          if (!this.inputs[sec][subsec][input_var][part].exclude) {
-            if (this.inputs[sec][subsec][input_var][part].value) {
-              obj[part] = this.inputs[sec][subsec][input_var][part].value;
+        for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
+          if (!this.inputs[sec][subsec][input_var].exclude) {
+            if (this.inputs[sec][subsec][input_var].value) {
+              obj[input_var] = this.inputs[sec][subsec][input_var].value;
             }
             else {
-              obj[part] = this.inputs[sec][subsec][input_var][part].placeholder;
+              obj[input_var] = this.inputs[sec][subsec][input_var].placeholder;
             }
-            this.inputs[sec][subsec][input_var][part].value = '';
+            this.inputs[sec][subsec][input_var].value = '';
           }
         }
-        this.inputs[sec][subsec][input_var].value.push(obj);
+        this.inputs[sec][subsec].value.push(obj);
       }
     },
-    createFields(sec, subsec, input_var) {
+    createFields(sec, subsec) {
       let fields = [];
-      for (let part of this.get_sub(this.inputs[sec][subsec][input_var])) {
-        if (!this.inputs[sec][subsec][input_var][part].exclude) {
+      for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
+        if (!this.inputs[sec][subsec][input_var].exclude) {
           fields.push({
-            key: part,
-            label: this.inputs[sec][subsec][input_var][part].label,
+            key: input_var,
+            label: this.inputs[sec][subsec][input_var].label,
             thClass: 'f-5',
             thStyle: 'width: 45.8333%; padding: 5px'
           });

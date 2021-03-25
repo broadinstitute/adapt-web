@@ -62,6 +62,8 @@ export default {
         .getPropertyValue('--mint');
       const navy = getComputedStyle(document.documentElement)
         .getPropertyValue('--navy');
+      const info = getComputedStyle(document.documentElement)
+        .getPropertyValue('--info');
 
       var activityColorScale = d3.scaleLinear()
         .domain([2.8, 3.1, 3.4, 3.7])
@@ -108,11 +110,11 @@ export default {
         .attr("ry", 5)
         .attr("stroke", "#00000000")
         .attr("stroke-width", 10)
-        .style("fill", navy);
+        .style("fill", info);
 
       var tooltip = tooltipgroup
         .append("text")
-        .style("fill", "white")
+        .style("fill", navy)
         .attr("class", "tooltip")
         .style("font-size", ".5rem");
 

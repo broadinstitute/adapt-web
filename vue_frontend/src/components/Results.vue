@@ -26,8 +26,8 @@
                 class="field"
                 label="Run ID"
                 label-for="runid"
-                label-align=left
-                label-align-md=right
+                label-align="left"
+                label-align-md="right"
                 label-class="h2 font-weight-bold"
               >
                 <ValidationProvider
@@ -47,10 +47,42 @@
                   <b-form-invalid-feedback id="runid-feedback">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
                 </ValidationProvider>
               </b-form-group>
-              <b-button pill block v-on:click.prevent="handleSubmit(run_status)" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="status_submit">Get Status</b-button>
-              <b-button pill block v-on:click.prevent="handleSubmit(get_results)" size="lg" type="button" variant="outline-secondary" class="font-weight-bold" name="download_submit">Download Results</b-button>
-              <b-button pill block v-on:click.prevent="handleSubmit(display_results)" size="lg" type="button" variant="outline-secondary" class="font-weight-bold" name="display_submit">Display Results</b-button>
-              <b-button pill block v-on:click.prevent="handleSubmit(visualize_results)" size="lg" type="button" variant="outline-secondary" class="font-weight-bold" name="visualize_submit">Visualize Results</b-button>
+              <b-overlay
+                :show="loading=='status'"
+                rounded="pill"
+                opacity="0.7"
+                blur="5px"
+                spinner-variant="secondary"
+              >
+                <b-button pill block v-on:click.prevent="handleSubmit(run_status)" :disabled="loading!=''" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="status_submit">Get Status</b-button>
+              </b-overlay>
+              <b-overlay
+                :show="loading=='download'"
+                rounded="pill"
+                opacity="0.7"
+                blur="5px"
+                spinner-variant="secondary"
+              >
+                <b-button pill block v-on:click.prevent="handleSubmit(get_results)" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="download_submit">Download Results</b-button>
+              </b-overlay>
+              <b-overlay
+                :show="loading=='display'"
+                rounded="pill"
+                opacity="0.7"
+                blur="5px"
+                spinner-variant="secondary"
+              >
+                <b-button pill block v-on:click.prevent="handleSubmit(display_results)" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="display_submit">Display Results</b-button>
+              </b-overlay>
+              <b-overlay
+                :show="loading=='visualize'"
+                rounded="pill"
+                opacity="0.7"
+                blur="5px"
+                spinner-variant="secondary"
+              >
+                <b-button pill block v-on:click.prevent="handleSubmit(visualize_results)" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="visualize_submit">Visualize Results</b-button>
+              </b-overlay>
             </b-col>
           </b-row>
           <span v-show="status">Status: {{ status }}</span>
@@ -88,6 +120,7 @@ export default {
       status: '',
       errortitle: '',
       errormsg: '',
+      loading: '',
     }
   },
   computed: {
@@ -113,6 +146,7 @@ export default {
   },
   methods: {
     async run_status() {
+      this.loading = 'status'
       // Check the status of a job from backend
       if (!this.runids.includes(this.runid)) {
         this.runids.push(this.runid)
@@ -149,9 +183,11 @@ export default {
         }
         this.$bvModal.show("error-modal")
       }
+      this.loading = ''
       return response
     },
-    async show_results() {
+    async show_results(loading) {
+      this.loading = loading
       // Get results JSON from backend
       if (!this.runids.includes(this.runid)) {
         this.runids.push(this.runid)
@@ -171,27 +207,30 @@ export default {
       })
       if (response.ok) {
         this.$root.$data.resultjson = await response.json()
+        this.$root.$data.runid = this.runid
       } else {
         let responsejson = await response.json()
         this.errortitle = Object.keys(responsejson)[0]
         this.errormsg = responsejson[this.errortitle]
         this.$bvModal.show("error-modal")
       }
+      this.loading = ''
       return response
     },
     async display_results() {
-      let response = await this.show_results();
+      let response = await this.show_results('display');
       if (response.ok) {
         this.$root.$emit('display-assays');
       }
     },
     async visualize_results() {
-      let response = await this.show_results();
+      let response = await this.show_results('visualize');
       if (response.ok) {
         this.$root.$emit('visualize-assays');
       }
     },
     async get_results() {
+      this.loading = 'download'
       // Download results as a TSV or ZIP from backend
       if (!this.runids.includes(this.runid)) {
         this.runids.push(this.runid)
@@ -217,13 +256,11 @@ export default {
         this.errormsg = responsejson[this.errortitle]
         this.$bvModal.show("error-modal")
       }
-
+      this.loading = ''
       return response
     },
     async download_file(response){
       // Helper function to download files
-      // i have no idea why this is so complicated but apparently this is how
-      // to download a file?? may try to simplify at some point
       let blob = await response.blob()
       let url = window.URL.createObjectURL(new Blob([blob]))
       let link = document.createElement('a')

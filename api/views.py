@@ -427,7 +427,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                                 float(expected_activity) \
                             for expected_activity in raw_content["guide-expected-activities"].split(" ")]
 
-                            for k, target in enumerate(raw_content["left-primer-target-sequences"].split(" ")):
+                            for k, target in enumerate(raw_content["guide-target-sequences"].split(" ")):
                                 guide_data = {
                                     "start_pos": start_poses[k],
                                     "expected_activity": expected_activities[k],
@@ -561,7 +561,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                                     break
                             except:
                                 pass
-                elif input_var not in FILES_INPUT_VARS:
+                elif input_var not in FILES_INPUT_VARS and input_var not in STR_OPT_INPUT_VARS:
                     content = "%s is not a valid input parameter" % input_var
                     break
         if content:
@@ -573,31 +573,34 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         Helper function for download and results
         """
         # Check status of run
-        self.status(request, *args, **kwargs)
-        adaptrun = self.get_object()
-        # Only get results if job succeeded
-        if adaptrun.status in SUCCESSFUL_STATES:
-            # Call Cromwell server
-            metadata_response = _metadata(adaptrun.cromwell_id)
-            if isinstance(metadata_response, Response):
-                return metadata_response
-            # Download files from S3
-            return _files(metadata_response["outputs"]["adapt_web.guides"])
+        response = self.status(request, *args, **kwargs)
+        if response.status_code == httpstatus.HTTP_200_OK:
+            adaptrun = self.get_object()
+            # Only get results if job succeeded
+            if adaptrun.status in SUCCESSFUL_STATES:
+                # Call Cromwell server
+                metadata_response = _metadata(adaptrun.cromwell_id)
+                if isinstance(metadata_response, Response):
+                    return metadata_response
+                # Download files from S3
+                return _files(metadata_response["outputs"]["adapt_web.guides"])
 
-        elif adaptrun.status in FAILED_STATES:
-            # TODO give reasons that the job might fail
-            content = {'Failed Job': "Job has failed. "
-                "This is likely due to invalid input parameters; "
-                "please check your input prior to your next request. "
-                "If you continue to have issues, contact %s" %CONTACT}
-            return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+            elif adaptrun.status in FAILED_STATES:
+                # TODO give reasons that the job might fail
+                content = {'Failed Job': "Job has failed. "
+                    "This is likely due to invalid input parameters; "
+                    "please check your input prior to your next request. "
+                    "If you continue to have issues, contact %s" %CONTACT}
+                return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
 
+            else:
+                content = {'Unfinished Job': "Job is not finished running. "
+                    "Please wait until the job is done; this can take a few "
+                    "hours on large datasets. You may check your job status "
+                    "using 'Get Status'."}
+                return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
         else:
-            content = {'Unfinished Job': "Job is not finished running. "
-                "Please wait until the job is done; this can take a few "
-                "hours on large datasets. You may check your job status "
-                "using 'Get Status'."}
-            return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+            return response
 
     def create(self, request, format=None):
         """
@@ -815,7 +818,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     expected_activities = [
                         float(expected_activity) \
                     for expected_activity in raw_content["guide-expected-activities"].split(" ")]
-                    targets = raw_content["left-primer-target-sequences"].split(" ")
+                    targets = raw_content["guide-target-sequences"].split(" ")
                     content[i][j]["guide_set"]["guides"] = [
                         {
                             "start_pos": start_poses[k],

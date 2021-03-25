@@ -9,10 +9,10 @@
         </b-navbar-toggle>
         <b-collapse id="nav-collapse" is-nav><b-navbar-nav :justified=true class="w-100 ml-auto pr-2">
         <b-nav-item disabled href=""></b-nav-item>
-        <b-nav-item href="/about">ABOUT</b-nav-item>
-        <b-nav-item href="/designs">ASSAYS</b-nav-item>
-        <b-nav-item href="/">RUN</b-nav-item>
-        <b-nav-item href="/results">RESULTS</b-nav-item>
+        <b-nav-item href="/about" :class="{ 'current-page': page=='About'}">ABOUT</b-nav-item>
+        <b-nav-item href="/designs" :class="{ 'current-page': page=='Assays'}">ASSAYS</b-nav-item>
+        <b-nav-item href="/" :class="{ 'current-page': page=='Run'}">RUN</b-nav-item>
+        <b-nav-item href="/results" :class="{ 'current-page': page=='Results'}">RESULTS</b-nav-item>
         </b-navbar-nav></b-collapse>
       </b-navbar>
       </b-col>
@@ -24,6 +24,9 @@
 <script>
 export default {
   name: 'Header',
+  props: {
+    page: String,
+  },
   data () {
     return {
       imgsrc: process.env.BASE_URL,

@@ -6,16 +6,15 @@
     >
       <h1 :class="taxons[taxon].rank">
         <a @click="select(taxon)" :class="[{'selected': taxons[taxon].selected, 'selectable': taxons[taxon].selectable}, 'p-1', 'taxon']" :href="'#' + taxon + '-toggle'">{{ taxons[taxon].name }}</a>
-        <a
+        <b-button
           :id="taxon+'-arrow'"
-          :class="{ collapsed: taxons[taxon].collapsed, 'not-collapsed': !taxons[taxon].collapsed }"
-          :href="'#' + taxon + '-toggle'"
+          :class="[{ collapsed: taxons[taxon].collapsed, 'not-collapsed': !taxons[taxon].collapsed }, 'px-1']"
           v-if="taxons[taxon].num_children>0"
-          v-on:click="toggle(taxon)"
-          @click.prevent
+          v-on:click.prevent="toggle(taxon)"
+          variant="link"
         >
-          <b-icon-chevron-down class="arrow mx-2" :aria-label="'Toggle ' + taxons[taxon].name"/>
-        </a>
+          <b-icon-chevron-down class="arrow" font-scale="1.75" :aria-label="'Toggle ' + taxons[taxon].name"/>
+        </b-button>
       </h1>
       <b-collapse :id="taxon + '-toggle'" v-if="taxons[taxon].shown">
         <Design :parent="taxon"></Design>
@@ -73,7 +72,7 @@ export default {
       this.taxons[taxon].collapsed = !this.taxons[taxon].collapsed;
       setTimeout(() => {
         this.$root.$emit('bv::toggle::collapse', taxon+'-toggle');
-      }, 50);
+      }, 100);
     },
     select(taxon) {
       if (this.taxons[taxon].selectable) {

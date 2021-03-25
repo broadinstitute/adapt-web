@@ -1,6 +1,6 @@
 <template>
   <div id="app" class="mb-5">
-  <Header/>
+  <Header page="Home"/>
   <b-container fluid id="body">
     <b-row class="mt-5">
       <b-col cols=0 md=2></b-col>

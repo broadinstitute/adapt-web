@@ -1,6 +1,6 @@
 <template>
   <div id="app" class="mb-5">
-  <Header/>
+  <Header page="Results"/>
   <b-container fluid id="body">
     <b-row class="mt-5">
       <b-col cols=0 md=2></b-col>
@@ -48,10 +48,9 @@ export default {
   data() {
     return {
       resulttable: {},
-      updated: 0
+      updated: 0,
     }
   },
-
   mounted() {
     var vm = this
     vm.$root.$on('display-assays', async function() {
