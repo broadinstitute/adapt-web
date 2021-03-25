@@ -502,6 +502,9 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         content = "'%s' is an invalid flanking sequence; each character must be one of " \
                             "<ul><li>%s</li></ul>" %(value, '</li><li>'.join(VALID_BASES))
                         break
+                elif input_var == segment:
+                    if value == '':
+                        request.data[input_var] = 'None'
                 elif input_var in POS_INT_OPT_INPUT_VARS:
                     if (not value.isdigit()) or value == '0':
                         content = "'%s' is invalid for %s; it must be a positive integer" %(value, _replace_spaces(input_var))
@@ -561,7 +564,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                                     break
                             except:
                                 pass
-                elif input_var not in FILES_INPUT_VARS and input_var not in STR_OPT_INPUT_VARS:
+                elif input_var not in FILES_INPUT_VARS:
                     content = "%s is not a valid input parameter" % input_var
                     break
         if content:
