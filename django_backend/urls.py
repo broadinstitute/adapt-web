@@ -26,5 +26,4 @@ urlpatterns = [
     path("designs/", TemplateView.as_view(template_name="designs.html"), name="Designs"),
     path("results/", TemplateView.as_view(template_name="results.html"), name="View Results"),
     path('api/', include('api.urls')),
-    path("favicon.ico", RedirectView.as_view(url=staticfiles_storage.url("vue/favicon.ico"))),
 ]
