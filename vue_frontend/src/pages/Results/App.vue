@@ -6,19 +6,23 @@
       <b-col cols=0 md=2></b-col>
       <b-col  cols=12 md=8>
         <Results class="px-4"/>
-        <b-modal id="assaytable-modal" size="xl" title="Assay Options" hide-footer class="">
-          <div id="clusters" v-if="resulttable" :key="updated">
-            <div v-for="cluster in Object.keys(resulttable)" :key="cluster">
-              <AssayTable :cluster="resulttable[cluster]" :cluster_id="cluster"/>
-            </div>
-          </div>
-        </b-modal>
-        <b-modal id="assayviz-modal" size="xl" title="Assay Options" hide-footer class="">
-          <div id="clusters" v-if="resulttable" :key="updated">
-            <div v-for="cluster in Object.keys(resulttable)" :key="cluster">
-              <Assay v-for="result in resulttable[cluster]" :key="result.rank" :result="result" :cluster_id="cluster"/>
-            </div>
-          </div>
+        <b-modal id="assay-modal" size="xl" title="Assay Options" hide-footer class="" scrollable>
+          <b-tabs content-class="mt-4" justified>
+            <b-tab title="Table" active>
+              <div id="clusters" v-if="resulttable" :key="updated">
+                <div v-for="cluster in Object.keys(resulttable)" :key="cluster">
+                  <AssayTable :cluster="resulttable[cluster]" :cluster_id="cluster"/>
+                </div>
+              </div>
+            </b-tab>
+            <b-tab title="Visualization">
+              <div id="clusters" v-if="resulttable" :key="updated">
+                <div v-for="cluster in Object.keys(resulttable)" :key="cluster">
+                  <Assay v-for="result in resulttable[cluster]" :key="result.rank" :result="result" :cluster_id="cluster"/>
+                </div>
+              </div>
+            </b-tab>
+          </b-tabs>
         </b-modal>
       </b-col>
       <b-col cols=0 md=2></b-col>
@@ -53,7 +57,7 @@ export default {
   },
   mounted() {
     var vm = this
-    vm.$root.$on('display-assays', async function() {
+    vm.$root.$on('show-assays', async function() {
       for (var cluster in vm.$root.$data.resultjson) {
         Vue.set(vm.resulttable, cluster, [])
         for (var rank in vm.$root.$data.resultjson[cluster]) {
@@ -61,18 +65,7 @@ export default {
         }
       }
       vm.updated += 1
-      this.$bvModal.show("assaytable-modal")
-    })
-
-    vm.$root.$on('visualize-assays', async function() {
-      for (var cluster in vm.$root.$data.resultjson) {
-        Vue.set(vm.resulttable, cluster, [])
-        for (var rank in vm.$root.$data.resultjson[cluster]) {
-          vm.resulttable[cluster].push(vm.$root.$data.resultjson[cluster][rank]);
-        }
-      }
-      vm.updated += 1
-      this.$bvModal.show("assayviz-modal")
+      this.$bvModal.show("assay-modal")
     })
   }
 }

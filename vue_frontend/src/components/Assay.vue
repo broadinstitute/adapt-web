@@ -1,9 +1,15 @@
 <template>
   <transition appear name="fade">
     <div class="assay">
-      {{result.rank + 1}}
-      <div class="visualization" :id="'visualization-' + cluster_id + '-' + result.rank.toString()">
-      </div>
+      <b-row align-v="center">
+        <b-col cols=1 class="text-center">
+          <h4>{{result.rank + 1}}</h4>
+        </b-col>
+        <b-col cols=11>
+          <div class="visualization" :id="'visualization-' + cluster_id + '-' + result.rank.toString()">
+          </div>
+        </b-col>
+      </b-row>
     </div>
   </transition>
 </template>
@@ -20,11 +26,11 @@ export default {
   data() {
     return {
       width: 750,
-      height: 120,
+      height: 150,
       margin: {
         top: 50,
-        right: 50,
-        left: 50,
+        right: 10,
+        left: 10,
         bottom: 50,
       },
       target: [this.result.amplicon_start, this.result.amplicon_end],
@@ -50,7 +56,9 @@ export default {
         .style(
           "transform",
           `translate(${vm.margin.left}px, ${vm.margin.top}px)`
-        );
+        )
+        .style("font-family", "PT Mono")
+        .style("letter-spacing", '0.03em');
 
       const red = getComputedStyle(document.documentElement)
         .getPropertyValue('--red');
@@ -66,23 +74,39 @@ export default {
         .getPropertyValue('--info');
 
       var activityColorScale = d3.scaleLinear()
-        .domain([2.8, 3.1, 3.4, 3.7])
+        .domain([0, 1.5, 3, 4])
         .range([red, orange, lemon, mint]);
 
       var fracBoundColorScale = d3.scaleLinear()
-        .domain([0, .3333, .6667, 1])
+        .domain([0, .375, .75, 1])
         .range([red, orange, lemon, mint]);
 
-      const yAccessor = () => 10;
-      const xAccessor = (d) => d;
+      const yAccessor = (d) => d[1];
+      const xAccessor = (d) => d[0];
       const yScale = d3
         .scaleLinear()
         .domain([0, 20])
         .range([boundedHeight, 0]);
 
-      const guideLine = [vm.guide_start, vm.guide_start + vm.guide_seq.length]
-      const leftPrimerLine = [vm.target[0], vm.target[0] + vm.left_primer_seq.length]
-      const rightPrimerLine = [vm.target[1] - vm.right_primer_seq.length, vm.target[1]]
+      const baseline = 15
+      const height = 3
+      const shift = 3
+      const guideLine = [
+        [vm.guide_start, baseline-height/2],
+        [vm.guide_start, baseline+height/2],
+        [vm.guide_start + vm.guide_seq.length, baseline+height/2],
+        [vm.guide_start + vm.guide_seq.length, baseline-height/2]
+      ]
+      const leftPrimerLine = [
+        [vm.target[0], baseline+shift],
+        [vm.target[0] + vm.left_primer_seq.length, baseline+shift],
+        [vm.target[0], baseline+shift+height],
+      ]
+      const rightPrimerLine = [
+        [vm.target[1] - vm.right_primer_seq.length, baseline-shift],
+        [vm.target[1], baseline-shift],
+        [vm.target[1], baseline-shift-height],
+      ]
 
       // const xScale = d3sB
       //   .scaleLinear()
@@ -90,16 +114,23 @@ export default {
       //   .range([0, boundedWidth])
       //   .scope([0, .25], [.25, .75], [.75, 1]);
 
-      let extentX = d3.extent(vm.target, (d) => xAccessor(d))
       const xScale = d3
         .scaleLinear()
-        .domain([extentX[0] - 50, extentX[1] + 50])
+        .domain([this.result.amplicon_start - 20, this.result.amplicon_end + 20])
         .range([0, boundedWidth]);
 
       const line = d3
         .line()
         .x((d) => xScale(xAccessor(d)))
         .y((d) => yScale(yAccessor(d)))
+
+      var guidePath = svg
+        .append("path")
+        .attr("d", line(guideLine))
+
+      var leftPrimerPath = svg
+        .append("path")
+        .attr("d", line(leftPrimerLine))
 
       var tooltipgroup = svg
         .append("g")
@@ -118,12 +149,9 @@ export default {
         .attr("class", "tooltip")
         .style("font-size", ".5rem");
 
-      svg
-        .append("path")
-        .attr("d", line(guideLine))
-        .attr("fill", "none")
-        .attr("stroke", activityColorScale(vm.result.guide_set.expected_activity))
-        .attr("stroke-width", 6)
+      guidePath
+        .attr("stroke", "none")
+        .attr("fill", activityColorScale(vm.result.guide_set.expected_activity))
         .on('mouseover', function () {
           tooltipbox.transition()
             .duration(200)
@@ -133,6 +161,7 @@ export default {
             .style("opacity", 1);
           tooltip
             .html(vm.guide_seq)
+            .style("font-family", "Overpass Mono")
             .attr("pointer-events", "none");
 
           let bboxTextLine = tooltip.node().getBBox()
@@ -140,12 +169,16 @@ export default {
           let line2 = tooltip
             .append("tspan")
             .attr("pointer-events", "none");
-          line2.html("Start Position: " + guideLine[0].toString());
+          line2
+            .html("Start Position: " + guideLine[0][0])
+            .style("font-family", "Montserrat");
 
           let line3 = tooltip
             .append("tspan")
             .attr("pointer-events", "none");
-          line3.html("Expected Activity: " + vm.result.guide_set.expected_activity);
+          line3
+            .html("Expected Activity: " + vm.result.guide_set.expected_activity)
+            .style("font-family", "Montserrat");
 
           let bboxGuideLine = this.getBBox()
 
@@ -178,13 +211,10 @@ export default {
            .style("opacity", 0);
         });
 
-      svg
-        .append("path")
-        .attr("id", "leftPrimerLine")
-        .attr("d", line(leftPrimerLine))
-        .attr("fill", "none")
-        .attr("stroke", fracBoundColorScale(vm.result.left_primers.frac_bound))
-        .attr("stroke-width", 2)
+      leftPrimerPath
+        .attr("stroke", "none")
+        .attr("fill", fracBoundColorScale(vm.result.left_primers.frac_bound))
+        // .attr("stroke-width", 2)
         .on('mouseover', function () {
           tooltipbox.transition()
             .duration(200)
@@ -194,6 +224,7 @@ export default {
             .style("opacity", 1);
           tooltip
             .html(vm.left_primer_seq)
+            .style("font-family", "Overpass Mono")
             .attr("pointer-events", "none");
 
           let bboxTextLine = tooltip.node().getBBox()
@@ -201,12 +232,15 @@ export default {
           let line2 = tooltip
             .append("tspan")
             .attr("pointer-events", "none");
-          line2.html("Start Position: " + leftPrimerLine[0].toString());
+          line2
+            .html("Start Position: " + leftPrimerLine[0][0]);
 
           let line3 = tooltip
             .append("tspan")
             .attr("pointer-events", "none");
-          line3.html("Fraction Bound: " + vm.result.left_primers.frac_bound);
+          line3
+            .html("Fraction Bound: " + vm.result.left_primers.frac_bound)
+            .style("font-family", "Montserrat");
 
           let bboxGuideLine = this.getBBox()
 
@@ -260,9 +294,9 @@ export default {
       svg
         .append("path")
         .attr("d", line(rightPrimerLine))
-        .attr("fill", "none")
-        .attr("stroke", fracBoundColorScale(vm.result.right_primers.frac_bound))
-        .attr("stroke-width", 2)
+        .attr("stroke", "none")
+        .attr("fill", fracBoundColorScale(vm.result.left_primers.frac_bound))
+        // .attr("stroke-width", 2)
         .on('mouseover', function () {
           tooltipbox.transition()
             .duration(200)
@@ -272,6 +306,7 @@ export default {
             .style("opacity", 1);
           tooltip
             .html(vm.right_primer_seq)
+            .style("font-family", "Overpass Mono")
             .attr("pointer-events", "none");
 
           let bboxTextLine = tooltip.node().getBBox()
@@ -279,12 +314,16 @@ export default {
           let line2 = tooltip
             .append("tspan")
             .attr("pointer-events", "none");
-          line2.html("Start Position: " + rightPrimerLine[0].toString());
+          line2
+            .html("Start Position: " + rightPrimerLine[0][0])
+            .style("font-family", "Montserrat");
 
           let line3 = tooltip
             .append("tspan")
             .attr("pointer-events", "none");
-          line3.html("Fraction Bound: " + vm.result.right_primers.frac_bound);
+          line3
+            .html("Fraction Bound: " + vm.result.right_primers.frac_bound)
+            .style("font-family", "Montserrat");
 
           let bboxGuideLine = this.getBBox()
 
@@ -323,12 +362,17 @@ export default {
 
       // svg.append("g").call(yAxisGenerator);
 
-      const xAxisGenerator = d3.axisBottom().scale(xScale).ticks(5)
+      const xAxisGenerator = d3
+        .axisBottom()
+        .scale(xScale)
+        .ticks(5)
 
       svg
         .append("g")
         .call(xAxisGenerator)
-        .style("transform", `translateY(${boundedHeight}px)`);
+        .style("transform", `translateY(${boundedHeight}px)`)
+        .call(g => g.select(".domain")
+          .remove());
 
     },
   },

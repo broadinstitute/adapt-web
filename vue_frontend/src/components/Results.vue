@@ -66,22 +66,13 @@
                 <b-button pill block v-on:click.prevent="handleSubmit(get_results)" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="download_submit">Download Results</b-button>
               </b-overlay>
               <b-overlay
-                :show="loading=='display'"
+                :show="loading=='show'"
                 rounded="pill"
                 opacity="0.7"
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="handleSubmit(display_results)" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="display_submit">Display Results</b-button>
-              </b-overlay>
-              <b-overlay
-                :show="loading=='visualize'"
-                rounded="pill"
-                opacity="0.7"
-                blur="5px"
-                spinner-variant="secondary"
-              >
-                <b-button pill block v-on:click.prevent="handleSubmit(visualize_results)" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="visualize_submit">Visualize Results</b-button>
+                <b-button pill block v-on:click.prevent="handleSubmit(show_results)" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="show_submit">Show Results</b-button>
               </b-overlay>
             </b-col>
           </b-row>
@@ -208,6 +199,7 @@ export default {
       if (response.ok) {
         this.$root.$data.resultjson = await response.json()
         this.$root.$data.runid = this.runid
+        this.$root.$emit('show-assays');
       } else {
         let responsejson = await response.json()
         this.errortitle = Object.keys(responsejson)[0]
@@ -216,18 +208,6 @@ export default {
       }
       this.loading = ''
       return response
-    },
-    async display_results() {
-      let response = await this.show_results('display');
-      if (response.ok) {
-        this.$root.$emit('display-assays');
-      }
-    },
-    async visualize_results() {
-      let response = await this.show_results('visualize');
-      if (response.ok) {
-        this.$root.$emit('visualize-assays');
-      }
     },
     async get_results() {
       this.loading = 'download'

@@ -1,7 +1,7 @@
 @use "sass:color";
 
-$font-family-sans-serif:            'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
-// $btn-font-family:                   'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+$font-family-sans-serif:            Montserrat, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+$font-family-monospace:             'Overpass Mono', SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
 $dark:                              #000D54;
 $secondary:                         #3C67DD;
@@ -50,12 +50,21 @@ $footer-height:                     6rem;
 
 // General Page Formatting
 * {
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
+  font-family: $font-family-sans-serif;
 }
 
 legend, .nav-link, button:not(.list-group-item), th > div, .h1, .h2, .h3, .h4, .h5, .h6, .modal-title {
   letter-spacing: 0.2em;
   text-transform: uppercase;
+}
+
+h6 {
+  margin-bottom: 0;
+}
+
+p {
+  margin-bottom: .5em;
 }
 
 th > div {
@@ -73,6 +82,15 @@ html {
 
 body {
   overscroll-behavior-y: none;
+}
+
+text {
+  font-family: $font-family-monospace;
+  font-size: 0.5rem;
+}
+
+.seq {
+  font-family: $font-family-monospace;
 }
 
 // Fade Transitions
@@ -133,6 +151,10 @@ button, input[type=button] {
   min-width: 12rem;
 }
 
+.btn-link {
+  text-align: left;
+}
+
 .add, .delete {
   min-width: 100%;
 }
@@ -183,15 +205,15 @@ button, input[type=button] {
 }
 
 .f-1, .family {
-  font-size: 2.5rem;
-}
-
-.f-2, .genus {
   font-size: 2rem;
 }
 
+.f-2, .genus {
+  font-size: 1.6rem;
+}
+
 .f-3, .species {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
 }
 
 .f-4, .subspecies {
@@ -222,7 +244,7 @@ button, input[type=button] {
   color: $body-color;
 }
 
-.taxon:hover {
+.taxon:hover, .taxon:focus {
   color: $body-color;
   text-decoration: none;
 }
