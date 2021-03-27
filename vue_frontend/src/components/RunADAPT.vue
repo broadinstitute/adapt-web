@@ -1,7 +1,7 @@
 <template>
   <transition appear name="fade">
     <div class="runadapt">
-      <Modal :success='false' :title='errortitle' :msg='errormsg'></Modal>
+      <Modal :variant='variant' :title='modaltitle' :msg='modalmsg'></Modal>
       <!-- Form created dynamically with 3 loops - one for sections, one for subsections, one for the fields -->
       <ValidationObserver ref="full-form" v-slot="{ handleSubmit }" slim>
         <b-form id="full-form" :disabled="loading">
@@ -414,7 +414,6 @@ export default {
           },
           autoinput: {
             order: 1,
-            label: 'Auto Download from NCBI',
             show: false,
             taxid: {
               order: 0,
@@ -445,11 +444,10 @@ export default {
           },
           fileinput: {
             order: 2,
-            label: 'Prealigned FASTA',
             show: false,
             fasta: {
               order: 0,
-              label: 'FASTA Files',
+              label: 'FASTA File',
               type: 'file',
               value: [],
               rules: 'required_if:@inputchoice,fasta',
@@ -741,8 +739,9 @@ export default {
         },
       },
       loading: false,
-      errortitle: '',
-      errormsg: '',
+      modaltitle: '',
+      modalmsg: '',
+      variant: ''
     }
   },
   // computed and watch are used to show certain sections of the form dependent on input choices
@@ -857,12 +856,13 @@ export default {
 
       if (response.ok) {
         let responsejson = await response.json()
+        let runid = responsejson.cromwell_id.slice(0,8) + ';' + responsejson.submit_time
         let prev_runids = Cookies.get('runid')
         if (prev_runids == null) {
-          Cookies.set('runid', responsejson.cromwell_id)
+          Cookies.set('runid', runid)
         }
         else {
-          Cookies.set('runid', prev_runids + ',' + responsejson.cromwell_id)
+          Cookies.set('runid', prev_runids + ',' + runid)
         }
         Cookies.set('submitted', true)
         window.location.href = '/results'
@@ -871,14 +871,15 @@ export default {
         let contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
           let responsejson = await response.json()
-          this.errortitle = Object.keys(responsejson)[0]
-          this.errormsg = responsejson[this.errortitle]
+          this.modaltitle = Object.keys(responsejson)[0]
+          this.modalmsg = responsejson[this.modaltitle]
         }
         else {
-          this.errortitle = 'Error'
-          this.errormsg = await response.text()
+          this.modaltitle = 'Error'
+          this.modalmsg = await response.text()
         }
-        this.$bvModal.show("error-modal")
+        this.variant = 'danger'
+        this.$bvModal.show("msg-modal")
       }
       this.loading = false
       return response
@@ -953,14 +954,3 @@ export default {
   },
 }
 </script>
-
-<style scoped>
-input[type=file] {
-  display: none
-}
-
-.collapsed .when-open,
-.not-collapsed .when-closed {
-  display: none;
-}
-</style>

@@ -23,6 +23,9 @@ class TaxonRank(models.Model):
         max_length=10,
         choices=RANK_CHOICES,
     )
+    description = models.TextField(
+        blank=True
+    )
 
     @property
     def lineage(self):
@@ -185,8 +188,10 @@ class ADAPTRun(models.Model):
     submit_time = models.DateTimeField(
         auto_now_add=True
     )
+
     @property
     def short_id(self):
         return self.cromwell_id[:8]
+
     class Meta:
         ordering = ['-submit_time']

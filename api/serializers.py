@@ -20,7 +20,7 @@ class TaxonRankSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = TaxonRank
-        fields = ('pk', 'taxon', 'latin_name', 'rank', 'parent', 'num_children', 'any_assays')
+        fields = ('pk', 'taxon', 'latin_name', 'rank', 'parent', 'num_children', 'description', 'any_assays')
 
 
 class PrimerSerializer(serializers.ModelSerializer):

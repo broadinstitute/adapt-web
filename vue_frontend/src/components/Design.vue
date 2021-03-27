@@ -4,8 +4,8 @@
       v-for="taxon in Object.keys(taxons)"
       :key="taxon"
     >
-      <b-row>
-        <b-col md=9 cols=12>
+      <b-row align-v="center">
+        <b-col md=8 cols=12>
           <b-button
             @click.prevent="select(taxon)"
             :class="[{'selected': taxons[taxon].selected, 'selectable': taxons[taxon].selectable}, 'p-1', 'taxon', taxons[taxon].rank]"
@@ -24,7 +24,8 @@
             <b-icon-chevron-down class="arrow" font-scale="1.75" :aria-label="'Toggle ' + taxons[taxon].name"/>
           </b-button>
         </b-col>
-        <b-col md=3 cols=12>
+        <b-col md=4 cols=12>
+          <i>{{ taxons[taxon].description }}</i>
         </b-col>
       </b-row>
       <b-collapse :id="taxon + '-toggle'" v-if="taxons[taxon].shown">
@@ -64,6 +65,7 @@ export default {
             name: response_json[child].latin_name,
             rank: response_json[child].rank,
             num_children: response_json[child].num_children,
+            description: response_json[child].description,
             selectable: response_json[child].any_assays,
             shown: false,
             selected: false,

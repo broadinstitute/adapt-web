@@ -1,10 +1,16 @@
 <template>
   <b-modal
-    :id="success? 'success-modal' : 'error-modal'"
+    id="msg-modal"
     size="lg"
+    :header-bg-variant="variant"
+    :header-text-variant="variant"
+    :body-bg-variant="variant"
+    :body-text-variant="variant"
+    :footer-bg-variant="variant"
+    :footer-text-variant="variant"
     :title="title"
     ok-only
-    :ok-variant="success? 'success' : 'danger'"
+    :ok-variant="variant"
     centered
     scrollable
   >
@@ -19,7 +25,7 @@
 export default {
   name: 'Modal',
   props: {
-    success: Boolean,
+    variant: String,
     title: String,
     msg: String
   },

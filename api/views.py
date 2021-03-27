@@ -151,6 +151,60 @@ def _files(s3_file_paths):
     return output_files
 
 
+def _file_to_dict(output_file):
+    content = {}
+    lines = output_file.splitlines()
+    headers = lines[0].split('\t')
+    for i, line in enumerate(lines[1:]):
+        raw_content = {headers[k]: val for k,val in enumerate(line.split('\t'))}
+        content[i] = {}
+        content[i]["rank"] = j
+        content[i]["objective_value"] = float(raw_content["objective-value"])
+        content[i]["left_primers"] = {
+            "frac_bound": float(raw_content["left-primer-frac-bound"]),
+            "start_pos": int(raw_content["left-primer-start"])
+        }
+        content[i]["left_primers"]["primers"] = [
+            {
+                "target": target
+            } \
+        for target in raw_content["left-primer-target-sequences"].split(" ")]
+        content[i]["right_primers"] = {
+            "frac_bound": float(raw_content["right-primer-frac-bound"]),
+            "start_pos": int(raw_content["right-primer-start"])
+        }
+        content[i][j]["right_primers"]["primers"] = [
+            {
+                "target": target
+            } \
+        for target in raw_content["right-primer-target-sequences"].split(" ")]
+        content[i]["amplicon_start"] = int(raw_content["target-start"])
+        content[i]["amplicon_end"] = int(raw_content["target-end"])
+        content[i]["guide_set"] = {
+            "frac_bound": float(raw_content["total-frac-bound-by-guides"]),
+            "expected_activity": float(raw_content["guide-set-expected-activity"]),
+            "median_activity": float(raw_content["guide-set-median-activity"]),
+            "fifth_pctile_activity": float(raw_content["guide-set-5th-pctile-activity"])
+        }
+        start_poses = [
+            [
+                int(start_pos_i) for start_pos_i in start_pos[1:-1].split(", ")
+            ] \
+        for start_pos in raw_content["guide-target-sequence-positions"].split(" ")]
+        expected_activities = [
+            float(expected_activity) \
+        for expected_activity in raw_content["guide-expected-activities"].split(" ")]
+        targets = raw_content["guide-target-sequences"].split(" ")
+        content[i]["guide_set"]["guides"] = [
+            {
+                "start_pos": start_poses[k],
+                "expected_activity": expected_activities[k],
+                "target": targets[k]
+            } \
+        for k in range(len(targets))]
+    return content
+
+
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Produces the various API views for the User Model
@@ -571,14 +625,14 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             return (False, Response({'Input Error': content}, status=httpstatus.HTTP_400_BAD_REQUEST))
         return (True, )
 
-    def _getresults(self, request, *args, **kwargs):
+    @staticmethod
+    def _get_results(adaptrun, data_format):
         """
         Helper function for download and results
         """
         # Check status of run
-        response = self.status(request, *args, **kwargs)
-        if response.status_code == httpstatus.HTTP_200_OK:
-            adaptrun = self.get_object()
+        status_response = ADAPTRunViewSet._get_status(adaptrun)
+        if status_response.status_code == httpstatus.HTTP_200_OK:
             # Only get results if job succeeded
             if adaptrun.status in SUCCESSFUL_STATES:
                 # Call Cromwell server
@@ -586,7 +640,35 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 if isinstance(metadata_response, Response):
                     return metadata_response
                 # Download files from S3
-                return _files(metadata_response["outputs"]["adapt_web.guides"])
+                files = _files(metadata_response["outputs"]["adapt_web.guides"])
+
+                if data_format == 'json':
+                    output_files = [output_file.read().decode("utf-8") for output_file in response]
+                    content = {}
+                    for i, output_file in enumerate(output_files):
+                        content[i] = _file_to_dict(output_files)
+                    response = Response(content)
+                elif data_format == 'file':
+                    if len(files) == 1:
+                        # If there is only one file, no need to zip
+                        output = files[0].read().decode("utf-8")
+                        output_type = "text/tsv"
+                        output_ext = ".tsv"
+                    else:
+                        output_files = [output_file.read().decode("utf-8") for output_file in files]
+                        output_type = "application/zip"
+                        # Create the zip file in memory only
+                        zipped_output = BytesIO()
+                        with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
+                            for i, output_file in enumerate(output):
+                                zipped_output_a.writestr("%s.%i.tsv" %(self.kwargs['pk'], i), output_file)
+                        zipped_output.seek(0)
+                        output = zipped_output
+                        output_ext = ".zip"
+                    filename = self.kwargs['pk']+output_ext
+                    response = FileResponse(output, content_type=output_type)
+                    response['Content-Disposition'] = 'attachment; filename=%s' % filename
+                return response
 
             elif adaptrun.status in FAILED_STATES:
                 # TODO give reasons that the job might fail
@@ -603,7 +685,29 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     "using 'Get Status'."}
                 return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
         else:
-            return response
+            return status_response
+
+    @staticmethod
+    def _get_status(adaptrun):
+        # Check if the run wasn't finished the last time status was checked
+        if adaptrun.status not in FINAL_STATES:
+            # Call Cromwell server
+            try:
+                cromwell_response = requests.get("%s/%s/status" %(SERVER_URL,adaptrun.cromwell_id), verify=False)
+            except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout):
+                content = {'Connection Error': "Unable to connect to our servers. "
+                    "Try again in a few minutes. If it still doesn't work, "
+                    "contact %s." %CONTACT}
+                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+            cromwell_json = cromwell_response.json()
+            # Update the model with the current status
+            adaptrun.status = cromwell_json["status"]
+            adaptrun.save()
+
+        # Return response with id and status
+        content = {'cromwell_id': adaptrun.cromwell_id, 'status': adaptrun.status}
+        return Response(content)
 
     def create(self, request, format=None):
         """
@@ -615,8 +719,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         server, sends the request to Cromwell, and, if successful, saves the
         run metadata in the web server database.
         """
-        # TODO: Validate inputs before sending to Cromwell
-        valid_check = ADAPTRunViewSet._is_valid(request)
+        valid_check = self._is_valid(request)
         if not valid_check[0]:
             return valid_check[1]
         workflowInputs = {
@@ -687,7 +790,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             if 'fasta[]' in request.FILES:
                 input_files = []
                 for i, input_file in enumerate(request.FILES.getlist('fasta[]')):
-                    if not ADAPTRunViewSet._check_fasta(input_file):
+                    if not self._check_fasta(input_file):
                         content = {'Input Error': "Please only select FASTAs for input files."}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
                     key = "%s/in_%i_%s"%(S3_id, i, _replace_spaces(input_file.name))
@@ -699,7 +802,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             if 'sp_fasta[]' in request.FILES:
                 sp_files = []
                 for i, sp_file in enumerate(request.FILES.getlist('sp_fasta[]')):
-                    if not ADAPTRunViewSet._check_fasta(sp_file):
+                    if not self._check_fasta(sp_file):
                         content = {'Input Error': "Please only select FASTAs for specificity files."}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
                     key = "%s/sp_%i_%s"%(S3_id, i, _replace_spaces(sp_file.name))
@@ -736,6 +839,37 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         rsp = Response(serializer.data, status=httpstatus.HTTP_201_CREATED)
         return rsp
 
+    @action(detail=False, url_path=r'id_prefix/(?P<idprefix>[a-z0-9\-]+)/(?P<action>[a-z]+)')
+    def id_prefix(self, request, *args, **kwargs):
+        """
+        Performs one of the actions below based on a run ID prefix specified in request
+
+        Function called at the "id_prefix" API endpoint
+        """
+        content = None
+        try:
+            adaptrun = ADAPTRun.objects.get(cromwell_id__startswith=kwargs["idprefix"])
+        except ADAPTRun.DoesNotExist:
+            content = {'Input Error': "ID prefix '%s' does not match any IDs. "
+            "Please double check your input." %kwargs["idprefix"]}
+        except ADAPTRun.MultipleObjectsReturned:
+            content = {'Input Error': "ID prefix '%s' matches multiple IDs. "
+            "Please include more characters." %kwargs["idprefix"]}
+        else:
+            if kwargs["action"] == 'status':
+                return self._get_status(adaptrun)
+            elif kwargs["action"] == 'results':
+                return self._get_results(adaptrun, 'json')
+            elif kwargs["action"] == 'download':
+                return self._get_results(adaptrun, 'file')
+            elif kwargs["action"] == 'detail':
+                return Response(ADAPTRunSerializer(adaptrun).data)
+            else:
+                content = {'Input Error': "Action '%s' is not a valid action. "
+                "Action must be 'status', 'results', or 'download'." %kwargs["action"]}
+
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
     @action(detail=True)
     def status(self, request, *args, **kwargs):
         """
@@ -744,25 +878,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         Function called at the "status" API endpoint
         """
         adaptrun = self.get_object()
-        # Check if the run wasn't finished the last time status was checked
-        if adaptrun.status not in FINAL_STATES:
-            # Call Cromwell server
-            try:
-                cromwell_response = requests.get("%s/%s/status" %(SERVER_URL,adaptrun.cromwell_id), verify=False)
-            except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout):
-                content = {'Connection Error': "Unable to connect to our servers. "
-                    "Try again in a few minutes. If it still doesn't work, "
-                    "contact %s." %CONTACT}
-                return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
-            cromwell_json = cromwell_response.json()
-            # Update the model with the current status
-            adaptrun.status = cromwell_json["status"]
-            adaptrun.save()
-
-        # Return response with id and status
-        content = {'cromwell_id': adaptrun.cromwell_id, 'status': adaptrun.status}
-        return Response(content)
+        return self._get_status(adaptrun)
 
     @action(detail=True)
     def results(self, request, *args, **kwargs):
@@ -771,66 +887,8 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
 
         Function called at the "results" API endpoint
         """
-        response = self._getresults(request, *args, **kwargs)
-        # The 'response' from _getresults is either an HTTP Response
-        # or a list of files which needs to be processed
-        if isinstance(response, list):
-            output_files = [output_file.read().decode("utf-8") for output_file in response]
-            content = {}
-
-            for i, output_file in enumerate(output_files):
-                content[i] = {}
-                lines = output_file.splitlines()
-                headers = lines[0].split('\t')
-                for j, line in enumerate(lines[1:]):
-                    raw_content = {headers[k]: val for k,val in enumerate(line.split('\t'))}
-                    content[i][j] = {}
-                    content[i][j]["rank"] = j
-                    content[i][j]["objective_value"] = float(raw_content["objective-value"])
-                    content[i][j]["left_primers"] = {
-                        "frac_bound": float(raw_content["left-primer-frac-bound"]),
-                        "start_pos": int(raw_content["left-primer-start"])
-                    }
-                    content[i][j]["left_primers"]["primers"] = [
-                        {
-                            "target": target
-                        } \
-                    for target in raw_content["left-primer-target-sequences"].split(" ")]
-                    content[i][j]["right_primers"] = {
-                        "frac_bound": float(raw_content["right-primer-frac-bound"]),
-                        "start_pos": int(raw_content["right-primer-start"])
-                    }
-                    content[i][j]["right_primers"]["primers"] = [
-                        {
-                            "target": target
-                        } \
-                    for target in raw_content["right-primer-target-sequences"].split(" ")]
-                    content[i][j]["amplicon_start"] = int(raw_content["target-start"])
-                    content[i][j]["amplicon_end"] = int(raw_content["target-end"])
-                    content[i][j]["guide_set"] = {
-                        "frac_bound": float(raw_content["total-frac-bound-by-guides"]),
-                        "expected_activity": float(raw_content["guide-set-expected-activity"]),
-                        "median_activity": float(raw_content["guide-set-median-activity"]),
-                        "fifth_pctile_activity": float(raw_content["guide-set-5th-pctile-activity"])
-                    }
-                    start_poses = [
-                        [
-                            int(start_pos_i) for start_pos_i in start_pos[1:-1].split(", ")
-                        ] \
-                    for start_pos in raw_content["guide-target-sequence-positions"].split(" ")]
-                    expected_activities = [
-                        float(expected_activity) \
-                    for expected_activity in raw_content["guide-expected-activities"].split(" ")]
-                    targets = raw_content["guide-target-sequences"].split(" ")
-                    content[i][j]["guide_set"]["guides"] = [
-                        {
-                            "start_pos": start_poses[k],
-                            "expected_activity": expected_activities[k],
-                            "target": targets[k]
-                        } \
-                    for k in range(len(targets))]
-
-            response = Response(content)
+        adaptrun = self.get_object()
+        response = self._get_results(adaptrun, 'json')
         return response
 
     @action(detail=True)
@@ -841,27 +899,6 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         Makes a TSV if there is only one file and a ZIP otherwise.
         Function called at the "download" API endpoint.
         """
-        response = self._getresults(request, *args, **kwargs)
-        # The 'response' from _getresults is either an HTTP Response
-        # or a list of files which needs to be processed
-        if isinstance(response, list):
-            if len(response) == 1:
-                # If there is only one file, no need to zip
-                output = response[0].read().decode("utf-8")
-                output_type = "text/tsv"
-                output_ext = ".tsv"
-            else:
-                output_files = [output_file.read().decode("utf-8") for output_file in response]
-                output_type = "application/zip"
-                # Create the zip file in memory only
-                zipped_output = BytesIO()
-                with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
-                    for i, output_file in enumerate(output):
-                        zipped_output_a.writestr("%s.%i.tsv" %(self.kwargs['pk'], i), output_file)
-                zipped_output.seek(0)
-                output = zipped_output
-                output_ext = ".zip"
-            filename = self.kwargs['pk']+output_ext
-            response = FileResponse(output, content_type=output_type)
-            response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        adaptrun = self.get_object()
+        response = self._get_results(adaptrun, 'file')
         return response

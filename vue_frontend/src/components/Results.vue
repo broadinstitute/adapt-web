@@ -1,16 +1,16 @@
 <template>
   <transition appear name="fade">
     <div class="results">
-      <Modal :success='true' title='Job Submitted!' :msg='submittedmsg'></Modal>
-      <Modal :success='false' :title='errortitle' :msg='errormsg'></Modal>
-      <ValidationObserver ref="status-form" v-slot="{ handleSubmit }">
+      <Modal :variant='variant' :title='modaltitle' :msg='modalmsg'></Modal>
+      <ValidationObserver ref="status-form" v-slot="{ validate }">
         <b-form id="status-form">
           <b-row>
             <b-col cols=12 md=4>
               <div class="h4 font-weight-bold" v-show="runids.length">Previous Runs</div>
               <b-list-group>
-                <b-list-group-item v-for="(runid, index) in runids" :key="runid" button v-on:click.prevent.stop.self="setRunID(runid)">
-                  {{ runid }}
+                <b-list-group-item v-for="(runid, index) of runids" :key="runid.id" button v-on:click.prevent.stop.self="setRunID(runid.id)">
+                  {{ runid.id }}<br>
+                  <i class='f-5'>{{ runid.time.toLocaleString() }}</i>
                   <b-button pill v-on:click.prevent="deleteRunID(index)" variant="outline-danger" class="font-weight-bold" style="float: right;"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
                 </b-list-group-item>
               </b-list-group>
@@ -54,7 +54,7 @@
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="handleSubmit(run_status)" :disabled="loading!=''" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="status_submit">Get Status</b-button>
+                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('status')}})" :disabled="loading!=''" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="status_submit">Get Status</b-button>
               </b-overlay>
               <b-overlay
                 :show="loading=='download'"
@@ -63,7 +63,7 @@
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="handleSubmit(get_results)" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="download_submit">Download Results</b-button>
+                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('download')}})" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="download_submit">Download Results</b-button>
               </b-overlay>
               <b-overlay
                 :show="loading=='show'"
@@ -72,11 +72,10 @@
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="handleSubmit(show_results)" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="show_submit">Show Results</b-button>
+                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('results')}})" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="show_submit">Show Results</b-button>
               </b-overlay>
             </b-col>
           </b-row>
-          <span v-show="status">Status: {{ status }}</span>
         </b-form>
       </ValidationObserver>
     </div>
@@ -108,15 +107,10 @@ export default {
     return {
       runids: [],
       runid: '',
-      status: '',
-      errortitle: '',
-      errormsg: '',
+      modaltitle: '',
+      modalmsg: '',
       loading: '',
-    }
-  },
-  computed: {
-    submittedmsg() {
-      return 'Your run ID is <b>' + this.runid + '</b>. Store this for future reference.<br>Use this site to check for its status.'
+      variant: '',
     }
   },
   mounted () {
@@ -127,115 +121,103 @@ export default {
     // Check if a job was just submitted based on cookies
     let runids_str = Cookies.get('runid')
     if (runids_str != null && runids_str != '') {
-      this.runids = runids_str.split(',')
-      this.runid = this.runids[this.runids.length - 1]
+      for (let runid_str of runids_str.split(',')) {
+        let runid_parts = runid_str.split(';')
+        this.runids.push({
+          'id': runid_parts[0],
+          'time': new Date(runid_parts[1])
+        })
+      }
+      this.runids.sort((a,b) => b.time-a.time)
+      this.runid = this.runids[0].id
       if (Cookies.get('submitted') == 'true') {
         Cookies.remove('submitted')
-        this.$bvModal.show("success-modal")
+        this.modaltitle = 'Job submitted!'
+        this.modalmsg = 'Your run ID is <b>' + this.runid + '</b>. Store this for future reference.<br>Use this site to check for its status.'
+        this.variant = 'success'
+        this.$bvModal.show("msg-modal")
         }
     }
   },
   methods: {
-    async run_status() {
-      this.loading = 'status'
-      // Check the status of a job from backend
-      if (!this.runids.includes(this.runid)) {
-        this.runids.push(this.runid)
-      }
-      let prev_runids = Cookies.get('runid')
-      if (prev_runids == null) {
-        Cookies.set('runid', this.runid)
-      }
-      else if (!prev_runids.includes(this.runid)) {
-        Cookies.set('runid', prev_runids + ',' + this.runid)
-      }
+    async call_server(action) {
+      this.loading = action
 
-      let response = await fetch('/api/adaptrun/' + this.runid + '/status', {
+      let response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/' + action, {
         headers: {
           "X-CSRFToken": csrfToken
         }
       })
+
       if (response.ok) {
-        response = await response.json().then(data => ({
-          data: data,
-          status: response.status
-        }))
-        this.status = response.data.status
+        if (!this.runids.some((runid) => runid.id.includes(this.runid))) {
+          let detail_response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/detail', {
+            headers: {
+              "X-CSRFToken": csrfToken
+            }
+          })
+          if (detail_response.ok) {
+            let date_str = await detail_response.json().then(data => data.submit_time)
+            this.runids.push({
+              'id': this.runid,
+              'time': new Date(date_str)
+            })
+            this.runids.sort((a,b) => b.time-a.time)
+            let prev_runids = Cookies.get('runid')
+            if (prev_runids == null) {
+              Cookies.set('runid', this.runid + ';' + date_str)
+            }
+            else if (!prev_runids.includes(this.runid)) {
+              Cookies.set('runid', prev_runids + ',' + this.runid + ';' + date_str)
+            }
+          }
+        }
+
+        switch(action) {
+          case 'status':
+            response = await response.json().then(data => ({
+              data: data,
+              status: response.status
+            }));
+            switch(response.data.status) {
+              case 'Succeeded':
+                this.modaltitle = 'Job Succeeded';
+                this.modalmsg = 'Run ' + this.runid + ' has finished running. Use "Show Results" to see the output.';
+                this.variant = 'success';
+                this.$bvModal.show("msg-modal");
+                break;
+              case 'Failed':
+                this.modaltitle = 'Job Failed';
+                this.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact ppillai@broadinstitute.org.';
+                this.variant = 'danger';
+                this.$bvModal.show("msg-modal");
+                break;
+            }
+            break;
+          case 'results':
+            this.$root.$data.resultjson = await response.json();
+            this.$root.$data.runid = this.runid;
+            this.$root.$emit('show-assays');
+            break;
+          case 'download':
+            this.download_file(response)
+            break;
+        }
       } else {
         let contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
           let responsejson = await response.json()
-          this.errortitle = Object.keys(responsejson)[0]
-          this.errormsg = responsejson[this.errortitle]
+          this.modaltitle = Object.keys(responsejson)[0]
+          this.modalmsg = responsejson[this.modaltitle]
         }
         else {
-          this.errortitle = 'Error'
-          this.errormsg = await response.text()
+          this.modaltitle = 'Error'
+          this.modalmsg = await response.text()
         }
-        this.$bvModal.show("error-modal")
-      }
-      this.loading = ''
-      return response
-    },
-    async show_results(loading) {
-      this.loading = loading
-      // Get results JSON from backend
-      if (!this.runids.includes(this.runid)) {
-        this.runids.push(this.runid)
-      }
-      let prev_runids = Cookies.get('runid')
-      if (prev_runids == null) {
-        Cookies.set('runid', this.runid)
-      }
-      else if (!prev_runids.includes(this.runid)) {
-        Cookies.set('runid', prev_runids + ',' + this.runid)
+        this.variant = 'danger'
+        this.$bvModal.show("msg-modal")
       }
 
-      let response = await fetch('/api/adaptrun/' + this.runid + '/results', {
-        headers: {
-          "X-CSRFToken": csrfToken
-        }
-      })
-      if (response.ok) {
-        this.$root.$data.resultjson = await response.json()
-        this.$root.$data.runid = this.runid
-        this.$root.$emit('show-assays');
-      } else {
-        let responsejson = await response.json()
-        this.errortitle = Object.keys(responsejson)[0]
-        this.errormsg = responsejson[this.errortitle]
-        this.$bvModal.show("error-modal")
-      }
-      this.loading = ''
-      return response
-    },
-    async get_results() {
-      this.loading = 'download'
-      // Download results as a TSV or ZIP from backend
-      if (!this.runids.includes(this.runid)) {
-        this.runids.push(this.runid)
-      }
-      let prev_runids = Cookies.get('runid')
-      if (prev_runids == null) {
-        Cookies.set('runid', this.runid)
-      }
-      else if (!prev_runids.includes(this.runid)) {
-        Cookies.set('runid', prev_runids + ',' + this.runid)
-      }
-
-      let response = await fetch('/api/adaptrun/' + this.runid + '/download', {
-        headers: {
-          "X-CSRFToken": csrfToken
-        }
-      })
-      if (response.ok) {
-          this.download_file(response)
-      } else {
-        let responsejson = await response.json()
-        this.errortitle = Object.keys(responsejson)[0]
-        this.errormsg = responsejson[this.errortitle]
-        this.$bvModal.show("error-modal")
-      }
       this.loading = ''
       return response
     },
@@ -261,7 +243,6 @@ export default {
     clearRunID() {
       Cookies.remove('runid')
       this.runids=[]
-      this.runid=''
     },
     setRunID(runid) {
       this.runid = runid
@@ -269,7 +250,11 @@ export default {
     deleteRunID(index) {
       this.runids.splice(index, 1);
       if (this.runids.length > 0) {
-        Cookies.set('runid', this.runids.join())
+        let runid_strs = []
+        for (let runid of this.runids) {
+          runid_strs.push(runid.id + ';' + runid.time.toISOString())
+        }
+        Cookies.set('runid', runid_strs.join())
       } else {
         Cookies.remove('runid')
       }

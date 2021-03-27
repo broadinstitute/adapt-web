@@ -170,28 +170,28 @@ button, input[type=button] {
 }
 
 // Part Specific - Modals
-#success-modal .modal-content {
-  color: $success;
-  background-color: color.scale($success, $lightness: 92%, $saturation: -46%);
+.modal-content {
   border: 0px;
-}
-
-#success-modal .modal-content .modal-header {
-  background-color: color.scale($success, $lightness: 89%, $saturation: -45%);
 }
 
 .modal-footer {
   border-top: 0px;
 }
 
-#error-modal .modal-content {
-  color: $danger;
-  background-color: color.scale($danger, $lightness: 93%, $saturation: -46%);
-  border: 0px;
+.modal-body.bg-success, .modal-footer.bg-success {
+  background-color: color.scale($success, $lightness: 92%, $saturation: -46%) !important;
 }
 
-#error-modal .modal-content .modal-header {
-  background-color: color.scale($danger, $lightness: 91%, $saturation: -45%);
+.modal-header.bg-success {
+  background-color: color.scale($success, $lightness: 89%, $saturation: -45%) !important;
+}
+
+.modal-body.bg-danger, .modal-footer.bg-danger {
+  background-color: color.scale($danger, $lightness: 93%, $saturation: -46%) !important;
+}
+
+.modal-header.bg-danger {
+  background-color: color.scale($danger, $lightness: 91%, $saturation: -45%) !important;
 }
 
 // Part Specific - Misc
