@@ -155,7 +155,4 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
-    '/django_backend/static/',
 ]
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
