@@ -158,7 +158,7 @@ def _file_to_dict(output_file):
     for i, line in enumerate(lines[1:]):
         raw_content = {headers[k]: val for k,val in enumerate(line.split('\t'))}
         content[i] = {}
-        content[i]["rank"] = j
+        content[i]["rank"] = i
         content[i]["objective_value"] = float(raw_content["objective-value"])
         content[i]["left_primers"] = {
             "frac_bound": float(raw_content["left-primer-frac-bound"]),
