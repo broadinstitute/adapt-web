@@ -643,7 +643,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 files = _files(metadata_response["outputs"]["adapt_web.guides"])
 
                 if data_format == 'json':
-                    output_files = [output_file.read().decode("utf-8") for output_file in response]
+                    output_files = [output_file.read().decode("utf-8") for output_file in files]
                     content = {}
                     for i, output_file in enumerate(output_files):
                         content[i] = _file_to_dict(output_files)
@@ -665,7 +665,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         zipped_output.seek(0)
                         output = zipped_output
                         output_ext = ".zip"
-                    filename = self.kwargs['pk']+output_ext
+                    filename = adaptrun.cromwell_id[:8]+output_ext
                     response = FileResponse(output, content_type=output_type)
                     response['Content-Disposition'] = 'attachment; filename=%s' % filename
                 return response
