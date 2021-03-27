@@ -646,7 +646,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     output_files = [output_file.read().decode("utf-8") for output_file in files]
                     content = {}
                     for i, output_file in enumerate(output_files):
-                        content[i] = _file_to_dict(output_files)
+                        content[i] = _file_to_dict(output_file)
                     response = Response(content)
                 elif data_format == 'file':
                     if len(files) == 1:
