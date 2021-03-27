@@ -173,7 +173,7 @@ def _file_to_dict(output_file):
             "frac_bound": float(raw_content["right-primer-frac-bound"]),
             "start_pos": int(raw_content["right-primer-start"])
         }
-        content[i][j]["right_primers"]["primers"] = [
+        content[i]["right_primers"]["primers"] = [
             {
                 "target": target
             } \
@@ -197,11 +197,11 @@ def _file_to_dict(output_file):
         targets = raw_content["guide-target-sequences"].split(" ")
         content[i]["guide_set"]["guides"] = [
             {
-                "start_pos": start_poses[k],
-                "expected_activity": expected_activities[k],
-                "target": targets[k]
+                "start_pos": start_poses[j],
+                "expected_activity": expected_activities[j],
+                "target": targets[j]
             } \
-        for k in range(len(targets))]
+        for j in range(len(targets))]
     return content
 
 
