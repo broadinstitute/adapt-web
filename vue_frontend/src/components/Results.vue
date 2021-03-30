@@ -66,7 +66,7 @@
                 <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('download')}})" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="mt-2" name="download_submit">Download Results</b-button>
               </b-overlay>
               <b-overlay
-                :show="loading=='show'"
+                :show="loading=='results'"
                 rounded="pill"
                 opacity="0.7"
                 blur="5px"
