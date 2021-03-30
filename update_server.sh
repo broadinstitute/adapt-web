@@ -1,5 +1,4 @@
 sudo systemctl stop gunicorn.socket
-cd adapt-web
 git reset --hard
 git pull origin main
 yarn --cwd vue_frontend/ build

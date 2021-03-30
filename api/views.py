@@ -643,6 +643,8 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     return metadata_response
                 # Download files from S3
                 files = _files(metadata_response["outputs"]["adapt_web.guides"])
+                if isinstance(files, Response):
+                    return files
 
                 if data_format == 'json':
                     output_files = [output_file.read().decode("utf-8") for output_file in files]
