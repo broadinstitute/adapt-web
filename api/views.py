@@ -107,6 +107,8 @@ def _replace_spaces(filename):
 
 
 def _metadata(cromwell_id):
+    if cromwell_id.startswith('example'):
+        return {'outputs': {"adapt_web.guides": ['s3://adaptwebstorage/example_files/example_results.tsv']}}
     try:
         cromwell_response = requests.get("%s/%s/metadata" %(SERVER_URL, cromwell_id), verify=False)
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
@@ -665,7 +667,10 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         zipped_output.seek(0)
                         output = zipped_output
                         output_ext = ".zip"
-                    filename = adaptrun.cromwell_id[:8]+output_ext
+                    if adaptrun.cromwell_id.startswith("example"):
+                        filename = adaptrun.cromwell_id+output_ext
+                    else:
+                        filename = adaptrun.cromwell_id[:8]+output_ext
                     response = FileResponse(output, content_type=output_type)
                     response['Content-Disposition'] = 'attachment; filename=%s' % filename
                 return response
@@ -690,7 +695,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
     @staticmethod
     def _get_status(adaptrun):
         # Check if the run wasn't finished the last time status was checked
-        if adaptrun.status not in FINAL_STATES:
+        if adaptrun.status not in FINAL_STATES and not adaptrun.cromwell_id.startswith('example'):
             # Call Cromwell server
             try:
                 cromwell_response = requests.get("%s/%s/status" %(SERVER_URL,adaptrun.cromwell_id), verify=False)

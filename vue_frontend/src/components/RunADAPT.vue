@@ -11,19 +11,24 @@
             v-for="sec in get_sub(inputs)"
             :key="inputs[sec].order"
             :id="sec"
+            :aria-describedby="sec + '-help '"
           >
           <!-- Make collapsible section, if it is one -->
-          <legend class="my-0 col-form-label-lg pt-0 font-weight-bold"
-          >{{ inputs[sec].label }}
-            <b-link
+          <legend :class="[{ 'pb-0': inputs[sec].description, 'pb-2': !inputs[sec].description }, 'my-0 col-form-label-lg pt-0 font-weight-bold']">
+            {{ inputs[sec].label }}
+            <b-button
+              :id="sec+'-arrow'"
+              :class="'px-0'"
               v-if="inputs[sec].collapsible"
               @click.prevent
               v-b-toggle
               :href="'#' + sec + '-toggle'"
+              variant="link"
             >
-              <b-icon-chevron-down class="arrow" :aria-label="'Toggle ' + inputs[sec].label"/>
-            </b-link>
+              <b-icon-chevron-down class="arrow" font-scale="1.5" :aria-label="'Toggle ' + inputs[sec].label"/>
+            </b-button>
           </legend>
+          <b-form-text v-if="inputs[sec].description" v-html="inputs[sec].description" :id="sec + '-help'" class="m-0 pb-2 f-5"></b-form-text>
             <b-collapse
               :id="sec + '-toggle'"
               :visible="inputs[sec].collapsible ? false : true"
@@ -34,14 +39,24 @@
                 v-for="subsec in get_sub(inputs[sec])"
                 v-show="inputs[sec][subsec].show"
                 :label="inputs[sec][subsec].label ? inputs[sec][subsec].label : ''"
-                label-class="h3"
+                :label-class="[{ 'py-0': inputs[sec][subsec].description || inputs[sec][subsec].predescription || inputs[sec][subsec].dynamic_description, 'pb-2': !(inputs[sec][subsec].description || inputs[sec][subsec].predescription || inputs[sec][subsec].dynamic_description)}, 'h3']"
                 :key="inputs[sec][subsec].order"
                 :id="sec + '-' + subsec"
+                :aria-describedby="(inputs[sec][subsec].description || inputs[sec][subsec].predescription || inputs[sec][subsec].dynamic_description)? sec + '-' + subsec  + '-help': ''"
               >
                 <b-form-row
                   v-show="inputs[sec][subsec].show"
                   v-if="inputs[sec][subsec].type != 'multi'"
                 >
+                  <b-form-text v-if="inputs[sec][subsec].description" v-html="inputs[sec][subsec].description" :id="sec + '-' + subsec  + '-help'" class="m-0 pb-2 pl-1 f-6"></b-form-text>
+                  <b-form-text v-else-if="inputs[sec][subsec].predescription" :id="sec + '-' + subsec  + '-help'" class="m-0 pb-2 pl-1 f-6">
+                    <span v-html="inputs[sec][subsec].predescription"/>
+                    <b>{{ inputs[sec][subsec][inputs[sec][subsec].ref_var].value==""? inputs[sec][subsec][inputs[sec][subsec].ref_var].placeholder : inputs[sec][subsec][inputs[sec][subsec].ref_var].value }}</b>
+                    <span v-html="inputs[sec][subsec].postdescription"/>
+                  </b-form-text>
+                  <b-form-text v-else-if="inputs[sec][subsec].dynamic_description" :id="sec + '-' + subsec  + '-help'" class="m-0 pb-2 pl-1 f-6">
+                    <span v-html="inputs[sec][subsec].dynamic_description[inputs[sec][subsec][inputs[sec][subsec].ref_var].value]"/>
+                  </b-form-text>
                   <!-- Field loop -->
                   <b-col
                     v-for="input_var in get_sub(inputs[sec][subsec])"
@@ -54,6 +69,7 @@
                       :label="inputs[sec][subsec][input_var].label"
                       :label-for="input_var"
                       label-align=left
+                      :id="sec + '-' + subsec + '-' + input_var"
                     >
                       <!-- ValidationProvider allows VeeValidate to put rules on a field -->
                       <ValidationProvider
@@ -67,12 +83,12 @@
                         <b-form-file
                           v-if="inputs[sec][subsec][input_var].type == 'file'"
                           v-model="inputs[sec][subsec][input_var].value"
-                          :id="input_var"
+                          :id="subsec + '-' + input_var"
                           :file-name-formatter="formatNames"
                           placeholder="Choose files or drop them here..."
                           drop-placeholder="Drop files here..."
                           accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln"
-                          :aria-describedby="input_var + '-feedback'"
+                          :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           :state="getValidationState(validationContext)"
                           @change="validationContext.validate"
                           multiple
@@ -81,29 +97,30 @@
                         <b-form-checkbox-group
                           v-if="inputs[sec][subsec][input_var].type == 'checkbox'"
                           v-model="inputs[sec][subsec][input_var].value"
-                          :id="input_var"
+                          :id="subsec + '-' + input_var"
                           :options="inputs[sec][subsec][input_var].fields"
                           :disabled="loading"
+                          :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           switches
                           class="text-center"
-                        >{{ inputs[sec][subsec][input_var].label }}</b-form-checkbox-group>
+                        ></b-form-checkbox-group>
                         <b-form-input
                           v-if="inputs[sec][subsec][input_var].type == 'number'"
                           v-model="inputs[sec][subsec][input_var].value"
                           :placeholder="inputs[sec][subsec][input_var].placeholder ? inputs[sec][subsec][input_var].placeholder.toString() : ''"
-                          :id="input_var"
+                          :id="subsec + '-' + input_var"
                           :type="inputs[sec][subsec][input_var].type"
                           :step="inputs[sec][subsec][input_var].step"
-                          :aria-describedby="input_var + '-feedback'"
+                          :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           :state="getValidationState(validationContext)"
                           :disabled="loading"
                         ></b-form-input>
                         <b-form-select
                           v-if="inputs[sec][subsec][input_var].type == 'options'"
                           v-model="inputs[sec][subsec][input_var].value"
-                          :id="input_var"
+                          :id="subsec + '-' + input_var"
                           :options="inputs[sec][subsec][input_var].options"
-                          :aria-describedby="input_var + '-feedback'"
+                          :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           :state="getValidationState(validationContext)"
                           :disabled="loading"
                         >
@@ -111,9 +128,9 @@
                         <b-form-radio-group
                           v-if="inputs[sec][subsec][input_var].type == 'radio'"
                           v-model="inputs[sec][subsec][input_var].value"
-                          :id="input_var"
+                          :id="subsec + '-' + input_var"
                           :options="inputs[sec][subsec][input_var].options"
-                          :aria-describedby="input_var + '-feedback'"
+                          :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           button-variant="outline-secondary"
                           buttons
                           :disabled="loading"
@@ -123,19 +140,28 @@
                           v-if="inputs[sec][subsec][input_var].type == 'text'"
                           v-model="inputs[sec][subsec][input_var].value"
                           :placeholder="inputs[sec][subsec][input_var].placeholder ? inputs[sec][subsec][input_var].placeholder.toString() : ''"
-                          :id="input_var"
+                          :id="subsec + '-' + input_var"
                           :type="inputs[sec][subsec][input_var].type"
-                          :aria-describedby="input_var + '-feedback'"
+                          :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           :state="getValidationState(validationContext)"
                           :disabled="loading"
                         ></b-form-input>
-                        <b-form-invalid-feedback :id="input_var + '-feedback'" :state="getValidationState(validationContext)">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
+                        <b-form-text v-if="inputs[sec][subsec][input_var].description" :id="subsec + '-' + input_var + '-help'" v-html="inputs[sec][subsec][input_var].description"></b-form-text>
+                        <b-form-text v-else-if="inputs[sec][subsec][input_var].predescription" :id="subsec + '-' + input_var + '-help'" class="m-0 pb-2 f-6">
+                          <span v-html="inputs[sec][subsec][input_var].predescription"/>
+                          <b>{{ inputs[sec][subsec][input_var].value==""? inputs[sec][subsec][input_var].placeholder : inputs[sec][subsec][input_var].value }}</b>
+                          <span v-html="inputs[sec][subsec][input_var].postdescription"/>
+                        </b-form-text>
+                        <b-form-text v-else-if="inputs[sec][subsec][input_var].dynamic_description" :id="subsec + '-' + input_var + '-help'" class="m-0 pb-2 f-6">
+                          <span v-html="inputs[sec][subsec][input_var].dynamic_description[inputs[sec][subsec][input_var].value]"/>
+                        </b-form-text>
+                        <b-form-invalid-feedback :id="subsec + '-' + input_var + '-feedback'" :state="getValidationState(validationContext)">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
                       </ValidationProvider>
                     </b-form-group>
                   </b-col>
                 </b-form-row>
                 <b-form
-                  :id="subsec"
+                  :id="sec + '-' + subsec"
                   v-show="inputs[sec][subsec].show"
                   v-if="inputs[sec][subsec].type == 'multi'"
                 >
@@ -180,7 +206,14 @@
                               :options="inputs[sec][subsec][input_var].fields"
                               :disabled="loading"
                               switches
-                            >{{ inputs[sec][subsec][input_var].label }}</b-form-checkbox-group>
+                              class="text-center"
+                            ></b-form-checkbox-group>
+                            <b-form-text v-if="inputs[sec][subsec][input_var].description" :id="subsec + '-' + input_var + '-help'" v-html="inputs[sec][subsec][input_var].description"></b-form-text>
+                            <b-form-text v-else-if="inputs[sec][subsec][input_var].predescription" :id="subsec + '-' + input_var + '-help'" class="m-0 pb-2 f-6">
+                              <span v-html="inputs[sec][subsec][input_var].predescription"/>
+                              <b>{{ inputs[sec][subsec][input_var].value==""? inputs[sec][subsec][input_var].placeholder : inputs[sec][subsec][input_var].value }}</b>
+                              <span v-html="inputs[sec][subsec][input_var].postdescription"/>
+                            </b-form-text>
                             <b-form-invalid-feedback
                               v-if="inputs[sec][subsec][input_var].valid==false"
                               :key="inputs[sec][subsec][input_var].valid"
@@ -194,16 +227,26 @@
                       </b-form-row>
                     </b-col>
                     <b-col sm=1 cols=4 class="mx-auto mt-sm-4">
-                      <b-button pill v-on:click.prevent="updateList(sec, subsec)" variant="success" class="font-weight-bold add" :disabled="loading"><b-icon-plus aria-label="Add" font-scale="1.5"></b-icon-plus></b-button>
+                      <b-button pill v-on:click.prevent="updateList(sec, subsec)" variant="success" class="add" :disabled="loading"><b-icon-plus aria-label="Add" font-scale="1.5"></b-icon-plus></b-button>
                     </b-col>
                   </b-form-row>
                   <div v-show="!checkEmpty(inputs[sec][subsec].value)">
                     <br>
+                    <b-form-text v-if="inputs[sec][subsec].description" v-html="inputs[sec][subsec].description" :id="sec + '-' + subsec  + '-help'" class="m-0 pb-2 f-5"></b-form-text>
+                    <b-form-text v-else-if="inputs[sec][subsec].predescription" :id="sec + '-' + subsec  + '-help'" class="m-0 pb-2 f-5">
+                      <span v-html="inputs[sec][subsec].predescription"/>
+                      <b>{{ inputs[sec][subsec][inputs[sec][subsec].ref_var].value==""? inputs[sec][subsec][inputs[sec][subsec].ref_var].placeholder : inputs[sec][subsec][inputs[sec][subsec].ref_var].value }}</b>
+                      <span v-html="inputs[sec][subsec].postdescription"/>
+                    </b-form-text>
+                    <b-form-text v-else-if="inputs[sec][subsec].dynamic_description" :id="sec + '-' + subsec  + '-help'" class="m-0 pb-2 f-5">
+                      <span v-html="inputs[sec][subsec].dynamic_description[inputs[sec][subsec][inputs[sec][subsec].ref_var].value]"/>
+                    </b-form-text>
                     <b-table :items="inputs[sec][subsec].value" :fields="createFields(sec, subsec)" small>
                       <template #cell(delete)="data">
-                        <b-button pill v-on:click.prevent="deleteRow(inputs[sec][subsec].value, data.index)" variant="outline-danger" class="font-weight-bold delete" :disabled="loading"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
+                        <b-button pill v-on:click.prevent="deleteRow(inputs[sec][subsec].value, data.index)" variant="outline-danger" class="delete" :disabled="loading"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
                       </template>
                     </b-table>
+
                   </div>
                 </b-form>
               </b-form-group>
@@ -217,7 +260,7 @@
             blur="5px"
             spinner-variant="secondary"
           >
-            <b-button pill block v-on:click.prevent="clearMultiParts().then(handleSubmit(adapt_run))" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" :disabled="loading">Submit a Run</b-button>
+            <b-button pill block v-on:click.prevent="clearMultiParts().then(handleSubmit(adapt_run))" size="lg" type="submit" variant="outline-secondary" :disabled="loading">Submit a Run</b-button>
           </b-overlay>
         </b-form>
       </ValidationObserver>
@@ -406,7 +449,7 @@ export default {
               value: '',
               options: [
                 { value: 'fasta', text: 'Prealigned FASTA' },
-                { value: 'auto-from-args', text: 'Taxonomic ID' },
+                { value: 'auto-from-args', text: 'NCBI Taxonomic ID' },
               ],
               rules: 'required',
               exclude: true,
@@ -417,9 +460,10 @@ export default {
             show: false,
             taxid: {
               order: 0,
-              label: 'Taxonomic ID',
+              label: 'NCBI Taxonomic ID',
               type: 'number',
               value: '',
+              description: 'Sequences will be downloaded from NCBI and aligned.',
               rules: 'required_if:@inputchoice,auto-from-args|min_value:0',
               cols: 12,
             },
@@ -447,32 +491,24 @@ export default {
             show: false,
             fasta: {
               order: 0,
-              label: 'FASTA File',
+              label: 'Prealigned FASTA File',
               type: 'file',
               value: [],
+              description: 'Sequence <i>must</i> be aligned. You can use <a href="https://mafft.cbrc.jp/alignment/server/" target="_blank">MAFFT</a> to align FASTAs.',
               rules: 'required_if:@inputchoice,fasta',
             },
           },
           all: {
             order: 3,
             show: true,
-            obj: {
-              order: 0,
-              label: 'Objective',
-              type: 'radio',
-              value: '',
-              options: [
-                { value: 'maximize-activity', text: 'Maximize Activity' },
-                { value: 'minimize-guides', text: 'Minimize Guides' },
-              ],
-              rules: 'required',
-            },
             bestntargets: {
-              order: 4,
+              order: 0,
               label: 'Number of Assays',
               type: 'number',
               value: 10,
               placeholder: 10,
+              predescription: 'The ',
+              postdescription: ' best assay designs will be outputted.',
               rules: 'between:1,20|integer',
             },
           },
@@ -481,11 +517,13 @@ export default {
           order: 2,
           label: 'Specificity',
           collapsible: false,
+          description: 'Sequences that should not be detected.',
           all: {
             order: 0,
             show: true,
             sp_types: {
               order: 2,
+              label: 'Input Types',
               type: 'checkbox',
               value: [],
               fields: [
@@ -504,6 +542,7 @@ export default {
               order: 0,
               type: 'file',
               label: 'FASTA Files',
+              description: 'Sequences do not need to be aligned.<br>The assays designed will show up negative when tested against the sequences in these FASTAs.',
               value: [],
               rules: 'required_if:@sp_types,sp_fasta',
             },
@@ -513,17 +552,19 @@ export default {
             show: false,
             type: 'multi',
             value: [],
+            description: 'The assays designed will show up negative when tested against these taxons:',
             rules: 'required_if:@sp_types,sp_taxa',
-            taxid: {
+            sp_taxid: {
               order: 0,
-              label: 'Taxonomic ID',
+              label: 'NCBI Taxonomic ID',
               type: 'number',
               value: '',
+              description: 'Sequences will be downloaded from NCBI.',
               rules: 'required',
               valid: null,
               cols: 12,
             },
-            segment: {
+            sp_segment: {
               order: 1,
               show: false,
               label: 'Segment',
@@ -533,7 +574,7 @@ export default {
               rules: '',
               cols: 0,
             },
-            segmented: {
+            sp_segmented: {
               order: 2,
               type: 'checkbox',
               value: [],
@@ -557,6 +598,8 @@ export default {
               type: 'number',
               value: '',
               placeholder: 28,
+              predescription: 'crRNAs will be precisely ',
+              postdescription: ' bases long.',
               rules: 'min_value:1|integer',
               cols: 6,
             },
@@ -566,6 +609,8 @@ export default {
               type: 'number',
               value: '',
               placeholder: 30,
+              predescription: 'Primers will be precisely ',
+              postdescription: ' bases long.',
               rules: 'min_value:1|integer',
               cols: 6,
             },
@@ -575,98 +620,192 @@ export default {
               type: 'number',
               value: '',
               placeholder: 250,
+              predescription: 'The amplified region will be at most ',
+              postdescription: ' bases long.',
               rules: 'amplicon|integer',
             },
+          },
+          primer: {
+            order: 1,
+            show: true,
+            label: 'Primers',
             pm: {
-              order: 3,
+              order: 0,
               label: 'Primer Mismatches',
               type: 'number',
               value: '',
               placeholder: 3,
+              predescription: 'Classify primers with ',
+              postdescription: ' mismatches as inactive.',
               rules: 'min_value:0|integer',
               cols: 4,
             },
             pp: {
-              order: 4,
+              order: 1,
               label: 'Primer Coverage Fraction',
               type: 'number',
               value: '',
               placeholder: 0.98,
               step: 0.01,
+              predescription: ' ',
+              postdescription: ' is the fraction of sequences required to have active primers.',
               rules: 'between:0,1|double',
               cols: 4,
             },
             max_primers_at_site: {
-              order: 5,
+              order: 2,
               label: 'Maximum Primers at Site',
               type: 'number',
               value: '',
               placeholder: 10,
+              predescription: 'No more than ',
+              postdescription: ' primers will be placed at a site',
               rules: 'min_value:1|integer',
               cols: 4,
             },
+            primer_gc_lo: {
+              order: 3,
+              label: 'Low GC Fraction Content',
+              type: 'number',
+              value: '',
+              placeholder: 0.35,
+              step: 0.01,
+              predescription: 'Classify primers with less than a fraction of ',
+              postdescription: ' of bases in the primer that are either G or C as inactive.',
+              rules: 'required_if_less:@primer_gc_hi,0.35|max_value:@primer_gc_hi,High GC Percent Content in Primer|between:0,1|double',
+              cols: 6
+            },
+            primer_gc_hi: {
+              order: 4,
+              label: 'High GC Fraction Content',
+              type: 'number',
+              value: '',
+              placeholder: 0.65,
+              step: 0.01,
+              predescription: 'Classify primers with more than a fraction of ',
+              postdescription: ' of bases in the primer that are either G or C as inactive.',
+              rules: 'required_if_greater:@primer_gc_lo,0.65|min_value:@primer_gc_lo,Low GC Percent Content in Primer|between:0,1|double',
+              cols: 6
+            },
+          },
+          autoadv: {
+            order: 2,
+            show: false,
+            label: 'Alignment',
             cluster_threshold: {
-              order: 6,
+              order: 0,
               label: 'Cluster Threshold',
               type: 'number',
               value: '',
               placeholder: 0.3,
               step: 0.01,
+              description: 'A measure of how similar sequences need to be for them to be aligned.',
               rules: 'double'
             },
           },
-          gc: {
-            order: 1,
+          obj: {
+            order: 3,
             show: true,
-            label: 'Percent GC Content Allowed in Primers',
-            primer_gc_lo: {
-              order: 0,
-              label: 'Low GC Percent Content in Primer',
-              type: 'number',
-              value: '',
-              placeholder: 0.35,
-              step: 0.01,
-              rules: 'required_if_less:@primer_gc_hi,0.35|max_value:@primer_gc_hi,High GC Percent Content in Primer|between:0,1|double',
-              cols: 6
+            label: 'Objective',
+            ref_var: 'obj',
+            dynamic_description: {
+              'maximize-activity': '<b>Maximize Activity</b> uses a machine learning model to optimize the fluorescence of crRNA assay set across all the sequences.',
+              'minimize-guides': '<b>Minimize Guides</b> uses heuristics to determine if the crRNA is active and adds crRNAs to the assay until a certain percentage of all the sequences have an active crRNA in the assay.'
             },
-            primer_gc_hi: {
-              order: 1,
-              label: 'High GC Percent Content in Primer',
+            obj: {
+              order: 0,
+              type: 'radio',
+              value: 'maximize-activity',
+              options: [
+                { value: 'maximize-activity', text: 'Maximize Activity' },
+                { value: 'minimize-guides', text: 'Minimize Guides' },
+              ],
+              rules: 'required',
+            },
+          },
+          minguides: {
+            order: 4,
+            show: false,
+            gm: {
+              order: 0,
+              label: 'Guide Mismatches',
               type: 'number',
               value: '',
-              placeholder: 0.65,
+              placeholder: 3,
+              predescription: 'Classify crRNAs with ',
+              postdescription: ' mismatches or more as inactive.',
+              rules: 'min_value:0|integer',
+              cols: 6,
+            },
+            gp: {
+              order: 1,
+              label: 'Guide Coverage Fraction',
+              type: 'number',
+              value: '',
+              placeholder: 0.98,
               step: 0.01,
-              rules: 'required_if_greater:@primer_gc_lo,0.65|min_value:@primer_gc_lo,Low GC Percent Content in Primer|between:0,1|double',
-              cols: 6
+              rules: 'between:0,1|double',
+              predescription: ' ',
+              postdescription: ' is the fraction of sequences required to have an active crRNA.',
+              cols: 6,
+            },
+          },
+          maxact: {
+            order: 5,
+            show: true,
+            soft_guide_constraint: {
+              order: 0,
+              label: 'Soft Guide Constraint',
+              type: 'number',
+              value: '',
+              placeholder: 1,
+              predescription: 'Penalize each extra crRNA above ',
+              postdescription: '.',
+              rules: 'max_value:@hard_guide_constraint,Hard Guide Constraint|min_value:1|integer',
+              cols: 6,
+            },
+            hard_guide_constraint: {
+              order: 1,
+              label: 'Hard Guide Constraint',
+              type: 'number',
+              value: '',
+              placeholder: 5,
+              predescription: 'Prevent the assay from having more than ',
+              postdescription: ' crRNAs.',
+              rules: 'required_if_greater:@soft_guide_constraint,5|min_value:@soft_guide_constraint,Soft Guide Constraint|integer',
+              cols: 6,
             },
           },
           objw: {
-            order: 2,
+            order: 6,
             show: true,
-            label: 'Objective Function Weights',
             objfnweights_a: {
-              order: 0,
-              label: 'Penalty for Number of Primers',
+              order: 1,
+              label: 'Number of Primers Penalty',
               type: 'number',
               value: '',
               placeholder: 0.5,
               step: 0.01,
+              predescription: ' ',
+              postdescription: ' is the penalty imposed per extra primer.',
               rules: 'double',
               cols: 6
             },
             objfnweights_b: {
-              order: 1,
-              label: 'Penalty for Amplicon Length',
+              order: 2,
+              label: 'Amplicon Length Penalty',
               type: 'number',
               value: '',
               placeholder: 0.25,
               step: 0.01,
+              predescription: ' ',
+              postdescription: ' is the multiplier of the penalty imposed by the log of the amplicon length.',
               rules: 'double',
               cols: 6
             },
           },
           sp: {
-            order: 3,
+            order: 7,
             show: false,
             label: 'Specificity',
             idm: {
@@ -689,53 +828,6 @@ export default {
               cols: 6,
             },
           },
-          minguides: {
-            order: 4,
-            label: 'Minimize Guides',
-            show: false,
-            gm: {
-              order: 0,
-              label: 'Guide Mismatches',
-              type: 'number',
-              value: '',
-              placeholder: 3,
-              rules: 'min_value:0|integer',
-              cols: 6,
-            },
-            gp: {
-              order: 1,
-              label: 'Guide Coverage Fraction',
-              type: 'number',
-              value: '',
-              placeholder: 0.98,
-              step: 0.01,
-              rules: 'between:0,1|double',
-              cols: 6,
-            },
-          },
-          maxact: {
-            order: 5,
-            label: 'Maximize Activity',
-            show: false,
-            soft_guide_constraint: {
-              order: 0,
-              label: 'Soft Guide Constraint',
-              type: 'number',
-              value: '',
-              placeholder: 1,
-              rules: 'max_value:@hard_guide_constraint,Hard Guide Constraint|min_value:1|integer',
-              cols: 6,
-            },
-            hard_guide_constraint: {
-              order: 1,
-              label: 'Hard Guide Constraint',
-              type: 'number',
-              value: '',
-              placeholder: 5,
-              rules: 'required_if_greater:@soft_guide_constraint,5|min_value:@soft_guide_constraint,Soft Guide Constraint|integer',
-              cols: 6,
-            },
-          },
         },
       },
       loading: false,
@@ -753,28 +845,29 @@ export default {
       return this.inputs.opts.inputchoices.inputchoice.value
     },
     objval() {
-      return this.inputs.opts.all.obj.value
+      return this.inputs.advopts.obj.obj.value
     },
     spval() {
       return this.inputs.sp.all.sp_types.value
     },
     sptaxidval() {
-      return !this.checkEmpty(this.inputs.sp.sp_taxa.taxid.value)
+      return !this.checkEmpty(this.inputs.sp.sp_taxa.sp_taxid.value)
     },
     segmentedval() {
       return this.inputs.opts.autoinput.segmented.value.length
     },
     spsegmentedval() {
-      return this.inputs.sp.sp_taxa.segmented.value.length
+      return this.inputs.sp.sp_taxa.sp_segmented.value.length
     },
     spsegmentval() {
-      return (this.spsegmentedval & this.checkEmpty(this.inputs.sp.sp_taxa.segment.value))
+      return (this.spsegmentedval & this.checkEmpty(this.inputs.sp.sp_taxa.sp_segment.value))
     }
   },
   watch: {
     inputchoiceval(val) {
       this.inputs.opts.autoinput.show = val == 'auto-from-args';
       this.inputs.opts.fileinput.show = val == 'fasta';
+      this.inputs.advopts.autoadv.show = val == 'auto-from-args';
     },
     objval(val) {
       this.inputs.advopts.minguides.show = val == 'minimize-guides';
@@ -787,13 +880,13 @@ export default {
     },
     sptaxidval(val) {
       if (val) {
-        this.inputs.sp.sp_taxa.taxid.valid = null
+        this.inputs.sp.sp_taxa.sp_taxid.valid = null
       }
     },
     spsegmentval(val) {
-      this.inputs.sp.sp_taxa.segment.rules = val? 'required' : ''
+      this.inputs.sp.sp_taxa.sp_segment.rules = val? 'required' : ''
       if (!val) {
-        this.inputs.sp.sp_taxa.segment.valid = null
+        this.inputs.sp.sp_taxa.sp_segment.valid = null
       }
     },
     segmentedval(val) {
@@ -802,9 +895,9 @@ export default {
       this.inputs.opts.autoinput.taxid.cols = val? 6 : 12
     },
     spsegmentedval(val) {
-      this.inputs.sp.sp_taxa.segment.show = val
-      this.inputs.sp.sp_taxa.segment.cols = val? 6 : 0
-      this.inputs.sp.sp_taxa.taxid.cols = val? 6 : 12
+      this.inputs.sp.sp_taxa.sp_segment.show = val
+      this.inputs.sp.sp_taxa.sp_segment.cols = val? 6 : 0
+      this.inputs.sp.sp_taxa.sp_taxid.cols = val? 6 : 12
     },
   },
   methods: {
@@ -815,8 +908,8 @@ export default {
              !String(val).trim().length
     },
     async clearMultiParts() {
-      this.inputs.sp.sp_taxa.taxid.valid = null;
-      this.inputs.sp.sp_taxa.segment.valid = null;
+      this.inputs.sp.sp_taxa.sp_taxid.valid = null;
+      this.inputs.sp.sp_taxa.sp_segment.valid = null;
       return true;
     },
     async adapt_run() {
@@ -887,7 +980,7 @@ export default {
     get_sub(sec) {
       // Helper function to get children of section
       return Object.keys(sec).filter(item => {
-        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields', 'exclude'].includes(item));
+        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields', 'exclude', 'description', 'predescription', 'postdescription', 'dynamic_description', 'ref_var'].includes(item));
       }).sort((a,b) => {
         return sec[a].order-sec[b].order
       })

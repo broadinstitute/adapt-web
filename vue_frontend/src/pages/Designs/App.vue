@@ -8,7 +8,7 @@
         <transition appear name="fade">
         <b-row class="mb-2 px-3">
           <b-col cols=12 sm=6 offset-sm=3>
-            <div class="pb-2"><b-button pill block v-on:click.prevent="display()" size="lg" type="submit" variant="outline-secondary" class="font-weight-bold" name="display_submit" :disabled="selectedDesigns.length==0">Show Assays</b-button></div>
+            <div class="pb-2"><b-button pill block v-on:click.prevent="display()" size="lg" type="submit" variant="outline-secondary" name="display_submit" :disabled="selectedDesigns.length==0">Show Assays</b-button></div>
           </b-col>
         </b-row>
         </transition>

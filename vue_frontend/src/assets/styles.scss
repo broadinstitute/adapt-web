@@ -4,8 +4,9 @@ $font-family-sans-serif:            Montserrat, -apple-system, BlinkMacSystemFon
 $font-family-monospace:             'Overpass Mono', SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
 $dark:                              #000D54;
+$primary:                           #45E2EA;
 $secondary:                         #3C67DD;
-$info:                              #dee2e6;
+$info:                              #DEE2E6;
 $success:                           #005C3D;
 $danger:                            #9C0041;
 // $danger:                            #A3001E;
@@ -52,6 +53,10 @@ $footer-height:                     6rem;
 * {
   letter-spacing: 0.04em;
   font-family: $font-family-sans-serif;
+}
+
+:focus {
+  outline: color.scale($primary, $alpha: -40%) auto 1px;
 }
 
 legend, .nav-link, button:not(.list-group-item), th > div, .h1, .h2, .h3, .h4, .h5, .h6, .modal-title {
@@ -137,6 +142,10 @@ button, input[type=button] {
   transition: 0.3s;
 }
 
+button:not(.list-group-item):not(.taxon) {
+  font-weight: 600;
+}
+
 .btn-group {
   text-align: center;
   display: block;
@@ -179,11 +188,11 @@ button, input[type=button] {
 }
 
 .modal-body.bg-success, .modal-footer.bg-success {
-  background-color: color.scale($success, $lightness: 92%, $saturation: -46%) !important;
+  background-color: color.scale($success, $lightness: 93%, $saturation: -46%) !important;
 }
 
 .modal-header.bg-success {
-  background-color: color.scale($success, $lightness: 89%, $saturation: -45%) !important;
+  background-color: color.scale($success, $lightness: 91%, $saturation: -45%) !important;
 }
 
 .modal-body.bg-danger, .modal-footer.bg-danger {
@@ -192,6 +201,14 @@ button, input[type=button] {
 
 .modal-header.bg-danger {
   background-color: color.scale($danger, $lightness: 91%, $saturation: -45%) !important;
+}
+
+.modal-body.bg-dark, .modal-footer.bg-dark {
+  background-color: color.scale($dark, $lightness: 93%, $saturation: -46%) !important;
+}
+
+.modal-header.bg-dark {
+  background-color: color.scale($dark, $lightness: 91%, $saturation: -45%) !important;
 }
 
 // Part Specific - Misc
@@ -219,7 +236,12 @@ button, input[type=button] {
 .f-4, .subspecies {
   font-size: 1rem;
 }
+
 .f-5 {
+  font-size: 0.9rem;
+}
+
+.f-6 {
   font-size: 0.8rem;
 }
 

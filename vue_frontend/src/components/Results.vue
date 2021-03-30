@@ -10,12 +10,12 @@
               <b-list-group>
                 <b-list-group-item v-for="(runid, index) of runids" :key="runid.id" button v-on:click.prevent.stop.self="setRunID(runid.id)">
                   {{ runid.id }}<br>
-                  <i class='f-5'>{{ runid.time.toLocaleString() }}</i>
-                  <b-button pill v-on:click.prevent="deleteRunID(index)" variant="outline-danger" class="font-weight-bold" style="float: right;"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
+                  <i v-on:click.prevent.stop.self="setRunID(runid.id)" class='f-5'>{{ runid.time.toLocaleString() }}</i>
+                  <b-button pill v-on:click.prevent="deleteRunID(index)" variant="outline-danger" style="float: right;"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
                 </b-list-group-item>
               </b-list-group>
               <br>
-              <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="button" variant="outline-secondary" class="font-weight-bold" name="clear-ids">Clear Run IDs</b-button>
+              <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="button" variant="outline-secondary" name="clear-ids">Clear Run IDs</b-button>
               <br>
             </b-col>
             <b-col cols=0 md=1>
@@ -54,7 +54,7 @@
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('status')}})" :disabled="loading!=''" size="lg" type="submit" variant="secondary" class="font-weight-bold" name="status_submit">Get Status</b-button>
+                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('status')}})" :disabled="loading!=''" size="lg" type="submit" variant="secondary" name="status_submit">Get Status</b-button>
               </b-overlay>
               <b-overlay
                 :show="loading=='download'"
@@ -63,7 +63,7 @@
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('download')}})" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="download_submit">Download Results</b-button>
+                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('download')}})" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="mt-2" name="download_submit">Download Results</b-button>
               </b-overlay>
               <b-overlay
                 :show="loading=='show'"
@@ -72,7 +72,7 @@
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('results')}})" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="font-weight-bold mt-2" name="show_submit">Show Results</b-button>
+                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('results')}})" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="mt-2" name="show_submit">Show Results</b-button>
               </b-overlay>
             </b-col>
           </b-row>
@@ -187,10 +187,24 @@ export default {
                 this.$bvModal.show("msg-modal");
                 break;
               case 'Failed':
+              case 'Aborted':
+              case 'Aborting':
                 this.modaltitle = 'Job Failed';
                 this.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact ppillai@broadinstitute.org.';
                 this.variant = 'danger';
                 this.$bvModal.show("msg-modal");
+                break;
+              case 'Submitted':
+                this.modaltitle = 'Job Submitted';
+                this.modalmsg = 'Run ' + this.runid + ' has been submitted. It will start running soon; please check back later.';
+                this.variant = 'dark';
+                this.$bvModal.show("msg-modal");
+                break;
+              case 'Running':
+                this.modaltitle = 'Job Running';
+                this.modalmsg = 'Run ' + this.runid + ' is running. Jobs can take up to a day to finish running; please check back later.';
+                this.variant = 'dark';
+                this.$bvModal.show("msg-modal")
                 break;
             }
             break;
