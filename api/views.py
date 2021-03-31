@@ -558,7 +558,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         content = "'%s' is an invalid flanking sequence; each character must be one of " \
                             "<ul><li>%s</li></ul>" %(value, '</li><li>'.join(VALID_BASES))
                         break
-                elif input_var == segment:
+                elif input_var == 'segment':
                     if value == '':
                         request.data[input_var] = 'None'
                 elif input_var in POS_INT_OPT_INPUT_VARS:

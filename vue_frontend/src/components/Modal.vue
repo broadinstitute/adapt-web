@@ -24,10 +24,21 @@
 <script>
 export default {
   name: 'Modal',
-  props: {
-    variant: String,
-    title: String,
-    msg: String
+  data() {
+    return {
+      variant: 'dark',
+      title: '',
+      msg: ''
+    }
+  },
+  mounted() {
+    var vm = this
+    vm.$root.$on('show-msg', async function() {
+      vm.title =  vm.$root.$data.modaltitle
+      vm.msg =  vm.$root.$data.modalmsg
+      vm.variant = vm.$root.$data.modalvariant
+      this.$bvModal.show("msg-modal")
+    })
   },
 }
 </script>

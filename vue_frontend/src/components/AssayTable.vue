@@ -26,7 +26,7 @@
           <p v-for="guide in data.value" :key="guide.target"  class="seq">{{ guide.target }}</p>
         </template>
         <template #cell(show_details)="row">
-          <b-button block size="sm" @click="row.toggleDetails" class="mr-2 font-weight-bold" pill variant="outline-secondary">
+          <b-button block size="sm" @click="row.toggleDetails" class="mr-2" pill variant="outline-secondary">
             {{ row.detailsShowing ? 'Hide' : 'Details'}}
           </b-button>
         </template>

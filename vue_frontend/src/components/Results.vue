@@ -1,7 +1,6 @@
 <template>
   <transition appear name="fade">
     <div class="results">
-      <Modal :variant='variant' :title='modaltitle' :msg='modalmsg'></Modal>
       <ValidationObserver ref="status-form" v-slot="{ validate }">
         <b-form id="status-form">
           <b-row>
@@ -48,31 +47,13 @@
                 </ValidationProvider>
               </b-form-group>
               <b-overlay
-                :show="loading=='status'"
+                :show="loading"
                 rounded="pill"
                 opacity="0.7"
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('status')}})" :disabled="loading!=''" size="lg" type="submit" variant="secondary" name="status_submit">Get Status</b-button>
-              </b-overlay>
-              <b-overlay
-                :show="loading=='download'"
-                rounded="pill"
-                opacity="0.7"
-                blur="5px"
-                spinner-variant="secondary"
-              >
-                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('download')}})" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="mt-2" name="download_submit">Download Results</b-button>
-              </b-overlay>
-              <b-overlay
-                :show="loading=='results'"
-                rounded="pill"
-                opacity="0.7"
-                blur="5px"
-                spinner-variant="secondary"
-              >
-                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('results')}})" :disabled="loading!=''" size="lg" type="button" variant="outline-secondary" class="mt-2" name="show_submit">Show Results</b-button>
+                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('results')}})" :disabled="loading" size="lg" type="submit" variant="outline-secondary" class="mt-2" name="show_submit">Show Results</b-button>
               </b-overlay>
             </b-col>
           </b-row>
@@ -94,23 +75,19 @@ import {
 import {
   required,
 } from 'vee-validate/dist/rules';
-import Modal from '@/components/Modal.vue'
+import Vue from 'vue';
 
 export default {
   name: 'Results',
   components: {
     ValidationObserver,
     ValidationProvider,
-    Modal,
   },
   data () {
     return {
       runids: [],
       runid: '',
-      modaltitle: '',
-      modalmsg: '',
-      loading: '',
-      variant: '',
+      loading: false,
     }
   },
   mounted () {
@@ -132,123 +109,105 @@ export default {
       this.runid = this.runids[0].id
       if (Cookies.get('submitted') == 'true') {
         Cookies.remove('submitted')
-        this.modaltitle = 'Job submitted!'
-        this.modalmsg = 'Your run ID is <b>' + this.runid + '</b>. Store this for future reference.<br>Use this site to check for its status.'
-        this.variant = 'success'
+        this.$root.$data.modaltitle = 'Job submitted!'
+        this.$root.$data.modalmsg = 'Your run ID is <b>' + this.runid + '</b>. Store this for future reference.<br>Use this site to check for its status.'
+        this.$root.$data.modalvariant = 'success'
         this.$bvModal.show("msg-modal")
-        }
+      }
     }
   },
   methods: {
-    async call_server(action) {
-      this.loading = action
+    async call_server() {
+      this.loading = true
 
-      let response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/' + action, {
+      let detail_response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/detail/', {
         headers: {
           "X-CSRFToken": csrfToken
         }
       })
-
-      if (response.ok) {
-        if (!this.runids.some((runid) => runid.id.includes(this.runid))) {
-          let detail_response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/detail', {
-            headers: {
-              "X-CSRFToken": csrfToken
-            }
-          })
-          if (detail_response.ok) {
-            let date_str = await detail_response.json().then(data => data.submit_time)
-            this.runids.push({
-              'id': this.runid,
-              'time': new Date(date_str)
+      let response
+      if (detail_response.ok) {
+        let detail_response_json = await detail_response.json();
+        switch(detail_response_json.status) {
+          case 'Succeeded':
+            response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/results/', {
+              headers: {
+                "X-CSRFToken": csrfToken
+              }
             })
-            this.runids.sort((a,b) => b.time-a.time)
-            let prev_runids = Cookies.get('runid')
-            if (prev_runids == null) {
-              Cookies.set('runid', this.runid + ';' + date_str)
+            if (response.ok) {
+              if (!this.runids.some((runid) => runid.id.includes(this.runid))) {
+                this.runids.push({
+                  'id': this.runid,
+                  'time': new Date(detail_response_json.submit_time)
+                })
+                this.runids.sort((a,b) => b.time-a.time)
+                let prev_runids = Cookies.get('runid')
+                if (prev_runids == null) {
+                  Cookies.set('runid', this.runid + ';' + detail_response_json.submit_time)
+                }
+                else if (!prev_runids.includes(this.runid)) {
+                  Cookies.set('runid', prev_runids + ',' + this.runid + ';' + detail_response_json.submit_time)
+                }
+              }
+              this.$root.$data.labels = [[this.runid, this.runid]]
+              let resultjson = await response.json();
+              Vue.set(this.$root.$data.resulttable, this.runid, {})
+              for (var cluster in resultjson) {
+                Vue.set(this.$root.$data.resulttable[this.runid], cluster, [])
+                for (var rank in resultjson[cluster]) {
+                  this.$root.$data.resulttable[this.runid][cluster].push(resultjson[cluster][rank]);
+                }
+              }
+              this.$root.$data.runid = this.runid;
+              this.$root.$emit('show-assays');
+              this.loading = false;
+              return response;
+            } else {
+              this.errorMsg(response);
+              this.loading = false;
+              return response;
             }
-            else if (!prev_runids.includes(this.runid)) {
-              Cookies.set('runid', prev_runids + ',' + this.runid + ';' + date_str)
-            }
-          }
-        }
-
-        switch(action) {
-          case 'status':
-            response = await response.json().then(data => ({
-              data: data,
-              status: response.status
-            }));
-            switch(response.data.status) {
-              case 'Succeeded':
-                this.modaltitle = 'Job Succeeded';
-                this.modalmsg = 'Run ' + this.runid + ' has finished running. Use "Show Results" to see the output.';
-                this.variant = 'success';
-                this.$bvModal.show("msg-modal");
-                break;
-              case 'Failed':
-              case 'Aborted':
-              case 'Aborting':
-                this.modaltitle = 'Job Failed';
-                this.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact ppillai@broadinstitute.org.';
-                this.variant = 'danger';
-                this.$bvModal.show("msg-modal");
-                break;
-              case 'Submitted':
-                this.modaltitle = 'Job Submitted';
-                this.modalmsg = 'Run ' + this.runid + ' has been submitted. It will start running soon; please check back later.';
-                this.variant = 'dark';
-                this.$bvModal.show("msg-modal");
-                break;
-              case 'Running':
-                this.modaltitle = 'Job Running';
-                this.modalmsg = 'Run ' + this.runid + ' is running. Jobs can take up to a day to finish running; please check back later.';
-                this.variant = 'dark';
-                this.$bvModal.show("msg-modal")
-                break;
-            }
+          case 'Failed':
+          case 'Aborted':
+          case 'Aborting':
+            this.$root.$data.modaltitle = 'Job Failed';
+            this.$root.$data.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact ppillai@broadinstitute.org.';
+            this.$root.$data.modalvariant = 'danger';
+            this.$root.$emit('show-msg');
             break;
-          case 'results':
-            this.$root.$data.resultjson = await response.json();
-            this.$root.$data.runid = this.runid;
-            this.$root.$emit('show-assays');
+          case 'Submitted':
+            this.$root.$data.modaltitle = 'Job Submitted';
+            this.$root.$data.modalmsg = 'Run ' + this.runid + ' has been submitted. It will start running soon; please check back later.';
+            this.$root.$data.modalvariant = 'dark';
+            this.$root.$emit('show-msg');
             break;
-          case 'download':
-            this.download_file(response)
+          case 'Running':
+            this.$root.$data.modaltitle = 'Job Running';
+            this.$root.$data.modalmsg = 'Run ' + this.runid + ' is running. Jobs can take up to a day to finish running; please check back later.';
+            this.$root.$data.modalvariant = 'dark';
+            this.$root.$emit('show-msg');
             break;
         }
       } else {
-        let contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-          let responsejson = await response.json()
-          this.modaltitle = Object.keys(responsejson)[0]
-          this.modalmsg = responsejson[this.modaltitle]
-        }
-        else {
-          this.modaltitle = 'Error'
-          this.modalmsg = await response.text()
-        }
-        this.variant = 'danger'
-        this.$bvModal.show("msg-modal")
+        this.errorMsg(detail_response);
       }
-
-      this.loading = ''
-      return response
+      this.loading = false;
+      return detail_response;
     },
-    async download_file(response){
-      // Helper function to download files
-      let blob = await response.blob()
-      let url = window.URL.createObjectURL(new Blob([blob]))
-      let link = document.createElement('a')
-      link.href = url
-      let filename = response.headers.get('content-disposition')
-        .split(';')
-        .find(n => n.includes('filename='))
-        .replace('filename=', '')
-        .trim()
-      link.setAttribute('download', filename)
-      document.body.appendChild(link)
-      link.click()
+    async errorMsg(response) {
+      let contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        let response_json = await response.json()
+        this.$root.$data.modaltitle = Object.keys(response_json)[0]
+        this.$root.$data.modalmsg = response_json[this.$root.$data.modaltitle]
+      }
+      else {
+        this.$root.$data.modaltitle = 'Error'
+        this.$root.$data.modalmsg = await response.text()
+      }
+      this.$root.$data.modalvariant = 'danger'
+      this.$root.$emit('show-msg');
     },
     getValidationState({failed, valid = null }) {
       // Only show if field is invalid; don't show if valid

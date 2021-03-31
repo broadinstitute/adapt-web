@@ -221,6 +221,12 @@ button:not(.list-group-item):not(.taxon) {
   transform: rotate(180deg);
 }
 
+.tabs .nav-justified .nav-item:last-of-type {
+  flex-basis: 0;
+  flex-grow: 0;
+  text-align: center;
+}
+
 .f-1, .family {
   font-size: 2rem;
 }

@@ -109,8 +109,6 @@ export default {
         }
         /* Resort selectedDesigns by primary key order */
         root.$data.selectedDesigns.sort();
-        /* Make call for functions listening */
-        root.$emit('designs-update');
       }
     }
   }

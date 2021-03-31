@@ -1,7 +1,6 @@
 <template>
   <transition appear name="fade">
     <div class="runadapt">
-      <Modal :variant='variant' :title='modaltitle' :msg='modalmsg'></Modal>
       <!-- Form created dynamically with 3 loops - one for sections, one for subsections, one for the fields -->
       <ValidationObserver ref="full-form" v-slot="{ handleSubmit }" slim>
         <b-form id="full-form" :disabled="loading">
@@ -85,13 +84,13 @@
                           v-model="inputs[sec][subsec][input_var].value"
                           :id="subsec + '-' + input_var"
                           :file-name-formatter="formatNames"
-                          placeholder="Choose files or drop them here..."
-                          drop-placeholder="Drop files here..."
+                          :placeholder="inputs[sec][subsec][input_var].multiple? 'Choose files or drop them here...' : 'Choose file or drop one here...'"
+                          :drop-placeholder="inputs[sec][subsec][input_var].multiple? 'Drop files here...' : 'Drop file here...'"
                           accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln"
                           :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           :state="getValidationState(validationContext)"
                           @change="validationContext.validate"
-                          multiple
+                          :multiple="inputs[sec][subsec][input_var].multiple"
                           :disabled="loading"
                         ></b-form-file>
                         <b-form-checkbox-group
@@ -279,7 +278,6 @@ import {
   required,
   integer,
 } from 'vee-validate/dist/rules';
-import Modal from '@/components/Modal.vue'
 const Cookies = require('js-cookie');
 // Needs CSRF for the server to accept the request
 const csrfToken = Cookies.get('csrftoken');
@@ -289,7 +287,6 @@ export default {
   components: {
     ValidationProvider,
     ValidationObserver,
-    Modal
   },
   mounted () {
     // Makes VeeValidate check only on change events if the field is untouched or valid,
@@ -493,6 +490,7 @@ export default {
               order: 0,
               label: 'Prealigned FASTA File',
               type: 'file',
+              multiple: false,
               value: [],
               description: 'Sequence <i>must</i> be aligned. You can use <a href="https://mafft.cbrc.jp/alignment/server/" target="_blank">MAFFT</a> to align FASTAs.',
               rules: 'required_if:@inputchoice,fasta',
@@ -541,6 +539,7 @@ export default {
             sp_fasta: {
               order: 0,
               type: 'file',
+              multiple: true,
               label: 'FASTA Files',
               description: 'Sequences do not need to be aligned.<br>The assays designed will show up negative when tested against the sequences in these FASTAs.',
               value: [],
@@ -831,9 +830,6 @@ export default {
         },
       },
       loading: false,
-      modaltitle: '',
-      modalmsg: '',
-      variant: ''
     }
   },
   // computed and watch are used to show certain sections of the form dependent on input choices
@@ -964,15 +960,15 @@ export default {
         let contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
           let responsejson = await response.json()
-          this.modaltitle = Object.keys(responsejson)[0]
-          this.modalmsg = responsejson[this.modaltitle]
+          this.$root.$data.modaltitle = Object.keys(responsejson)[0]
+          this.$root.$data.modalmsg = responsejson[this.$root.$data.modaltitle]
         }
         else {
-          this.modaltitle = 'Error'
-          this.modalmsg = await response.text()
+          this.$root.$data.modaltitle = 'Error'
+          this.$root.$data.modalmsg = await response.text()
         }
-        this.variant = 'danger'
-        this.$bvModal.show("msg-modal")
+        this.$root.$data.modalvariant = 'danger'
+        this.$root.$emit('show-msg');
       }
       this.loading = false
       return response
@@ -980,7 +976,7 @@ export default {
     get_sub(sec) {
       // Helper function to get children of section
       return Object.keys(sec).filter(item => {
-        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields', 'exclude', 'description', 'predescription', 'postdescription', 'dynamic_description', 'ref_var'].includes(item));
+        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields', 'exclude', 'description', 'predescription', 'postdescription', 'dynamic_description', 'ref_var', 'multiple'].includes(item));
       }).sort((a,b) => {
         return sec[a].order-sec[b].order
       })

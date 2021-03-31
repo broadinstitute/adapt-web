@@ -15,30 +15,7 @@
         <transition appear name="fade">
           <Design class="px-3" parent="pknull"></Design>
         </transition>
-        <b-modal id="assay-modal" size="xl" title="Assay Options" hide-footer class="" scrollable>
-          <b-tabs content-class="mt-4" justified>
-            <b-tab title="Table" active>
-              <div id="clusters" v-if="resulttable" :key="updated">
-                <div v-for="taxon_and_name in selectedDesigns" :key="taxon_and_name[0]">
-                  <h2>{{ taxon_and_name[1] }}</h2>
-                  <div v-for="(cluster, index) in resulttable[taxon_and_name[0]]" :key="index">
-                    <AssayTable :cluster="cluster" :cluster_id="taxon_and_name[0] + index"/>
-                  </div>
-                </div>
-              </div>
-            </b-tab>
-            <b-tab title="Visualization">
-              <div id="clusters" v-if="resulttable" :key="updated">
-                <div v-for="taxon_and_name in selectedDesigns" :key="taxon_and_name[0]">
-                  <h2>{{ taxon_and_name[1] }}</h2>
-                  <div v-for="(cluster, index) in resulttable[taxon_and_name[0]]" :key="index">
-                    <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="taxon_and_name[0] + index"/>
-                  </div>
-                </div>
-              </div>
-            </b-tab>
-          </b-tabs>
-        </b-modal>
+       <AssayModal/>
       </b-col>
       <b-col cols=0 md=1></b-col>
     </b-row>
@@ -51,8 +28,7 @@
 import Vue from 'vue'
 import Header from '@/components/Header.vue'
 import Design from '@/components/Design.vue'
-import AssayTable from '@/components/AssayTable.vue'
-import Assay from '@/components/Assay.vue'
+import AssayModal from '@/components/AssayModal.vue'
 import Footer from '@/components/Footer.vue'
 const Cookies = require('js-cookie')
 // Needs CSRF for the server to accept the request
@@ -63,26 +39,23 @@ export default {
   components: {
     Header,
     Design,
-    AssayTable,
-    Assay,
+    AssayModal,
     Footer
   },
   data() {
     this.$root.$data.selectedDesigns = []
     return {
-      resulttable: {},
-      updated: 0,
       selectedDesigns: this.$root.$data.selectedDesigns
     }
   },
   methods : {
     async display() {
       var vm = this
-      vm.resulttable = {}
-      for (var taxon_and_name of vm.selectedDesigns) {
+      vm.$root.$data.labels = vm.$root.$data.selectedDesigns
+      for (var taxon_and_name of vm.$root.$data.selectedDesigns) {
         var taxon = taxon_and_name[0]
         var cluster = 0
-        Vue.set(vm.resulttable, taxon, [])
+        Vue.set(vm.$root.$data.resulttable, taxon, [])
         while (cluster >= 0) {
           let response = await fetch('/api/assay?taxonrank=' + taxon.slice(2) + '&cluster=' + cluster, {
             headers: {
@@ -92,9 +65,9 @@ export default {
           if (response.ok) {
             let resultjson = await response.json()
             if (resultjson.length > 0) {
-              vm.resulttable[taxon].push([]);
+              vm.$root.$data.resulttable[taxon].push([]);
               for (let rank in resultjson) {
-                vm.resulttable[taxon][cluster].push(resultjson[rank]);
+                vm.$root.$data.resulttable[taxon][cluster].push(resultjson[rank]);
               }
             }
             else {
@@ -107,8 +80,7 @@ export default {
           cluster += 1
         }
       }
-      vm.updated += 1
-      this.$bvModal.show("assay-modal")
+      this.$root.$emit('show-assays');
     }
   }
 }
