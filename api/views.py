@@ -791,7 +791,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     sp_taxon_str += "%s\t%s\n" %(sp_tax['sp_taxid'], sp_segment)
                 sp_taxa_file = sp_taxon_str.encode('utf-8')
                 S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_taxa_file)
-                workflowInputs["adapt_web.adapt.specificity_taxa"] = key
+                workflowInputs["adapt_web.adapt.specificity_taxa"] = "s3://%s/%s" %(STORAGE_BUCKET, key)
 
             if 'fasta[]' in request.FILES:
                 input_files = []

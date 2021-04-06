@@ -112,7 +112,9 @@ export default {
         this.$root.$data.modaltitle = 'Job submitted!'
         this.$root.$data.modalmsg = 'Your run ID is <b>' + this.runid + '</b>. Store this for future reference.<br>Use this site to check for its status.'
         this.$root.$data.modalvariant = 'success'
-        this.$bvModal.show("msg-modal")
+        this.$nextTick(function() {
+          this.$root.$emit('show-msg');
+        })
       }
     }
   },
@@ -129,27 +131,28 @@ export default {
       if (detail_response.ok) {
         let detail_response_json = await detail_response.json();
         switch(detail_response_json.status) {
+          case 'Submitted':
+            this.updateRunIDs(detail_response_json.submit_time)
+            this.$root.$data.modaltitle = 'Job Submitted';
+            this.$root.$data.modalmsg = 'Run ' + this.runid + ' has been submitted. It will start running soon; please check back later.';
+            this.$root.$data.modalvariant = 'dark';
+            this.$root.$emit('show-msg');
+            break;
+          case 'Running':
+            this.updateRunIDs(detail_response_json.submit_time)
+            this.$root.$data.modaltitle = 'Job Running';
+            this.$root.$data.modalmsg = 'Run ' + this.runid + ' is running. Jobs can take up to a day to finish running; please check back later.';
+            this.$root.$data.modalvariant = 'dark';
+            this.$root.$emit('show-msg');
+            break;
           case 'Succeeded':
+            this.updateRunIDs(detail_response_json.submit_time)
             response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/results/', {
               headers: {
                 "X-CSRFToken": csrfToken
               }
             })
             if (response.ok) {
-              if (!this.runids.some((runid) => runid.id.includes(this.runid))) {
-                this.runids.push({
-                  'id': this.runid,
-                  'time': new Date(detail_response_json.submit_time)
-                })
-                this.runids.sort((a,b) => b.time-a.time)
-                let prev_runids = Cookies.get('runid')
-                if (prev_runids == null) {
-                  Cookies.set('runid', this.runid + ';' + detail_response_json.submit_time)
-                }
-                else if (!prev_runids.includes(this.runid)) {
-                  Cookies.set('runid', prev_runids + ',' + this.runid + ';' + detail_response_json.submit_time)
-                }
-              }
               this.$root.$data.labels = [[this.runid, this.runid]]
               let resultjson = await response.json();
               Vue.set(this.$root.$data.resulttable, this.runid, {})
@@ -174,18 +177,6 @@ export default {
             this.$root.$data.modaltitle = 'Job Failed';
             this.$root.$data.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact ppillai@broadinstitute.org.';
             this.$root.$data.modalvariant = 'danger';
-            this.$root.$emit('show-msg');
-            break;
-          case 'Submitted':
-            this.$root.$data.modaltitle = 'Job Submitted';
-            this.$root.$data.modalmsg = 'Run ' + this.runid + ' has been submitted. It will start running soon; please check back later.';
-            this.$root.$data.modalvariant = 'dark';
-            this.$root.$emit('show-msg');
-            break;
-          case 'Running':
-            this.$root.$data.modaltitle = 'Job Running';
-            this.$root.$data.modalmsg = 'Run ' + this.runid + ' is running. Jobs can take up to a day to finish running; please check back later.';
-            this.$root.$data.modalvariant = 'dark';
             this.$root.$emit('show-msg');
             break;
         }
@@ -219,6 +210,22 @@ export default {
     },
     setRunID(runid) {
       this.runid = runid
+    },
+    updateRunIDs(submit_time) {
+      if (!this.runids.some((runid) => runid.id.includes(this.runid))) {
+        this.runids.push({
+          'id': this.runid,
+          'time': new Date(submit_time)
+        })
+        this.runids.sort((a,b) => b.time-a.time)
+        let prev_runids = Cookies.get('runid')
+        if (prev_runids == null) {
+          Cookies.set('runid', this.runid + ';' + submit_time)
+        }
+        else if (!prev_runids.includes(this.runid)) {
+          Cookies.set('runid', prev_runids + ',' + this.runid + ';' + submit_time)
+        }
+      }
     },
     deleteRunID(index) {
       this.runids.splice(index, 1);
