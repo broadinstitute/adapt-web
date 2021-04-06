@@ -1,12 +1,23 @@
 import Vue from 'vue'
 import App from './App.vue'
-import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
+import { LayoutPlugin, NavbarPlugin, ModalPlugin, TabsPlugin, TablePlugin, FormPlugin, ListGroupPlugin, FormGroupPlugin, FormInputPlugin, OverlayPlugin, ButtonPlugin, BIconChevronDown, BIconPlus, BIconDash } from 'bootstrap-vue'
 import '../../assets/styles.scss'
 
-// Make BootstrapVue available throughout page
-Vue.use(BootstrapVue)
-// Optionally install the BootstrapVue icon components plugin
-Vue.use(IconsPlugin)
+// Make BootstrapVue Components available throughout page
+Vue.use(LayoutPlugin)
+Vue.use(NavbarPlugin)
+Vue.use(ModalPlugin)
+Vue.use(TabsPlugin)
+Vue.use(TablePlugin)
+Vue.use(FormPlugin)
+Vue.use(ListGroupPlugin)
+Vue.use(FormGroupPlugin)
+Vue.use(FormInputPlugin)
+Vue.use(OverlayPlugin)
+Vue.use(ButtonPlugin)
+Vue.component('b-icon-chevron-down', BIconChevronDown)
+Vue.component('b-icon-plus', BIconPlus)
+Vue.component('b-icon-dash', BIconDash)
 
 Vue.config.productionTip = false
 

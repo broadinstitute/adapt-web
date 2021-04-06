@@ -2,7 +2,7 @@
   <transition appear name="fade">
     <div class="runadapt">
       <!-- Form created dynamically with 3 loops - one for sections, one for subsections, one for the fields -->
-      <ValidationObserver ref="full-form" v-slot="{ handleSubmit }" slim>
+      <ValidationObserver ref="full-form" v-slot="{ handleSubmit, validate }" slim>
         <b-form id="full-form" :disabled="loading">
           <!-- Section loop -->
           <b-form-group
@@ -229,7 +229,7 @@
                       <b-button pill v-on:click.prevent="updateList(sec, subsec)" variant="success" class="add" :disabled="loading"><b-icon-plus aria-label="Add" font-scale="1.5"></b-icon-plus></b-button>
                     </b-col>
                   </b-form-row>
-                  <div v-show="!checkEmpty(inputs[sec][subsec].value)">
+                  <div v-if="!checkEmpty(inputs[sec][subsec].value)">
                     <br>
                     <b-form-text v-if="inputs[sec][subsec].description" v-html="inputs[sec][subsec].description" :id="sec + '-' + subsec  + '-help'" class="m-0 pb-2 f-5"></b-form-text>
                     <b-form-text v-else-if="inputs[sec][subsec].predescription" :id="sec + '-' + subsec  + '-help'" class="m-0 pb-2 f-5">
@@ -245,8 +245,15 @@
                         <b-button pill v-on:click.prevent="deleteRow(inputs[sec][subsec].value, data.index)" variant="outline-danger" class="delete" :disabled="loading"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
                       </template>
                     </b-table>
-
                   </div>
+                  <b-form-invalid-feedback
+                    v-else-if="inputs[sec][subsec].valid==false"
+                    :key="inputs[sec][subsec].value.length"
+                    :id="subsec + '-feedback'"
+                    :state="!checkEmpty(inputs[sec][subsec].value)"
+                  >
+                    At least one {{ inputs[sec][subsec][inputs[sec][subsec].ref_var].label }} is required
+                  </b-form-invalid-feedback>
                 </b-form>
               </b-form-group>
             </b-collapse>
@@ -259,7 +266,7 @@
             blur="5px"
             spinner-variant="secondary"
           >
-            <b-button pill block v-on:click.prevent="clearMultiParts().then(handleSubmit(adapt_run))" size="lg" type="submit" variant="outline-secondary" :disabled="loading">Submit a Run</b-button>
+            <b-button pill block v-on:click.prevent="validateMultiParts().then(valid => {if (valid) {handleSubmit(adapt_run)} else {validate()}})" size="lg" type="submit" variant="outline-secondary" :disabled="loading">Submit a Run</b-button>
           </b-overlay>
         </b-form>
       </ValidationObserver>
@@ -551,8 +558,10 @@ export default {
             show: false,
             type: 'multi',
             value: [],
+            ref_var: "sp_taxid",
             description: 'The assays designed will show up negative when tested against these taxons:',
             rules: 'required_if:@sp_types,sp_taxa',
+            valid: null,
             sp_taxid: {
               order: 0,
               label: 'NCBI Taxonomic ID',
@@ -846,6 +855,9 @@ export default {
     spval() {
       return this.inputs.sp.all.sp_types.value
     },
+    sptaxaval() {
+      return !this.checkEmpty(this.inputs.sp.sp_taxa.value)
+    },
     sptaxidval() {
       return !this.checkEmpty(this.inputs.sp.sp_taxa.sp_taxid.value)
     },
@@ -873,6 +885,11 @@ export default {
       this.inputs.advopts.sp.show = (val.length > 0)
       this.inputs.sp.sp_fasta.show = val.includes('sp_fasta')
       this.inputs.sp.sp_taxa.show = val.includes('sp_taxa')
+    },
+    sptaxaval(val) {
+      if (val) {
+        this.inputs.sp.sp_taxa.valid = null
+      }
     },
     sptaxidval(val) {
       if (val) {
@@ -903,7 +920,11 @@ export default {
              [false, null, undefined].includes(val) ||
              !String(val).trim().length
     },
-    async clearMultiParts() {
+    async validateMultiParts() {
+      if (this.inputs.sp.sp_taxa.show != false & this.checkEmpty(this.inputs.sp.sp_taxa.value)) {
+        this.inputs.sp.sp_taxa.valid = false;
+        return false;
+      }
       this.inputs.sp.sp_taxa.sp_taxid.valid = null;
       this.inputs.sp.sp_taxa.sp_segment.valid = null;
       return true;
@@ -976,7 +997,7 @@ export default {
     get_sub(sec) {
       // Helper function to get children of section
       return Object.keys(sec).filter(item => {
-        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields', 'exclude', 'description', 'predescription', 'postdescription', 'dynamic_description', 'ref_var', 'multiple'].includes(item));
+        return !(['order', 'label', 'collapsible', 'show', 'value', 'type', 'rules', 'fields', 'exclude', 'description', 'predescription', 'postdescription', 'dynamic_description', 'ref_var', 'multiple', 'valid'].includes(item));
       }).sort((a,b) => {
         return sec[a].order-sec[b].order
       })
@@ -988,9 +1009,6 @@ export default {
     getValidationState({failed, valid = null }) {
       // Only show if field is invalid; don't show if valid
       return !failed ? null : valid;
-    },
-    getGeneralValidationState(errors, failed) {
-      return !failed? null : (errors? false : null)
     },
     multiValidate(sec, subsec) {
       for (let input_var of this.get_sub(this.inputs[sec][subsec])) {

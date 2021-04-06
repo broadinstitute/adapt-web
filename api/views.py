@@ -766,6 +766,8 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             if 'sp_taxa' in request.data:
                 decoder = json.JSONDecoder()
                 sp_taxa_list = decoder.decode(request.data['sp_taxa'])
+                key = "%s/sp_tx.tsv"%(S3_id)
+                sp_taxon_str = ""
                 if not isinstance(sp_taxa_list, list):
                     content = {'Input Error': "Specificity taxa not formatted correctly. "
                         "It should be a list of objects with keys of 'taxid' and optionally 'segment'"}
@@ -775,21 +777,18 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         content = {'Input Error': "Specificity taxa not formatted correctly. "
                             "It should be a list of objects with keys of 'taxid' and optionally 'segment'"}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    if 'taxid' not in sp_tax:
+                    if 'sp_taxid' not in sp_tax:
                         content = {'Input Error': "Specificity taxa not formatted correctly. "
                             "It should be a list of objects with keys of 'taxid' and optionally 'segment'"}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                key = "%s/sp_tx.tsv"%(S3_id)
-                sp_taxon_str = ""
-                for sp_taxon in sp_taxa_list:
-                    if not isinstance(sp_taxon['taxid'], str) or not sp_taxon['taxid'].isdigit():
+                    if not isinstance(sp_tax['sp_taxid'], str) or not sp_tax['sp_taxid'].isdigit():
                         content = {'Input Error': "Taxa in specificity taxa should be nonnegative integers"}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    segment = sp_taxon['segment'] if sp_taxon['segment'] else 'None'
-                    if not isinstance(segment, str):
+                    sp_segment = sp_tax['sp_segment'] if 'sp_segment' in sp_tax else 'None'
+                    if not isinstance(sp_segment, str):
                         content = {'Input Error': "Segments in specificity taxa should be strings"}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    sp_taxon_str += "%s\t%s\n" %(sp_taxon['taxid'], segment)
+                    sp_taxon_str += "%s\t%s\n" %(sp_tax['sp_taxid'], sp_segment)
                 sp_taxa_file = sp_taxon_str.encode('utf-8')
                 S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_taxa_file)
                 workflowInputs["adapt_web.adapt.specificity_taxa"] = key
