@@ -384,8 +384,8 @@ class AssayViewSet(viewsets.ModelViewSet):
         taxa = [{taxa_headers[i]: val \
             for i, val in enumerate(taxa_line.split('\t'))} \
             for taxa_line in taxa_lines[1:]]
-        objs = metadata_response["inputs"]["parallel_adapt.objs"]
-        sps = metadata_response["inputs"]["parallel_adapt.sps"]
+        objs = metadata_response["inputs"]["objs"]
+        sps = metadata_response["inputs"]["sps"]
 
         def save_by_rank(taxid, name, rank, parent=None):
             if rank not in LINEAGE_RANKS:
