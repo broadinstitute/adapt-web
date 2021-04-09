@@ -374,7 +374,7 @@ class AssayViewSet(viewsets.ModelViewSet):
         # Get file paths for S3
         s3_file_paths = metadata_response["outputs"]["parallel_adapt.guides"]
         # Parse taxa information and make taxa for those that do not exist in database
-        taxa_file_path = metadata_response["outputs"]["parallel_adapt.output_taxa_file"]
+        taxa_file_path = metadata_response["inputs"]["taxa_file"]
         start_time = metadata_response["start"][:10]
         taxa_file = _files([taxa_file_path])
         if isinstance(taxa_file, Response):
