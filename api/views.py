@@ -803,6 +803,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
                     input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
                 workflowInputs["adapt_web.adapt.fasta"] = input_files
+                request.data['fasta[]'] = input_files
 
             # TODO: deduplicate this code; nearly identical to above
             if 'sp_fasta[]' in request.FILES:
@@ -815,6 +816,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_file)
                     sp_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
                 workflowInputs["adapt_web.adapt.specificity_fasta"] = sp_files
+                request.data['sp_fasta[]'] = sp_files
 
         # Send to Cromwell; note that request requires input to be sent via "files"
         #   in order to send a JSON within a JSON
