@@ -943,9 +943,16 @@ export default {
               for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
                 if (this.inputs[sec][subsec][input_var].show != false & !this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
                   if (input_var.includes('fasta')) {
-                    for (let file of this.inputs[sec][subsec][input_var].value) {
-                      form_data.append(input_var + '[]', file, file.name);
+                    if (Array.isArray(this.inputs[sec][subsec][input_var].value)) {
+                      for (let file of this.inputs[sec][subsec][input_var].value) {
+                        form_data.append(input_var + '[]', file, file.name);
+                      }
+                    } else {
+                      form_data.append(input_var + '[]',
+                                       this.inputs[sec][subsec][input_var].value,
+                                       this.inputs[sec][subsec][input_var].value.name);
                     }
+
                   } else if (!this.inputs[sec][subsec][input_var].exclude){
                     form_data.append(input_var, this.inputs[sec][subsec][input_var].value)
                   }
