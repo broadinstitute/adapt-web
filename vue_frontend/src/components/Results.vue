@@ -13,8 +13,7 @@
                   <b-button pill v-on:click.prevent="deleteRunID(index)" variant="outline-danger" style="float: right;"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
                 </b-list-group-item>
               </b-list-group>
-              <br>
-              <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="button" variant="outline-secondary" name="clear-ids">Clear Run IDs</b-button>
+              <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="button" variant="outline-secondary" class="mt-3" name="clear-ids">Clear Run IDs</b-button>
               <br>
             </b-col>
             <b-col cols=0 md=1>
@@ -132,21 +131,20 @@ export default {
         let detail_response_json = await detail_response.json();
         switch(detail_response_json.status) {
           case 'Submitted':
-            this.updateRunIDs(detail_response_json.submit_time)
             this.$root.$data.modaltitle = 'Job Submitted';
             this.$root.$data.modalmsg = 'Run ' + this.runid + ' has been submitted. It will start running soon; please check back later.';
             this.$root.$data.modalvariant = 'dark';
             this.$root.$emit('show-msg');
+            this.updateRunIDs(detail_response_json.submit_time);
             break;
           case 'Running':
-            this.updateRunIDs(detail_response_json.submit_time)
             this.$root.$data.modaltitle = 'Job Running';
             this.$root.$data.modalmsg = 'Run ' + this.runid + ' is running. Jobs can take up to a day to finish running; please check back later.';
             this.$root.$data.modalvariant = 'dark';
             this.$root.$emit('show-msg');
+            this.updateRunIDs(detail_response_json.submit_time);
             break;
           case 'Succeeded':
-            this.updateRunIDs(detail_response_json.submit_time)
             response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/results/', {
               headers: {
                 "X-CSRFToken": csrfToken
@@ -165,12 +163,12 @@ export default {
               this.$root.$data.runid = this.runid;
               this.$root.$emit('show-assays');
               this.loading = false;
-              return response;
             } else {
               this.errorMsg(response);
               this.loading = false;
-              return response;
             }
+            this.updateRunIDs(detail_response_json.submit_time);
+            return response;
           case 'Failed':
           case 'Aborted':
           case 'Aborting':
@@ -178,6 +176,7 @@ export default {
             this.$root.$data.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact ppillai@broadinstitute.org.';
             this.$root.$data.modalvariant = 'danger';
             this.$root.$emit('show-msg');
+            this.updateRunIDs(detail_response_json.submit_time)
             break;
         }
       } else {
@@ -206,7 +205,7 @@ export default {
     },
     clearRunID() {
       Cookies.remove('runid')
-      this.runids=[]
+      this.runids = []
     },
     setRunID(runid) {
       this.runid = runid

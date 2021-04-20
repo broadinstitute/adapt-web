@@ -499,7 +499,7 @@ export default {
               type: 'file',
               multiple: false,
               value: [],
-              description: 'Sequence <i>must</i> be aligned. You can use <a href="https://mafft.cbrc.jp/alignment/server/" target="_blank">MAFFT</a> to align FASTAs.',
+              description: 'Sequence <i>must</i> be aligned. You can use <a href="https://mafft.cbrc.jp/alignment/server/" rel="noreferrer" target="_blank">MAFFT</a> to align FASTAs.',
               rules: 'required_if:@inputchoice,fasta',
             },
           },

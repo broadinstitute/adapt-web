@@ -869,6 +869,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             elif kwargs["action"] == 'download':
                 return self._get_results(adaptrun, 'file')
             elif kwargs["action"] == 'detail':
+                self._get_status(adaptrun)
                 return Response(ADAPTRunSerializer(adaptrun).data)
             else:
                 content = {'Input Error': "Action '%s' is not a valid action. "
