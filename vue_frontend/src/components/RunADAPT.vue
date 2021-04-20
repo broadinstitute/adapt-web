@@ -407,12 +407,20 @@ export default {
       validate(value, args) {
         return checkEmpty(args[0])? true : Number(value) <= Number(args[0]);
       },
-      // Sets the message to say greater than a specified string if one is supplied; otherwise, just says number
+      // Sets the message to say less than a specified string if one is supplied; otherwise, just says number
       message: (fieldName, placeholders) => {
         if (placeholders[1]) {
           return `The ${fieldName} must be less than or equal to the ${placeholders[1]}`;
         }
-        return `The ${fieldName} must be at least ${placeholders[0]}`;
+        return `The ${fieldName} must be at most ${placeholders[0]}`;
+      }
+    });
+    extend('max_length', {
+      validate(value, args) {
+        return checkEmpty(args[0])? true : value.length <= Number(args[0]);
+      },
+      message: (fieldName, placeholders) => {
+        return `The ${fieldName} must be at most ${placeholders[0]} characters`;
       }
     });
     // Specific rule for amplicon length
@@ -440,8 +448,23 @@ export default {
       // Fields have a label, a type, a value, rules to validate it, and options if it is
       // an options or radio type
       inputs: {
-        opts: {
+        preopts: {
           order: 0,
+          collapsible: false,
+          runopts: {
+            show: true,
+            nickname: {
+              order: 0,
+              label: 'Nickname',
+              type: 'text',
+              value: '',
+              description: 'An optional, short (<50 characters) description of the run',
+              rules: 'max_length:50'
+            }
+          }
+        },
+        opts: {
+          order: 1,
           label: 'Options',
           collapsible: false,
           inputchoices: {
@@ -933,72 +956,82 @@ export default {
       // Handles submission
       // Relies on innermost input field names matching adapt_web.wdl's input variable names.
       this.loading = true
-      let form_data = new FormData()
-      for (let sec of this.get_sub(this.inputs)) {
-        for (let subsec of this.get_sub(this.inputs[sec])) {
-          if (this.inputs[sec][subsec].show != false) {
-            if (this.inputs[sec][subsec].type == 'multi') {
-              form_data.append(subsec, JSON.stringify(this.inputs[sec][subsec].value));
-            } else {
-              for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
-                if (this.inputs[sec][subsec][input_var].show != false & !this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
-                  if (input_var.includes('fasta')) {
-                    if (Array.isArray(this.inputs[sec][subsec][input_var].value)) {
-                      for (let file of this.inputs[sec][subsec][input_var].value) {
-                        form_data.append(input_var + '[]', file, file.name);
+      let response = null
+      try {
+        let form_data = new FormData()
+        for (let sec of this.get_sub(this.inputs)) {
+          for (let subsec of this.get_sub(this.inputs[sec])) {
+            if (this.inputs[sec][subsec].show != false) {
+              if (this.inputs[sec][subsec].type == 'multi') {
+                form_data.append(subsec, JSON.stringify(this.inputs[sec][subsec].value));
+              } else {
+                for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
+                  if (this.inputs[sec][subsec][input_var].show != false & !this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
+                    if (input_var.includes('fasta')) {
+                      if (Array.isArray(this.inputs[sec][subsec][input_var].value)) {
+                        for (let file of this.inputs[sec][subsec][input_var].value) {
+                          form_data.append(input_var + '[]', file, file.name);
+                        }
+                      } else {
+                        form_data.append(input_var + '[]',
+                                         this.inputs[sec][subsec][input_var].value,
+                                         this.inputs[sec][subsec][input_var].value.name);
                       }
-                    } else {
-                      form_data.append(input_var + '[]',
-                                       this.inputs[sec][subsec][input_var].value,
-                                       this.inputs[sec][subsec][input_var].value.name);
+                    } else if (!this.inputs[sec][subsec][input_var].exclude){
+                      form_data.append(input_var, this.inputs[sec][subsec][input_var].value)
                     }
-
-                  } else if (!this.inputs[sec][subsec][input_var].exclude){
-                    form_data.append(input_var, this.inputs[sec][subsec][input_var].value)
                   }
                 }
               }
             }
           }
         }
-      }
 
-      let response = await fetch('/api/adaptrun/', {
-        method: 'POST',
-        headers: {
-          "X-CSRFToken": csrfToken
-        },
-        body: form_data,
-      })
+        response = await fetch('/api/adaptrun/', {
+          method: 'POST',
+          headers: {
+            "X-CSRFToken": csrfToken
+          },
+          body: form_data,
+        })
 
-      if (response.ok) {
-        let responsejson = await response.json()
-        let runid = responsejson.cromwell_id.slice(0,8) + ';' + responsejson.submit_time
-        let prev_runids = Cookies.get('runid')
-        if (prev_runids == null) {
-          Cookies.set('runid', runid)
-        }
-        else {
-          Cookies.set('runid', prev_runids + ',' + runid)
-        }
-        Cookies.set('submitted', true)
-        window.location.href = '/results'
-      }
-      else {
-        let contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
+        if (response.ok) {
           let responsejson = await response.json()
-          this.$root.$data.modaltitle = Object.keys(responsejson)[0]
-          this.$root.$data.modalmsg = responsejson[this.$root.$data.modaltitle]
+          let runid = responsejson.cromwell_id.slice(0,8) + ';' + responsejson.submit_time + ';' + form_data['nickname']
+          let prev_runids = Cookies.get('runid')
+          if (prev_runids == null) {
+            Cookies.set('runid', runid)
+          }
+          else {
+            Cookies.set('runid', prev_runids + ',' + runid)
+          }
+          Cookies.set('submitted', true)
+          window.location.href = '/results'
         }
         else {
-          this.$root.$data.modaltitle = 'Error'
-          this.$root.$data.modalmsg = await response.text()
+          let contentType = response.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            let responsejson = await response.json()
+            this.$root.$data.modaltitle = Object.keys(responsejson)[0]
+            this.$root.$data.modalmsg = responsejson[this.$root.$data.modaltitle]
+          }
+          else {
+            this.$root.$data.modaltitle = 'Error'
+            this.$root.$data.modalmsg = await response.text()
+          }
+          this.$root.$data.modalvariant = 'danger'
+          this.$root.$emit('show-msg');
         }
+      }
+      catch (error) {
+        this.$root.$data.modaltitle = 'Error'
+        this.$root.$data.modalmsg = error.message
         this.$root.$data.modalvariant = 'danger'
         this.$root.$emit('show-msg');
       }
-      this.loading = false
+      finally {
+        this.loading = false
+      }
       return response
     },
     get_sub(sec) {

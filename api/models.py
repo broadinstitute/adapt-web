@@ -188,6 +188,11 @@ class ADAPTRun(models.Model):
     submit_time = models.DateTimeField(
         auto_now_add=True
     )
+    nickname = models.CharField(
+        max_length=50,
+        blank=True,
+        default=""
+    )
 
     @property
     def short_id(self):

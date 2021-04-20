@@ -8,6 +8,7 @@
               <div class="h4 font-weight-bold" v-show="runids.length">Previous Runs</div>
               <b-list-group>
                 <b-list-group-item v-for="(runid, index) of runids" :key="runid.id" button v-on:click.prevent.stop.self="setRunID(runid.id)">
+                  <b v-if="runid.nickname!=''" v-on:click.prevent.stop.self="setRunID(runid.id)" class='f-3'>{{ runid.nickname }}<br></b>
                   {{ runid.id }}<br>
                   <i v-on:click.prevent.stop.self="setRunID(runid.id)" class='f-5'>{{ runid.time.toLocaleString() }}</i>
                   <b-button pill v-on:click.prevent="deleteRunID(index)" variant="outline-danger" style="float: right;"><b-icon-dash aria-label="Delete" font-scale="1"></b-icon-dash></b-button>
@@ -101,7 +102,8 @@ export default {
         let runid_parts = runid_str.split(';')
         this.runids.push({
           'id': runid_parts[0],
-          'time': new Date(runid_parts[1])
+          'time': new Date(runid_parts[1]),
+          'nickname': runid_parts[2]
         })
       }
       this.runids.sort((a,b) => b.time-a.time)
@@ -135,14 +137,14 @@ export default {
             this.$root.$data.modalmsg = 'Run ' + this.runid + ' has been submitted. It will start running soon; please check back later.';
             this.$root.$data.modalvariant = 'dark';
             this.$root.$emit('show-msg');
-            this.updateRunIDs(detail_response_json.submit_time);
+            this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname);
             break;
           case 'Running':
             this.$root.$data.modaltitle = 'Job Running';
             this.$root.$data.modalmsg = 'Run ' + this.runid + ' is running. Jobs can take up to a day to finish running; please check back later.';
             this.$root.$data.modalvariant = 'dark';
             this.$root.$emit('show-msg');
-            this.updateRunIDs(detail_response_json.submit_time);
+            this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname);
             break;
           case 'Succeeded':
             response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/results/', {
@@ -167,7 +169,7 @@ export default {
               this.errorMsg(response);
               this.loading = false;
             }
-            this.updateRunIDs(detail_response_json.submit_time);
+            this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname);
             return response;
           case 'Failed':
           case 'Aborted':
@@ -176,7 +178,7 @@ export default {
             this.$root.$data.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact ppillai@broadinstitute.org.';
             this.$root.$data.modalvariant = 'danger';
             this.$root.$emit('show-msg');
-            this.updateRunIDs(detail_response_json.submit_time)
+            this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname)
             break;
         }
       } else {
@@ -210,19 +212,20 @@ export default {
     setRunID(runid) {
       this.runid = runid
     },
-    updateRunIDs(submit_time) {
+    updateRunIDs(submit_time, nickname) {
       if (!this.runids.some((runid) => runid.id.includes(this.runid))) {
         this.runids.push({
           'id': this.runid,
-          'time': new Date(submit_time)
+          'time': new Date(submit_time),
+          'nickname': nickname
         })
         this.runids.sort((a,b) => b.time-a.time)
         let prev_runids = Cookies.get('runid')
         if (prev_runids == null) {
-          Cookies.set('runid', this.runid + ';' + submit_time)
+          Cookies.set('runid', this.runid + ';' + submit_time + ';' + nickname)
         }
         else if (!prev_runids.includes(this.runid)) {
-          Cookies.set('runid', prev_runids + ',' + this.runid + ';' + submit_time)
+          Cookies.set('runid', prev_runids + ',' + this.runid + ';' + submit_time + ';' + nickname)
         }
       }
     },
@@ -231,7 +234,7 @@ export default {
       if (this.runids.length > 0) {
         let runid_strs = []
         for (let runid of this.runids) {
-          runid_strs.push(runid.id + ';' + runid.time.toISOString())
+          runid_strs.push(runid.id + ';' + runid.time.toISOString() + ';' + runid.nickname)
         }
         Cookies.set('runid', runid_strs.join())
       } else {

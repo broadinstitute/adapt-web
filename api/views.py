@@ -558,6 +558,10 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         content = "'%s' is an invalid flanking sequence; each character must be one of " \
                             "<ul><li>%s</li></ul>" %(value, '</li><li>'.join(VALID_BASES))
                         break
+                elif input_var == 'nickname':
+                    if len(value) > 50:
+                        content = "Nickname '%s' is too long; it must be less than 50 characters." %value
+                        break
                 elif input_var == 'segment':
                     if value == '':
                         request.data[input_var] = 'None'
@@ -833,11 +837,17 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 "contact %s." %CONTACT}
             return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
 
+        nickname = ""
+        if 'nickname' in request.data:
+            nickname = request.data['nickname']
+            del request.data['nickname']
+
         cromwell_json = cromwell_response.json()
         adaptrun_info = {
             # If Cromwell submission was unsuccessful, this will cause an error
             "cromwell_id": cromwell_json["id"],
             "form_inputs": request.data,
+            "nickname": nickname
         }
 
         # Set up and save run to the web server database
