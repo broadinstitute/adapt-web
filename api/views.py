@@ -60,6 +60,7 @@ POS_INT_OPT_INPUT_VARS = [
     'max_target_length',
     'hard_guide_constraint',
     'rand_sample',
+    'memory',
 ]
 NONNEG_INT_OPT_INPUT_VARS = [
     'taxid',
@@ -85,7 +86,8 @@ NONNEG_FLOAT_OPT_INPUT_VARS = [
 ]
 FLOAT_OPT_INPUT_VARS = FRAC_OPT_INPUT_VARS + NONNEG_FLOAT_OPT_INPUT_VARS
 OPTIONAL_INPUT_VARS = STR_OPT_INPUT_VARS + INT_OPT_INPUT_VARS + FLOAT_OPT_INPUT_VARS
-FILES_INPUT_VARS = ['fasta[]', 'sp_fasta[]', 'sp_taxa']
+UPLOADED_FILES_INPUT_VARS = ['fasta[]', 'specificity_fasta[]']
+FILES_INPUT_VARS = UPLOADED_FILES_INPUT_VARS + ['specificity_taxa']
 GL_DEFAULT = 28
 PL_DEFAULT = 30
 SOFT_GUIDE_DEFAULT = 1
@@ -752,7 +754,12 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             if optional_input_var in request.data:
                 workflowInputs["adapt_web.adapt.%s" %optional_input_var] = float(request.data[optional_input_var])
 
-        if 'sp_taxa' in request.data or ('fasta[]' in request.FILES or 'sp_fasta[]' in request.FILES):
+        # 'Memory' is a special case; needs GB added at the end
+        if 'memory' in request.data:
+            workflowInputs["adapt_web.adapt.memory"] = "%sGB" %request.data['memory']
+
+        # Files are a special case
+        if 'specificity_taxa' in request.data or ('fasta[]' in request.FILES or 'specificity_fasta[]' in request.FILES):
             # If there are files in the request, upload to our S3 bucket, labeled with a unique identifier
             # We don't have Cromwell's unique identifier, so make a different one (will be stored)
             S3_id = uuid.uuid4()
@@ -767,16 +774,16 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     "contact %s." %CONTACT}
                 return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
 
-            if 'sp_taxa' in request.data:
+            if 'specificity_taxa' in request.data:
                 decoder = json.JSONDecoder()
-                sp_taxa_list = decoder.decode(request.data['sp_taxa'])
+                specificity_taxa_list = decoder.decode(request.data['specificity_taxa'])
                 key = "%s/sp_tx.tsv"%(S3_id)
                 sp_taxon_str = ""
-                if not isinstance(sp_taxa_list, list):
+                if not isinstance(specificity_taxa_list, list):
                     content = {'Input Error': "Specificity taxa not formatted correctly. "
                         "It should be a list of objects with keys of 'taxid' and optionally 'segment'"}
                     return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                for sp_tax in sp_taxa_list:
+                for sp_tax in specificity_taxa_list:
                     if not isinstance(sp_tax, dict):
                         content = {'Input Error': "Specificity taxa not formatted correctly. "
                             "It should be a list of objects with keys of 'taxid' and optionally 'segment'"}
@@ -793,34 +800,23 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         content = {'Input Error': "Segments in specificity taxa should be strings"}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
                     sp_taxon_str += "%s\t%s\n" %(sp_tax['sp_taxid'], sp_segment)
-                sp_taxa_file = sp_taxon_str.encode('utf-8')
-                S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_taxa_file)
+                specificity_taxa_file = sp_taxon_str.encode('utf-8')
+                S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = specificity_taxa_file)
                 workflowInputs["adapt_web.adapt.specificity_taxa"] = "s3://%s/%s" %(STORAGE_BUCKET, key)
 
-            if 'fasta[]' in request.FILES:
-                input_files = []
-                for i, input_file in enumerate(request.FILES.getlist('fasta[]')):
-                    if not self._check_fasta(input_file):
-                        content = {'Input Error': "Please only select FASTAs for input files."}
-                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    key = "%s/in_%i_%s"%(S3_id, i, _replace_spaces(input_file.name))
-                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
-                    input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
-                workflowInputs["adapt_web.adapt.fasta"] = input_files
-                request.data['fasta[]'] = input_files
-
-            # TODO: deduplicate this code; nearly identical to above
-            if 'sp_fasta[]' in request.FILES:
-                sp_files = []
-                for i, sp_file in enumerate(request.FILES.getlist('sp_fasta[]')):
-                    if not self._check_fasta(sp_file):
-                        content = {'Input Error': "Please only select FASTAs for specificity files."}
-                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    key = "%s/sp_%i_%s"%(S3_id, i, _replace_spaces(sp_file.name))
-                    S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = sp_file)
-                    sp_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
-                workflowInputs["adapt_web.adapt.specificity_fasta"] = sp_files
-                request.data['sp_fasta[]'] = sp_files
+            for uploaded_files_input_var in UPLOADED_FILES_INPUT_VARS:
+                if uploaded_files_input_var in request.FILES:
+                    input_files = []
+                    uploaded_files_name = uploaded_files_input_var[:-2]
+                    for i, input_file in enumerate(request.FILES.getlist(uploaded_files_input_var)):
+                        if not self._check_fasta(input_file):
+                            content = {'Input Error': "Please only select FASTAs for input files."}
+                            return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+                        key = "%s/%s_%i_%s"%(S3_id, uploaded_files_name, i, _replace_spaces(input_file.name))
+                        S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
+                        input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
+                    workflowInputs["adapt_web.adapt.%s" %uploaded_files_name] = input_files
+                    request.data[uploaded_files_input_var] = input_files
 
         # Send to Cromwell; note that request requires input to be sent via "files"
         #   in order to send a JSON within a JSON

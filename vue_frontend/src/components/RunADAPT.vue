@@ -555,35 +555,35 @@ export default {
               type: 'checkbox',
               value: [],
               fields: [
-                { text: 'FASTAs', value: 'sp_fasta' },
-                { text: 'Taxa', value: 'sp_taxa' }
+                { text: 'FASTAs', value: 'specificity_fasta' },
+                { text: 'Taxa', value: 'specificity_taxa' }
               ],
               rules: '',
               cols: 12,
               exclude: true,
             },
           },
-          sp_fasta: {
+          specificity_fasta: {
             order: 1,
             show: false,
-            sp_fasta: {
+            specificity_fasta: {
               order: 0,
               type: 'file',
               multiple: true,
               label: 'FASTA Files',
               description: 'Sequences do not need to be aligned.<br>The assays designed will show up negative when tested against the sequences in these FASTAs.',
               value: [],
-              rules: 'required_if:@sp_types,sp_fasta',
+              rules: 'required_if:@sp_types,specificity_fasta',
             },
           },
-          sp_taxa: {
+          specificity_taxa: {
             order: 2,
             show: false,
             type: 'multi',
             value: [],
             ref_var: "sp_taxid",
             description: 'The assays designed will show up negative when tested against these taxons:',
-            rules: 'required_if:@sp_types,sp_taxa',
+            rules: 'required_if:@sp_types,specificity_taxa',
             valid: null,
             sp_taxid: {
               order: 0,
@@ -741,7 +741,7 @@ export default {
             ref_var: 'obj',
             dynamic_description: {
               'maximize-activity': '<b>Maximize Activity</b> uses a machine learning model to optimize the fluorescence of crRNA assay set across all the sequences.',
-              'minimize-guides': '<b>Minimize Guides</b> uses heuristics to determine if the crRNA is active and adds crRNAs to the assay until a certain percentage of all the sequences have an active crRNA in the assay.'
+              'minimize-guides': '<b>Minimize Guides</b> uses heuristics to determine if the crRNA is active and adds crRNAs to the assay until a certain percentage of all the sequences have an active crRNA.'
             },
             obj: {
               order: 0,
@@ -845,6 +845,8 @@ export default {
               type: 'number',
               value: '',
               placeholder: 4,
+              predescription: 'If the guide matches a sequence it shouldn\'t (up to ',
+              postdescription: ' mismatches), it will be classified as binding to it.',
               rules: 'min_value:0|integer',
               cols: 6,
             },
@@ -855,8 +857,25 @@ export default {
               value: '',
               placeholder: 0.01,
               step: 0.01,
+              predescription: 'If the guide binds to a fraction of ',
+              postdescription: ' of a nonspecific taxa/FASTA, it will be classified nonspecific.',
               rules: 'between:0,1|double',
               cols: 6,
+            },
+          },
+          job: {
+            order: 8,
+            show: true,
+            label: 'Computation',
+            memory: {
+              order: 0,
+              label: 'Memory (GB)',
+              type: 'number',
+              value: '',
+              placeholder: 2,
+              predescription: 'The job will be given ',
+              postdescription: ' GB of memory to run.',
+              rules: 'between:1,200|integer',
             },
           },
         },
@@ -879,19 +898,19 @@ export default {
       return this.inputs.sp.all.sp_types.value
     },
     sptaxaval() {
-      return !this.checkEmpty(this.inputs.sp.sp_taxa.value)
+      return !this.checkEmpty(this.inputs.sp.specificity_taxa.value)
     },
     sptaxidval() {
-      return !this.checkEmpty(this.inputs.sp.sp_taxa.sp_taxid.value)
+      return !this.checkEmpty(this.inputs.sp.specificity_taxa.sp_taxid.value)
     },
     segmentedval() {
       return this.inputs.opts.autoinput.segmented.value.length
     },
     spsegmentedval() {
-      return this.inputs.sp.sp_taxa.sp_segmented.value.length
+      return this.inputs.sp.specificity_taxa.sp_segmented.value.length
     },
     spsegmentval() {
-      return (this.spsegmentedval & this.checkEmpty(this.inputs.sp.sp_taxa.sp_segment.value))
+      return (this.spsegmentedval & this.checkEmpty(this.inputs.sp.specificity_taxa.sp_segment.value))
     }
   },
   watch: {
@@ -906,23 +925,23 @@ export default {
     },
     spval(val) {
       this.inputs.advopts.sp.show = (val.length > 0)
-      this.inputs.sp.sp_fasta.show = val.includes('sp_fasta')
-      this.inputs.sp.sp_taxa.show = val.includes('sp_taxa')
+      this.inputs.sp.specificity_fasta.show = val.includes('specificity_fasta')
+      this.inputs.sp.specificity_taxa.show = val.includes('specificity_taxa')
     },
     sptaxaval(val) {
       if (val) {
-        this.inputs.sp.sp_taxa.valid = null
+        this.inputs.sp.specificity_taxa.valid = null
       }
     },
     sptaxidval(val) {
       if (val) {
-        this.inputs.sp.sp_taxa.sp_taxid.valid = null
+        this.inputs.sp.specificity_taxa.sp_taxid.valid = null
       }
     },
     spsegmentval(val) {
-      this.inputs.sp.sp_taxa.sp_segment.rules = val? 'required' : ''
+      this.inputs.sp.specificity_taxa.sp_segment.rules = val? 'required' : ''
       if (!val) {
-        this.inputs.sp.sp_taxa.sp_segment.valid = null
+        this.inputs.sp.specificity_taxa.sp_segment.valid = null
       }
     },
     segmentedval(val) {
@@ -931,9 +950,9 @@ export default {
       this.inputs.opts.autoinput.taxid.cols = val? 6 : 12
     },
     spsegmentedval(val) {
-      this.inputs.sp.sp_taxa.sp_segment.show = val
-      this.inputs.sp.sp_taxa.sp_segment.cols = val? 6 : 0
-      this.inputs.sp.sp_taxa.sp_taxid.cols = val? 6 : 12
+      this.inputs.sp.specificity_taxa.sp_segment.show = val
+      this.inputs.sp.specificity_taxa.sp_segment.cols = val? 6 : 0
+      this.inputs.sp.specificity_taxa.sp_taxid.cols = val? 6 : 12
     },
   },
   methods: {
@@ -944,12 +963,12 @@ export default {
              !String(val).trim().length
     },
     async validateMultiParts() {
-      if (this.inputs.sp.sp_taxa.show != false & this.checkEmpty(this.inputs.sp.sp_taxa.value)) {
-        this.inputs.sp.sp_taxa.valid = false;
+      if (this.inputs.sp.specificity_taxa.show != false & this.checkEmpty(this.inputs.sp.specificity_taxa.value)) {
+        this.inputs.sp.specificity_taxa.valid = false;
         return false;
       }
-      this.inputs.sp.sp_taxa.sp_taxid.valid = null;
-      this.inputs.sp.sp_taxa.sp_segment.valid = null;
+      this.inputs.sp.specificity_taxa.sp_taxid.valid = null;
+      this.inputs.sp.specificity_taxa.sp_segment.valid = null;
       return true;
     },
     async adapt_run() {

@@ -28,7 +28,9 @@
                 label-align="left"
                 label-align-md="right"
                 label-class="h2 font-weight-bold"
+                aria-describedby="runid-help"
               >
+                <b-form-text id="runid-help" class="text-md-right pb-1"><i>Type in "example-success" to see the output of a successful run.</i></b-form-text>
                 <ValidationProvider
                   vid="runid"
                   rules="required"
