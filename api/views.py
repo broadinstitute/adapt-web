@@ -46,6 +46,10 @@ MAX_ALGS = ["random-greedy", "greedy"]
 FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
 VALID_BASES = {'G', 'A', 'T', 'C', 'R', 'Y', 'M', 'K', 'S', 'W', 'H', 'B', 'V', 'D', 'N'}
 
+
+BOOL_OPT_INPUT_VARS = [
+    'write_aln',
+]
 STR_OPT_INPUT_VARS = [
     'segment',
     'maximization_algorithm',
@@ -85,7 +89,6 @@ NONNEG_FLOAT_OPT_INPUT_VARS = [
     'penalty_strength',
 ]
 FLOAT_OPT_INPUT_VARS = FRAC_OPT_INPUT_VARS + NONNEG_FLOAT_OPT_INPUT_VARS
-OPTIONAL_INPUT_VARS = STR_OPT_INPUT_VARS + INT_OPT_INPUT_VARS + FLOAT_OPT_INPUT_VARS
 UPLOADED_FILES_INPUT_VARS = ['fasta[]', 'specificity_fasta[]']
 FILES_INPUT_VARS = UPLOADED_FILES_INPUT_VARS + ['specificity_taxa']
 GL_DEFAULT = 28
@@ -613,7 +616,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                                 primer_gc_hi = float(request.data['primer_gc_hi']) if 'primer_gc_hi' in request.data else P_GC_HI_DEFAULT
                                 if mod_value > primer_gc_hi:
                                     content = "'%s' is invalid for the lowest GC primer percent content; it must " \
-                                        "be less than the highest GC primer percent content" %(value, _replace_spaces(input_var))
+                                        "be less than the highest GC primer percent content" %value
                                     break
                             except:
                                 pass
@@ -622,10 +625,15 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                                 primer_gc_lo = float(request.data['primer_gc_lo']) if 'primer_gc_lo' in request.data else P_GC_LO_DEFAULT
                                 if mod_value < primer_gc_lo:
                                     content = "'%s' is invalid for the highest GC primer percent content; it must " \
-                                        "be greater than the lowest GC primer percent content" %(value, _replace_spaces(input_var))
+                                        "be greater than the lowest GC primer percent content" %value
                                     break
                             except:
                                 pass
+                elif input_var in BOOL_OPT_INPUT_VARS:
+                    if value != 'true' and value != 'false':
+                        content = "'%s' is invalid for %s; it must be a boolean of value 'true' or " \
+                            "'false'" %(value, _replace_spaces(input_var))
+                        break
                 elif input_var not in FILES_INPUT_VARS:
                     content = "%s is not a valid input parameter" % input_var
                     break
@@ -648,7 +656,10 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 if isinstance(metadata_response, Response):
                     return metadata_response
                 # Download files from S3
-                files = _files(metadata_response["outputs"]["adapt_web.guides"])
+                if data_format == 'aln':
+                    files = _files(metadata_response["outputs"]["adapt_web.alns"])
+                else:
+                    files = _files(metadata_response["outputs"]["adapt_web.guides"])
                 if isinstance(files, Response):
                     return files
 
@@ -658,20 +669,32 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     for i, output_file in enumerate(output_files):
                         content[i] = _file_to_dict(output_file)
                     response = Response(content)
-                elif data_format == 'file':
-                    if len(files) == 1:
+                else:
+                    if len(files) == 0:
+                        content = {'No output': "Job output does not exist. "
+                            "Please contact %s with your run ID to resolve the issue." %CONTACT}
+                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+                    elif len(files) == 1:
                         # If there is only one file, no need to zip
                         output = files[0].read().decode("utf-8")
-                        output_type = "text/tsv"
-                        output_ext = ".tsv"
+                        if data_format == 'aln':
+                            output_type = "chemical/seq-na-fasta"
+                            output_ext = ".fasta"
+                        else:
+                            output_type = "text/tsv"
+                            output_ext = ".tsv"
                     else:
                         output_files = [output_file.read().decode("utf-8") for output_file in files]
                         output_type = "application/zip"
                         # Create the zip file in memory only
                         zipped_output = BytesIO()
                         with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
-                            for i, output_file in enumerate(output):
-                                zipped_output_a.writestr("%s.%i.tsv" %(self.kwargs['pk'], i), output_file)
+                            if data_format == 'aln':
+                                for i, output_file in enumerate(output):
+                                    zipped_output_a.writestr("%s.%i.fasta" %(self.kwargs['pk'], i), output_file)
+                            else:
+                                for i, output_file in enumerate(output):
+                                    zipped_output_a.writestr("%s.%i.tsv" %(self.kwargs['pk'], i), output_file)
                         zipped_output.seek(0)
                         output = zipped_output
                         output_ext = ".zip"
@@ -686,8 +709,9 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             elif adaptrun.status in FAILED_STATES:
                 # TODO give reasons that the job might fail
                 content = {'Failed Job': "Job has failed. "
-                    "This is likely due to invalid input parameters; "
-                    "please check your input prior to your next request. "
+                    "This could be due to invalid input parameters or "
+                    "running out of memory. Please check your input prior "
+                    "to your next request, then try increasing memory. "
                     "If you continue to have issues, contact %s" %CONTACT}
                 return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
 
@@ -744,6 +768,9 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         }
         # Add inputs if they exist
         # Cromwell requires correct typing, so cast to be safe
+        for optional_input_var in BOOL_OPT_INPUT_VARS:
+            if optional_input_var in request.data:
+                workflowInputs["adapt_web.adapt.%s" %optional_input_var] = request.data[optional_input_var].lower() == 'true'
         for optional_input_var in STR_OPT_INPUT_VARS:
             if optional_input_var in request.data:
                 workflowInputs["adapt_web.adapt.%s" %optional_input_var] = request.data[optional_input_var]
@@ -843,7 +870,8 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             # If Cromwell submission was unsuccessful, this will cause an error
             "cromwell_id": cromwell_json["id"],
             "form_inputs": request.data,
-            "nickname": nickname
+            "nickname": nickname,
+            "alignment": request.data['write_aln'] == 'true'
         }
 
         # Set up and save run to the web server database
@@ -876,6 +904,14 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 return self._get_results(adaptrun, 'json')
             elif kwargs["action"] == 'download':
                 return self._get_results(adaptrun, 'file')
+            elif kwargs["action"] == 'alignment':
+                if adaptrun.alignment:
+                    return self._get_results(adaptrun, 'aln')
+                else:
+                    content = {'Input Error': "There is no alignment for this run. "
+                    "To generate an alignment, use the 'Output Alignment' setting in "
+                    "the Advanced options section (Alignments can only outputted for "
+                    "taxonomic ID input)."}
             elif kwargs["action"] == 'detail':
                 self._get_status(adaptrun)
                 return Response(ADAPTRunSerializer(adaptrun).data)
@@ -917,3 +953,21 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         adaptrun = self.get_object()
         response = self._get_results(adaptrun, 'file')
         return response
+
+    @action(detail=True)
+    def alignment(self, request, *args, **kwargs):
+        """
+        Produces a file of the alignments to download
+
+        Makes a fasta if there is only one file and a ZIP otherwise.
+        Function called at the "alignment" API endpoint.
+        """
+        adaptrun = self.get_object()
+        if adaptrun.alignment:
+            response = self._get_results(adaptrun, 'aln')
+            return response
+        content = {'Input Error': "There is no alignment for this run. "
+        "To generate an alignment, use the 'Output Alignment' setting in "
+        "the Advanced options section (Alignments can only outputted for "
+        "taxonomic ID input)."}
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)

@@ -178,6 +178,10 @@ button:not(.list-group-item):not(.taxon) {
   background-color: $secondary;
 }
 
+.nav-pills .nav-link.active {
+  background-color: $secondary
+}
+
 // Part Specific - Modals
 .modal-content {
   border: 0px;
@@ -220,12 +224,6 @@ button:not(.list-group-item):not(.taxon) {
 
 .not-collapsed .arrow {
   transform: rotate(180deg);
-}
-
-.tabs .nav-justified .nav-item:last-of-type {
-  flex-basis: 0;
-  flex-grow: 0;
-  text-align: center;
 }
 
 .f-1, .family {

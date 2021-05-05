@@ -165,6 +165,7 @@ export default {
                 }
               }
               this.$root.$data.runid = this.runid;
+              this.$root.$data.alignment = detail_response_json.alignment
               this.$root.$emit('show-assays');
               this.loading = false;
             } else {

@@ -61,6 +61,7 @@
                     v-for="input_var in get_sub(inputs[sec][subsec])"
                     :key="inputs[sec][subsec][input_var].order"
                     :sm="inputs[sec][subsec][input_var].cols ? inputs[sec][subsec][input_var].cols : 12"
+                    align-self="center"
                   >
                     <b-form-group
                       class="field"
@@ -103,6 +104,15 @@
                           switches
                           class="text-center"
                         ></b-form-checkbox-group>
+                        <b-form-checkbox
+                          v-if="inputs[sec][subsec][input_var].type == 'boolean'"
+                          v-model="inputs[sec][subsec][input_var].value"
+                          :id="subsec + '-' + input_var"
+                          :disabled="loading"
+                          :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
+                          switch
+                          class="text-center"
+                        >{{ inputs[sec][subsec][input_var].fields }}</b-form-checkbox>
                         <b-form-input
                           v-if="inputs[sec][subsec][input_var].type == 'number'"
                           v-model="inputs[sec][subsec][input_var].value"
@@ -207,6 +217,14 @@
                               switches
                               class="text-center"
                             ></b-form-checkbox-group>
+                            <b-form-checkbox
+                              v-if="inputs[sec][subsec][input_var].type == 'boolean'"
+                              v-model="inputs[sec][subsec][input_var].value"
+                              :id="subsec + '-' + input_var"
+                              :disabled="loading"
+                              switch
+                              class="text-center"
+                            >{{ inputs[sec][subsec][input_var].fields }}</b-form-checkbox>
                             <b-form-text v-if="inputs[sec][subsec][input_var].description" :id="subsec + '-' + input_var + '-help'" v-html="inputs[sec][subsec][input_var].description"></b-form-text>
                             <b-form-text v-else-if="inputs[sec][subsec][input_var].predescription" :id="subsec + '-' + input_var + '-help'" class="m-0 pb-2 f-6">
                               <span v-html="inputs[sec][subsec][input_var].predescription"/>
@@ -505,9 +523,9 @@ export default {
             },
             segmented: {
               order: 2,
-              type: 'checkbox',
-              value: [],
-              fields: [{ text: 'Segmented Genome', value: 'true' }],
+              type: 'boolean',
+              value: false,
+              fields: 'Segmented Genome',
               rules: '',
               cols: 12,
               exclude: true,
@@ -607,9 +625,9 @@ export default {
             },
             sp_segmented: {
               order: 2,
-              type: 'checkbox',
-              value: [],
-              fields: [{ text: 'Segmented Genome', value: 'true' }],
+              type: 'boolean',
+              value: false,
+              fields: 'Segmented Genome',
               rules: '',
               cols: 12,
               exclude: true,
@@ -731,7 +749,16 @@ export default {
               placeholder: 0.3,
               step: 0.01,
               description: 'A measure of how similar sequences need to be for them to be aligned.',
-              rules: 'double'
+              rules: 'double',
+              cols: 8
+            },
+            write_aln: {
+              order: 1,
+              type: 'boolean',
+              value: false,
+              fields: 'Output Alignment',
+              rules: '',
+              cols: 4
             },
           },
           obj: {
@@ -904,10 +931,10 @@ export default {
       return !this.checkEmpty(this.inputs.sp.specificity_taxa.sp_taxid.value)
     },
     segmentedval() {
-      return this.inputs.opts.autoinput.segmented.value.length
+      return this.inputs.opts.autoinput.segmented.value
     },
     spsegmentedval() {
-      return this.inputs.sp.specificity_taxa.sp_segmented.value.length
+      return this.inputs.sp.specificity_taxa.sp_segmented.value
     },
     spsegmentval() {
       return (this.spsegmentedval & this.checkEmpty(this.inputs.sp.specificity_taxa.sp_segment.value))

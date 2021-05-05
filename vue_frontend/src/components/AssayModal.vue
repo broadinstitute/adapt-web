@@ -1,6 +1,6 @@
 <template>
    <b-modal id="assay-modal" size="xl" title="Assay Options" hide-footer class="" scrollable>
-    <b-tabs content-class="mt-4" justified>
+    <b-tabs content-class="mt-4" justified pills>
       <b-tab title="Table" active>
         <div id="clusters" v-if="resulttable" :key="updated">
           <div v-for="label in labels" :key="label[0]">
@@ -23,7 +23,8 @@
         </div>
       </b-tab>
        <template #tabs-end>
-        <b-nav-item role="presentation" @click.prevent="download_file()" href="#"><b-icon-download aria-label="Download"></b-icon-download></b-nav-item>
+        <b-nav-item role="presentation" @click.prevent="download_file('download')" href="#">Results <b-icon-download aria-label="Download"></b-icon-download></b-nav-item>
+        <b-nav-item v-if='alignment' role="presentation" @click.prevent="download_file('alignment')" href="#">Alignment <b-icon-download aria-label="Download"></b-icon-download></b-nav-item>
       </template>
     </b-tabs>
   </b-modal>
@@ -48,22 +49,25 @@ export default {
       resulttable: {},
       labels: [],
       updated: 0,
+      alignment: false,
     }
   },
   mounted() {
     this.$root.$data.resulttable = {}
     this.$root.$data.labels = []
     this.$root.$data.runid = ''
+    this.$root.$data.alignment = false
     var vm = this
     vm.$root.$on('show-assays', async function() {
       vm.resulttable = vm.$root.$data.resulttable;
       vm.labels = vm.$root.$data.labels;
+      vm.alignment = vm.$root.$data.alignment;
       vm.updated += 1
       vm.$bvModal.show("assay-modal")
     })
   },
   methods: {
-    async download_file() {
+    async download_file(endpoint) {
       let url
       let filename
       if (this.$root.$data.runid=='') {
@@ -75,7 +79,7 @@ export default {
         url = "data:text/plain;charset=utf-8," + encodeURIComponent(json);
         filename = 'designs.json'
       } else {
-        let response = await fetch('/api/adaptrun/id_prefix/' + this.$root.$data.runid + '/download/', {
+        let response = await fetch('/api/adaptrun/id_prefix/' + this.$root.$data.runid + '/' + endpoint + '/', {
           headers: {
             "X-CSRFToken": csrfToken
           }

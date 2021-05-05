@@ -193,6 +193,9 @@ class ADAPTRun(models.Model):
         blank=True,
         default=""
     )
+    alignment = models.BooleanField(
+        default=False
+    )
 
     @property
     def short_id(self):
