@@ -1043,7 +1043,7 @@ export default {
 
         if (response.ok) {
           let responsejson = await response.json()
-          let runid = responsejson.cromwell_id.slice(0,8) + ';' + responsejson.submit_time + ';' + form_data['nickname']
+          let runid = responsejson.cromwell_id.slice(0,8) + ';' + responsejson.submit_time + ';' + form_data.get('nickname')
           let prev_runids = Cookies.get('runid')
           if (prev_runids == null) {
             Cookies.set('runid', runid)
