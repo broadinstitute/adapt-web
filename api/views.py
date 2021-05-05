@@ -863,7 +863,10 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         nickname = ""
         if 'nickname' in request.data:
             nickname = request.data['nickname']
-            del request.data['nickname']
+
+        alignment = False
+        if 'write_aln' in request.data:
+            alignment = request.data['write_aln'] == 'true'
 
         cromwell_json = cromwell_response.json()
         adaptrun_info = {
@@ -871,7 +874,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             "cromwell_id": cromwell_json["id"],
             "form_inputs": request.data,
             "nickname": nickname,
-            "alignment": request.data['write_aln'] == 'true'
+            "alignment": alignment
         }
 
         # Set up and save run to the web server database
