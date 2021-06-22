@@ -467,9 +467,14 @@ class AssayViewSet(viewsets.ModelViewSet):
             for i, val in enumerate(taxa_line.split('\t'))} \
             for taxa_line in taxa_lines[1:]]
 
-        def save_by_rank(name, rank, taxid=None, parent=None):
-            if rank not in LINEAGE_RANKS:
-                raise ValueError('The rank %s is not built into the database structure' %rank)
+        def save_by_rank(name, taxrank, taxid=None, parent=None):
+            if taxrank not in LINEAGE_RANKS:
+                if taxrank == 'no rank' and parent.rank == 'species':
+                    rank = 'subspecies'
+                else:
+                    return parent
+            else:
+                rank = taxrank
             taxonrank_data = {'latin_name': name, 'rank': rank}
             if parent:
                 taxonrank_data['parent'] = parent.pk
