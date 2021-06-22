@@ -52,6 +52,7 @@ $footer-height:                     6rem;
 // General Page Formatting
 * {
   letter-spacing: 0.04em;
+  transition: opacity 0.1s;
   font-family: $font-family-sans-serif;
 }
 
@@ -104,6 +105,21 @@ text {
 }
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
+}
+.hide {
+  opacity: 0 !important;
+}
+
+// Positioning
+.float {
+  position: fixed;
+  z-index: 100;
+}
+.bottom {
+  bottom: 12.5%;
+}
+.right {
+  right: 12.5%;
 }
 
 // Header/Body/Footer Formatting
@@ -158,6 +174,13 @@ button:not(.list-group-item):not(.taxon) {
   border-radius: 0.25rem;
   margin: 5px 4px 5px 4px;
   min-width: 12rem;
+}
+
+.btn-xl {
+  padding: 1rem 2.5rem;
+  font-size: 2rem;
+  line-height: 1.75;
+  border-radius: 0.3rem;
 }
 
 .btn-link {
