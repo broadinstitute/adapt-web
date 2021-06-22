@@ -46,6 +46,8 @@ class TaxonRank(models.Model):
     def any_assays(self):
         return self.assay_sets.all().exists()
 
+    class Meta:
+        ordering = ['rank', 'latin_name']
 
 class Taxon(models.Model):
     '''Defines base model for all viral taxonomies with premade designs
