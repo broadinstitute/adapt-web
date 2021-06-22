@@ -427,7 +427,9 @@ class AssayViewSet(viewsets.ModelViewSet):
         tax_to_do = metadata_response["inputs"]["tax_to_do"] if "tax_to_do" in metadata_response["inputs"] else None
         # Get file paths for S3
         if metadata_response["status"] == "Failed":
-            S3 = boto3.client("s3")
+            S3 = boto3.client("s3",
+                aws_access_key_id=AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
             file_response = S3.list_objects_v2(
                 Bucket=CROMWELL_BUCKET,
                 Prefix="cromwell-execution/parallel_adapt/%s/call-Scatter" %request.data["id"],
