@@ -484,7 +484,7 @@ class AssayViewSet(viewsets.ModelViewSet):
             for q, obj in enumerate(objs):
                 for r, taxon in enumerate(taxa):
                     tax_seg = taxon['segment']
-                    if tax_to_do and k not in tax_to_do:
+                    if tax_to_do and r not in tax_to_do:
                         continue
                     if (isinstance(s3_file_paths[p][q], dict) and r not in s3_file_paths[p][q]) or s3_file_paths[p][q][r] == []:
                         continue
