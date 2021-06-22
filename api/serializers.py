@@ -11,7 +11,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 class TaxonRankSerializer(serializers.ModelSerializer):
     taxon = serializers.PrimaryKeyRelatedField(
-        read_only=True
+        queryset=Taxon.objects.all(),
+        allow_null=True,
+        required=False
     )
     parent = serializers.PrimaryKeyRelatedField(
         queryset=TaxonRank.objects.all(),
@@ -82,14 +84,14 @@ class AssaySerializer(serializers.ModelSerializer):
     left_primers = LeftPrimersSerializer()
     right_primers = RightPrimersSerializer()
     guide_set = GuideSetSerializer()
-    taxonrank = serializers.PrimaryKeyRelatedField(
-        queryset=TaxonRank.objects.all(),
+    assay_set = serializers.PrimaryKeyRelatedField(
+        queryset=AssaySet.objects.all(),
         allow_null=True,
         required=False
     )
     class Meta:
         model = Assay
-        fields = ('taxonrank', 'rank', 'cluster', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'guide_set', 'created', 'specific', 'objective')
+        fields = ('assay_set', 'rank', 'objective_value', 'left_primers', 'right_primers', 'amplicon_start', 'amplicon_end', 'guide_set')
 
     def create(self, validated_data):
         left_primers_data = validated_data.pop('left_primers')
@@ -104,6 +106,21 @@ class AssaySerializer(serializers.ModelSerializer):
             guide_set=guide_set, **validated_data)
 
         return assay
+
+
+class AssaySetSerializer(serializers.ModelSerializer):
+    assays = AssaySerializer(
+        many=True,
+        read_only=True,
+    )
+    taxonrank = serializers.PrimaryKeyRelatedField(
+        queryset=TaxonRank.objects.all(),
+        allow_null=True,
+        required=False
+    )
+    class Meta:
+        model = AssaySet
+        fields = ('pk', 'taxonrank', 'cluster',  'created', 'specific', 'objective', 'assays')
 
 
 class TaxonSerializer(serializers.ModelSerializer):

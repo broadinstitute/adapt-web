@@ -6,11 +6,14 @@ import tempfile
 import uuid
 import boto3
 import sys
+import re
 import xml.etree.ElementTree as ET
 from io import BytesIO
 from botocore.exceptions import ClientError
+from collections import defaultdict
 
-from django.shortcuts import render, get_object_or_404
+
+from django.shortcuts import render, get_object_or_404, get_list_or_404
 from django.http import HttpResponse, JsonResponse, FileResponse, Http404
 from django.core.files import File
 from django.views.decorators.csrf import csrf_exempt
@@ -27,6 +30,7 @@ from .serializers import *
 from .models import *
 from .permissions import AdminPermissionOrReadOnly
 
+
 SERVER_URL = "https://ip-10-0-16-250.ec2.internal/api/workflows/v1"
 WORKFLOW_URL = "https://raw.githubusercontent.com/broadinstitute/adapt-pipes/main/adapt_web.wdl"
 NCBI_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
@@ -34,6 +38,7 @@ NCBI_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 QUEUE_ARN = "arn:aws:batch:us-east-1:194065838422:job-queue/default-Adapt-Cromwell-54-Core"
 IMAGE = "quay.io/broadinstitute/adaptcloud"
 STORAGE_BUCKET = "adaptwebstorage"
+CROMWELL_BUCKET = "adapt-cromwell-54"
 
 with open('./api/aws_config.txt') as f:
     AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY = f.read().splitlines()
@@ -97,7 +102,7 @@ SOFT_GUIDE_DEFAULT = 1
 P_GC_LO_DEFAULT = 0.35
 P_GC_HI_DEFAULT = 0.65
 
-LINEAGE_RANKS = ['family', 'genus', 'species', 'subspecies']
+LINEAGE_RANKS = ['family', 'genus', 'species', 'subspecies', 'segment']
 
 
 def _valid_genome(genome):
@@ -107,8 +112,11 @@ def _valid_genome(genome):
     return True
 
 
-def _replace_spaces(filename):
-    return filename.replace(' ', '_')
+def _format(val):
+    formatted_val = val.replace(' ', '_')
+    formatted_val = formatted_val.replace('(', '_')
+    formatted_val = formatted_val.replace(')', '_')
+    return formatted_val
 
 
 def _metadata(cromwell_id):
@@ -244,7 +252,7 @@ class TaxonViewSet(viewsets.ModelViewSet):
         taxids = taxids.split(',')
         taxids_qs = Taxon.objects.filter(taxid=taxids[0])
         if len(taxids) > 1:
-            for taxid in parents[1:]:
+            for taxid in taxids[1:]:
                 taxids_qs = taxids_qs.union(Taxon.objects.filter(taxid=taxid))
         return taxids_qs
 
@@ -350,6 +358,32 @@ class GuideViewSet(viewsets.ModelViewSet):
     serializer_class = GuideSerializer
 
 
+class AssaySetViewSet(viewsets.ModelViewSet):
+    """
+    Produces the various API views for the Assay Set Model
+
+    Abstracts the HTTP requests to the actions list, create, retrieve,
+    update, partial_update, and destroy, which are inherited.
+    """
+    # These permission classes make sure only authenticated admin users can
+    # edit this model
+    permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
+    queryset = AssaySet.objects.all()
+    serializer_class = AssaySetSerializer
+
+    def get_queryset(self):
+        taxonrank = self.request.query_params.get('taxonrank')
+        cluster = self.request.query_params.get('cluster')
+        if taxonrank:
+            if cluster:
+                return AssaySet.objects.filter(taxonrank=taxonrank, cluster=cluster).order_by('-created')
+            else:
+                return AssaySet.objects.filter(taxonrank=taxonrank).order_by('-created')
+        elif cluster:
+            return AssaySet.objects.filter(cluster=cluster).order_by('-created')
+        return AssaySet.objects.all().order_by('-created')
+
+
 class AssayViewSet(viewsets.ModelViewSet):
     """
     Produces the various API views for the Assay Model
@@ -363,6 +397,18 @@ class AssayViewSet(viewsets.ModelViewSet):
     serializer_class = AssaySerializer
     queryset = Assay.objects.all()
 
+    @action(detail=False)
+    def delete_all(self, request, *args, **kwargs):
+        Assay.objects.all().delete()
+        AssaySet.objects.all().delete()
+        TaxonRank.objects.all().delete()
+        Taxon.objects.all().delete()
+        Guide.objects.all().delete()
+        GuideSet.objects.all().delete()
+        Primer.objects.all().delete()
+        LeftPrimers.objects.all().delete()
+        RightPrimers.objects.all().delete()
+        return Response()
 
     @action(detail=False, methods=['post'])
     def database_update(self, request, *args, **kwargs):
@@ -376,8 +422,27 @@ class AssayViewSet(viewsets.ModelViewSet):
         if isinstance(metadata_response, Response):
             return metadata_response
 
+        objs = metadata_response["inputs"]["objs"]
+        sps = metadata_response["inputs"]["sps"]
+        tax_to_do = metadata_response["inputs"]["tax_to_do"] if "tax_to_do" in metadata_response["inputs"] else None
         # Get file paths for S3
-        s3_file_paths = metadata_response["outputs"]["parallel_adapt.guides"]
+        if metadata_response["status"] == "Failed":
+            S3 = boto3.client("s3")
+            file_response = S3.list_objects_v2(
+                Bucket=CROMWELL_BUCKET,
+                Prefix="cromwell-execution/parallel_adapt/%s/call-Scatter" %request.data["id"],
+            )
+            s3_file_paths = [[defaultdict(list) for obj in objs] for sp in sps]
+            for file in file_response["Contents"]:
+                if file["Key"].endswith("guides.tsv.0"):
+                    shards_str = re.findall(r"shard-\d+", file["Key"])
+                    shards_int = [int(shard_str[6:]) for shard_str in shards_str]
+                    if len(shards_int) != 3:
+                        raise ValueError("There are not the correct number of scatter shards "
+                                        "(should be 3); check the cromwell ID and the WDL.")
+                    s3_file_paths[shards_int[0]][shards_int[1]][shards_int[2]].append("s3://%s/%s" %(CROMWELL_BUCKET, file["Key"]))
+        else:
+            s3_file_paths = metadata_response["outputs"]["parallel_adapt.guides"]
         # Parse taxa information and make taxa for those that do not exist in database
         taxa_file_path = metadata_response["inputs"]["taxa_file"]
         start_time = metadata_response["start"][:10]
@@ -389,23 +454,39 @@ class AssayViewSet(viewsets.ModelViewSet):
         taxa = [{taxa_headers[i]: val \
             for i, val in enumerate(taxa_line.split('\t'))} \
             for taxa_line in taxa_lines[1:]]
-        objs = metadata_response["inputs"]["objs"]
-        sps = metadata_response["inputs"]["sps"]
 
-        def save_by_rank(taxid, name, rank, parent=None):
+        def save_by_rank(name, rank, taxid=None, parent=None):
             if rank not in LINEAGE_RANKS:
                 raise ValueError('The rank %s is not built into the database structure' %rank)
-            data = {'taxid': taxid, 'taxonrank': {'latin_name': name, 'rank': rank}}
+            if taxid:
+                try:
+                    taxon = get_object_or_404(Taxon, pk=taxid)
+                    return taxon.taxonrank
+                except Http404:
+                    pass
+            taxonrank_data = {'latin_name': name, 'rank': rank}
             if parent:
-                data['taxonrank']['parent'] = parent.pk
-            serializer = TaxonSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            taxon = serializer.save()
-            return taxon.taxonrank
+                taxonrank_data['parent'] = parent.pk
+            if taxid:
+                data = {'taxid': taxid, 'taxonrank': taxonrank_data}
+                serializer = TaxonSerializer(data=data)
+                serializer.is_valid(raise_exception=True)
+                taxon = serializer.save()
+                return taxon.taxonrank
+            else:
+                serializer = TaxonRankSerializer(data=taxonrank_data)
+                serializer.is_valid(raise_exception=True)
+                taxonrank = serializer.save()
+                return taxonrank
 
-        for i, sp in enumerate(sps):
-            for j, obj in enumerate(objs):
-                for k, taxon in enumerate(taxa):
+        for p, sp in enumerate(sps):
+            for q, obj in enumerate(objs):
+                for r, taxon in enumerate(taxa):
+                    tax_seg = taxon['segment']
+                    if tax_to_do and k not in tax_to_do:
+                        continue
+                    if (isinstance(s3_file_paths[p][q], dict) and r not in s3_file_paths[p][q]) or s3_file_paths[p][q][r] == []:
+                        continue
                     try:
                         taxon_obj = get_object_or_404(Taxon, pk=int(taxon["taxid"]))
                         taxonrank_obj = taxon_obj.taxonrank
@@ -413,9 +494,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                         params = {'db': 'taxonomy', 'id': int(taxon['taxid'])}
                         tax_xml = requests.get(NCBI_URL, params=params).text
                         tax_ET = ET.fromstring(tax_xml)[0]
-                        # NOTE this is based on the current model we're using in the spreadsheet.
-                        # Could/should generalize spreadsheet
-                        tax_name = taxon['species']
+                        tax_name = tax_ET.find('ScientificName').text
                         tax_rank = tax_ET.find('Rank').text
                         lineage = tax_ET.find('LineageEx')
                         parent = None
@@ -424,17 +503,43 @@ class AssayViewSet(viewsets.ModelViewSet):
                             ancestor_name = ancestor.find('ScientificName').text
                             ancestor_rank = ancestor.find('Rank').text
                             if ancestor_rank in LINEAGE_RANKS:
-                                parent = save_by_rank(ancestor_id, ancestor_name, ancestor_rank, parent=parent)
-                        taxonrank_obj = save_by_rank(taxon['taxid'], tax_name, tax_rank, parent=parent)
-                    output_files = [output_file.read().decode("utf-8") for output_file in _files(s3_file_paths[i][j][k])]
+                                parent = save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
+                        taxonrank_obj = save_by_rank(tax_name, tax_rank, taxid=taxon['taxid'], parent=parent)
+                    if tax_seg != 'None':
+                        taxonrank_obj = save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
+
+                    output_files_encoded = _files(s3_file_paths[p][q][r])
+                    if isinstance(output_files_encoded, Response):
+                        return output_files_encoded
+                    output_files = [output_file.read().decode("utf-8") for output_file in output_files_encoded]
 
                     for i, output_file in enumerate(output_files):
+                        try:
+                            get_list_or_404(AssaySet,
+                                taxonrank=taxonrank_obj.pk,
+                                specific=sp,
+                                objective=obj,
+                                cluster=i)
+                            continue
+                        except Http404:
+                            pass
                         lines = output_file.splitlines()
                         headers = lines[0].split('\t')
+                        assay_set_data = {
+                            'taxonrank': taxonrank_obj.pk,
+                            'created': start_time,
+                            'specific': sp,
+                            'objective': obj,
+                            'cluster': i,
+                        }
+                        assay_set = AssaySetSerializer(data=assay_set_data)
+                        assay_set.is_valid(raise_exception=True)
+                        assay_set_obj = assay_set.save()
                         for j, line in enumerate(lines[1:]):
                             raw_content = {headers[k]: val for k,val in enumerate(line.split('\t'))}
 
                             assay_data = {
+                                "assay_set": assay_set_obj.pk,
                                 "left_primers": {
                                     "frac_bound": float(raw_content["left-primer-frac-bound"]),
                                     "start_pos": int(raw_content["left-primer-start"])
@@ -449,15 +554,10 @@ class AssayViewSet(viewsets.ModelViewSet):
                                     "median_activity": float(raw_content["guide-set-median-activity"]),
                                     "fifth_pctile_activity": float(raw_content["guide-set-5th-pctile-activity"])
                                 },
-                                'taxonrank': taxonrank_obj.pk,
                                 'rank': j,
-                                'cluster': i,
-                                'objective_value': float(raw_content["objective-value"]),
+                                'objective_value': round(float(raw_content["objective-value"]),16),
                                 'amplicon_start': int(raw_content["target-start"]),
                                 'amplicon_end': int(raw_content["target-end"]),
-                                'created': start_time,
-                                'specific': sp,
-                                'objective': obj
                             }
                             assay = AssaySerializer(data=assay_data)
                             assay.is_valid(raise_exception=True)
@@ -501,18 +601,15 @@ class AssayViewSet(viewsets.ModelViewSet):
         return Response({"id": request.data["id"]}, status=httpstatus.HTTP_201_CREATED)
 
     def get_queryset(self):
-        taxonrank = self.request.query_params.get('taxonrank')
-        cluster = self.request.query_params.get('cluster')
-        if taxonrank:
-            if cluster:
-                return Assay.objects.filter(taxonrank=taxonrank, cluster=cluster)
-            else:
-                return Assay.objects.filter(taxonrank=taxonrank)
-        elif cluster:
-            return Assay.objects.filter(cluster=cluster)
-        return Assay.objects.all()
-
-
+        assay_set_str = self.request.query_params.get('assay_set')
+        if not assay_set_str:
+            return Assay.objects.all()
+        assay_sets = assay_set_str.split(',')
+        assay_qs = Assay.objects.filter(assay_set=assay_sets[0])
+        if len(assay_sets) > 1:
+            for assay_set in assay_sets[1:]:
+                assay_qs = assay_qs.union(Assay.objects.filter(assay_set=assay_set))
+        return assay_qs
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):
     """
@@ -572,7 +669,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         request.data[input_var] = 'None'
                 elif input_var in POS_INT_OPT_INPUT_VARS:
                     if (not value.isdigit()) or value == '0':
-                        content = "'%s' is invalid for %s; it must be a positive integer" %(value, _replace_spaces(input_var))
+                        content = "'%s' is invalid for %s; it must be a positive integer" %(value, input_var)
                         break
                     if input_var == 'max_target_length':
                         mod_value = int(value)
@@ -580,7 +677,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                             gl = int(request.data['gl']) if 'gl' in request.data else GL_DEFAULT
                             pl = int(request.data['pl']) if 'pl' in request.data else PL_DEFAULT
                             if mod_value < max(gl, pl):
-                                content = "'%s' is invalid for %s; it must be at least as large at the primer length and the guide length" %(value, _replace_spaces(input_var))
+                                content = "'%s' is invalid for %s; it must be at least as large at the primer length and the guide length" %(value, input_var)
                                 break
                         except:
                             pass
@@ -589,27 +686,27 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         try:
                             soft_guide = int(request.data['soft_guide_constraint']) if 'soft_guide_constraint' in request.data else SOFT_GUIDE_DEFAULT
                             if mod_value < soft_guide:
-                                content = "'%s' is invalid for %s; it must be at least as large at the primer length and the guide length" %(value, _replace_spaces(input_var))
+                                content = "'%s' is invalid for %s; it must be at least as large at the primer length and the guide length" %(value, input_var)
                                 break
                         except:
                             pass
                 elif input_var in NONNEG_INT_OPT_INPUT_VARS:
                     if not value.isdigit():
-                        content = "'%s' is invalid for %s; it must be a nonnegative integer" %(value, _replace_spaces(input_var))
+                        content = "'%s' is invalid for %s; it must be a nonnegative integer" %(value, input_var)
                         break
                 elif input_var in FLOAT_OPT_INPUT_VARS:
                     try:
                         mod_value = float(value)
                     except:
-                        content = "'%s' is invalid for %s; it must be a decimal" %(value, _replace_spaces(input_var))
+                        content = "'%s' is invalid for %s; it must be a decimal" %(value, input_var)
                         break
                     else:
                         if mod_value < 0:
-                            content = "'%s' is invalid for %s; it must be between 0 and 1 (inclusive)" %(value, _replace_spaces(input_var))
+                            content = "'%s' is invalid for %s; it must be between 0 and 1 (inclusive)" %(value, input_var)
                             break
                         if input_var in FRAC_OPT_INPUT_VARS:
                             if mod_value > 1:
-                                content = "'%s' is invalid for %s; it must be between 0 and 1 (inclusive)" %(value, _replace_spaces(input_var))
+                                content = "'%s' is invalid for %s; it must be between 0 and 1 (inclusive)" %(value, input_var)
                                 break
                         if input_var == 'primer_gc_lo':
                             try:
@@ -632,7 +729,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 elif input_var in BOOL_OPT_INPUT_VARS:
                     if value != 'true' and value != 'false':
                         content = "'%s' is invalid for %s; it must be a boolean of value 'true' or " \
-                            "'false'" %(value, _replace_spaces(input_var))
+                            "'false'" %(value, input_var)
                         break
                 elif input_var not in FILES_INPUT_VARS:
                     content = "%s is not a valid input parameter" % input_var
@@ -839,7 +936,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         if not self._check_fasta(input_file):
                             content = {'Input Error': "Please only select FASTAs for input files."}
                             return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                        key = "%s/%s_%i_%s"%(S3_id, uploaded_files_name, i, _replace_spaces(input_file.name))
+                        key = "%s/%s_%i_%s"%(S3_id, uploaded_files_name, i, _format(input_file.name))
                         S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = input_file)
                         input_files.append("s3://%s/%s" %(STORAGE_BUCKET, key))
                     workflowInputs["adapt_web.adapt.%s" %uploaded_files_name] = input_files

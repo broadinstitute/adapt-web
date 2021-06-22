@@ -57,14 +57,20 @@ export default {
         var cluster = 0
         Vue.set(vm.$root.$data.resulttable, taxon, [])
         while (cluster >= 0) {
-          let response = await fetch('/api/assay?taxonrank=' + taxon.slice(2) + '&cluster=' + cluster, {
+          let set_response = await fetch('/api/assayset?taxonrank=' + taxon.slice(2) + '&cluster=' + cluster, {
             headers: {
               "X-CSRFToken": csrfToken
             }
           })
-          if (response.ok) {
-            let resultjson = await response.json()
-            if (resultjson.length > 0) {
+          if (set_response.ok) {
+            let set_resultjson = await set_response.json()
+            if (set_resultjson.length > 0) {
+              let response = await fetch('/api/assay?assay_set=' + set_resultjson[0]['pk'], {
+                headers: {
+                  "X-CSRFToken": csrfToken
+                }
+              })
+              let resultjson = await response.json()
               vm.$root.$data.resulttable[taxon].push([]);
               for (let rank in resultjson) {
                 vm.$root.$data.resulttable[taxon][cluster].push(resultjson[rank]);
@@ -74,7 +80,7 @@ export default {
               break;
             }
           } else {
-            let msg = await response.text()
+            let msg = await set_response.text()
             alert(msg);
           }
           cluster += 1

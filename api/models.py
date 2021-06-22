@@ -9,6 +9,7 @@ class TaxonRank(models.Model):
         ('genus', 'genus'),
         ('species', 'species'),
         ('subspecies', 'subspecies'),
+        ('segment', 'segment'),
     ]
     parent = models.ForeignKey('self',
         on_delete=models.CASCADE,
@@ -43,7 +44,7 @@ class TaxonRank(models.Model):
 
     @property
     def any_assays(self):
-        return self.assays.all().exists()
+        return self.assay_sets.all().exists()
 
 
 class Taxon(models.Model):
@@ -129,20 +130,35 @@ class Guide(models.Model):
     # class Meta:
     #     ordering = ['crRNA_set__assay__rank', 'start_pos']
 
-
-class Assay(models.Model):
-    '''Defines base model for an assay for a virus
+class AssaySet(models.Model):
+    '''Defines base model for an assay set for a virus
     '''
     OBJ_CHOICES = [
         ('maximize-activity', 'maximize-activity'),
         ('minimize-guides', 'minimize-guides'),
     ]
     taxonrank = models.ForeignKey(TaxonRank,
-        related_name='assays',
+        related_name='assay_sets',
         on_delete=models.CASCADE
     )
-    rank = models.PositiveSmallIntegerField()
+    created = models.DateField()
+    specific = models.BooleanField()
+    objective = models.CharField(
+        max_length=17,
+        choices=OBJ_CHOICES,
+    )
     cluster = models.PositiveSmallIntegerField(default=0)
+
+class Assay(models.Model):
+    '''Defines base model for an assay for a virus
+    '''
+    assay_set = models.ForeignKey(AssaySet,
+        related_name='assays',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    rank = models.PositiveSmallIntegerField()
     objective_value = models.DecimalField(
         max_digits=20,
         decimal_places=16
@@ -162,15 +178,9 @@ class Assay(models.Model):
         null=True,
         blank=True
     )
-    created = models.DateField()
-    specific = models.BooleanField()
-    objective = models.CharField(
-        max_length=17,
-        choices=OBJ_CHOICES,
-    )
 
     class Meta:
-        ordering = ['taxonrank__taxon__taxid', 'rank']
+        ordering = ['assay_set__taxonrank__taxon__taxid', 'assay_set__created', 'rank']
 
 
 class ADAPTRun(models.Model):
