@@ -430,19 +430,29 @@ class AssayViewSet(viewsets.ModelViewSet):
             S3 = boto3.client("s3",
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-            file_response = S3.list_objects_v2(
-                Bucket=CROMWELL_BUCKET,
-                Prefix="cromwell-execution/parallel_adapt/%s/call-Scatter" %request.data["id"],
-            )
+            more_files = True
+            continuation_token = None
             s3_file_paths = [[defaultdict(list) for obj in objs] for sp in sps]
-            for file in file_response["Contents"]:
-                if file["Key"].endswith("guides.tsv.0"):
-                    shards_str = re.findall(r"shard-\d+", file["Key"])
-                    shards_int = [int(shard_str[6:]) for shard_str in shards_str]
-                    if len(shards_int) != 3:
-                        raise ValueError("There are not the correct number of scatter shards "
-                                        "(should be 3); check the cromwell ID and the WDL.")
-                    s3_file_paths[shards_int[0]][shards_int[1]][shards_int[2]].append("s3://%s/%s" %(CROMWELL_BUCKET, file["Key"]))
+            while more_files:
+                list_objs_args = {
+                    'Bucket': CROMWELL_BUCKET,
+                    'Prefix': "cromwell-execution/parallel_adapt/%s/call-Scatter" %request.data["id"],
+                }
+                if continuation_token:
+                    list_objs_args['ContinuationToken'] = continuation_token
+                file_response = S3.list_objects_v2(**list_objs_args)
+                for file in file_response["Contents"]:
+                    if file["Key"].endswith("guides.tsv.0"):
+                        shards_str = re.findall(r"shard-\d+", file["Key"])
+                        shards_int = [int(shard_str[6:]) for shard_str in shards_str]
+                        if len(shards_int) != 3:
+                            raise ValueError("There are not the correct number of scatter shards "
+                                             "(should be 3); check the cromwell ID and the WDL.")
+                        s3_file_paths[shards_int[0]][shards_int[1]][shards_int[2]].append("s3://%s/%s" %(CROMWELL_BUCKET, file["Key"]))
+                if file_response["IsTruncated"]:
+                    continuation_token = file_response["NextContinuationToken"]
+                else:
+                    more_files = False
         else:
             s3_file_paths = metadata_response["outputs"]["parallel_adapt.guides"]
         # Parse taxa information and make taxa for those that do not exist in database
