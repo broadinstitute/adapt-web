@@ -460,15 +460,14 @@ class AssayViewSet(viewsets.ModelViewSet):
         def save_by_rank(name, rank, taxid=None, parent=None):
             if rank not in LINEAGE_RANKS:
                 raise ValueError('The rank %s is not built into the database structure' %rank)
-            if taxid:
-                try:
-                    taxon = get_object_or_404(Taxon, pk=taxid)
-                    return taxon.taxonrank
-                except Http404:
-                    pass
             taxonrank_data = {'latin_name': name, 'rank': rank}
             if parent:
                 taxonrank_data['parent'] = parent.pk
+            try:
+                taxonrank = get_object_or_404(TaxonRank, **taxonrank_data)
+                return taxonrank
+            except Http404:
+                pass
             if taxid:
                 data = {'taxid': taxid, 'taxonrank': taxonrank_data}
                 serializer = TaxonSerializer(data=data)
@@ -519,6 +518,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                         try:
                             get_list_or_404(AssaySet,
                                 taxonrank=taxonrank_obj.pk,
+                                created=start_time,
                                 specific=sp,
                                 objective=obj,
                                 cluster=i)
