@@ -426,7 +426,7 @@ class AssayViewSet(viewsets.ModelViewSet):
         sps = metadata_response["inputs"]["sps"]
         tax_to_do = metadata_response["inputs"]["tax_to_do"] if "tax_to_do" in metadata_response["inputs"] else None
         # Get file paths for S3
-        if metadata_response["status"] == "Failed":
+        if metadata_response["status"] not in SUCCESSFUL_STATES:
             S3 = boto3.client("s3",
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
