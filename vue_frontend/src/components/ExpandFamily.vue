@@ -1,18 +1,20 @@
 <template>
-  <div class="design">
-    <b-row
-      v-for="taxon in Object.keys(taxons)"
-      :key="taxon"
-    >
-      <Family v-if="taxons[taxon].rank=='family'" :pk="taxon"></Family>
-      <Genus v-if="taxons[taxon].rank=='genus'" :pk="taxon"></Genus>
-      <Species v-if="taxons[taxon].rank=='species'" :pk="taxon"></Species>
+  <div class="expandfamily">
+    <b-row>
+      <b-col
+        v-for="taxon in Object.keys(taxons)"
+        :key="taxon"
+        md=4
+        sm=6
+        cols=12>
+        <Genus v-if="taxons[taxon].rank=='genus'" :pk="taxon"></Genus>
+        <Species v-if="taxons[taxon].rank=='species'" :pk="taxon"></Species>
+      </b-col>
     </b-row>
   </div>
 </template>
 
 <script>
-import Family from '@/components/Family.vue'
 import Genus from '@/components/Genus.vue'
 import Species from '@/components/Species.vue'
 const Cookies = require('js-cookie');
@@ -20,9 +22,11 @@ const Cookies = require('js-cookie');
 const csrfToken = Cookies.get('csrftoken')
 
 export default {
-  name: 'Design',
+  name: 'ExpandFamily',
+  props: {
+    family: String
+  },
   components: {
-    Family,
     Genus,
     Species
   },
@@ -32,7 +36,7 @@ export default {
     }
   },
   async created () {
-    let response = await fetch('/api/taxonrank?parent=null', {
+    let response = await fetch('/api/taxonrank?parent=' + this.family.slice(2), {
       headers: {
         "X-CSRFToken": csrfToken
       }
@@ -55,7 +59,7 @@ export default {
             collapsed: true,
           }
         )
-        this.$set(vm.taxons,
+        this.$set(this.taxons,
           "pk" + response_json[child].pk.toString(),
           {
             name: response_json[child].latin_name,
@@ -75,6 +79,6 @@ export default {
       let msg = await response.text()
       alert(msg);
     }
-  },
+  }
 }
 </script>

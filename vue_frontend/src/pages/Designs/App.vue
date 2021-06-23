@@ -19,7 +19,12 @@
           </div>
         </transition>
         <transition appear name="fade">
-          <Design class="px-3" parent="pknull"></Design>
+          <b-row>
+            <b-col cols=12 align="center" class="f-4 pb-5">Select taxa to see crRNA/RPA primer assay designs. Click on arrows to see subtaxa. Only taxa in purple have designs.</b-col>
+            <b-col cols=12>
+              <Design class="px-3" style="width: 100%"></Design>
+            </b-col>
+          </b-row>
         </transition>
         <AssayModal/>
         <Modal/>
@@ -53,8 +58,10 @@ export default {
   },
   data() {
     this.$root.$data.selectedDesigns = []
+    this.$root.$data.all_taxons = {}
     return {
       selectedDesigns: this.$root.$data.selectedDesigns,
+      all_taxons: this.$root.$data.all_taxons,
       loading: false
     }
   },

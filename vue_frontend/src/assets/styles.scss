@@ -60,7 +60,7 @@ $footer-height:                     6rem;
   outline: color.scale($primary, $alpha: -40%) auto 1px;
 }
 
-legend, .nav-link, button:not(.list-group-item), th > div, .h1, .h2, .h3, .h4, .h5, .h6, .modal-title {
+legend, .nav-link, button:not(.list-group-item, .btn-link), th > div, .h1, .h2, .h3, .h4, .h5, .h6, .modal-title {
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
@@ -162,6 +162,10 @@ button:not(.list-group-item):not(.taxon) {
   font-weight: 600;
 }
 
+.btn {
+  font-size: inherit;
+}
+
 .btn-group {
   text-align: center;
   display: block;
@@ -185,6 +189,11 @@ button:not(.list-group-item):not(.taxon) {
 
 .btn-link {
   text-align: left;
+}
+
+.btn-link:disabled, .btn-link.disabled {
+  color: $body-color;
+  opacity: 80%;
 }
 
 .add, .delete {
@@ -249,19 +258,24 @@ button:not(.list-group-item):not(.taxon) {
   transform: rotate(180deg);
 }
 
-.f-1, .family {
-  font-size: 2rem;
-}
-
-.f-2, .genus {
+.f-1, {
   font-size: 1.6rem;
 }
 
-.f-3, .species {
+.f-2, .family {
+  font-size: 1.4rem;
+}
+
+.family {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.f-3, .genus {
   font-size: 1.2rem;
 }
 
-.f-4, .subspecies {
+.f-4, .species  {
   font-size: 1rem;
 }
 
@@ -269,12 +283,16 @@ button:not(.list-group-item):not(.taxon) {
   font-size: 0.9rem;
 }
 
-.f-6 {
+.f-6, .subspecies {
   font-size: 0.8rem;
 }
 
 .selected {
   background-color: rgba(lighten($success, 60%), 0.5);
+}
+
+.selectable {
+  color: $secondary;
 }
 
 .selectable, .arrow {
@@ -283,18 +301,22 @@ button:not(.list-group-item):not(.taxon) {
 }
 
 .selectable:hover, .selectable:focus {
+  color: $secondary;
   background-color: rgba(lighten($success, 60%), 0.25);
+  text-decoration: none;
 }
 
 .selected:hover, .selected:focus {
+  color: $secondary;
   background-color: rgba(lighten($success, 60%), 0.75);
-}
-
-.taxon {
-  color: $body-color;
-}
-
-.taxon:hover, .taxon:focus {
-  color: $body-color;
   text-decoration: none;
 }
+
+// .taxon {
+//   color: $body-color;
+// }
+
+// .taxon:hover, .taxon:focus {
+//   color: $body-color;
+//   text-decoration: none;
+// }
