@@ -272,20 +272,23 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         parents = self.request.query_params.get('parent')
-        if not parents:
-            return TaxonRank.objects.all()
-        parents = parents.split(',')
-        if parents[0] == 'null':
-            parents_qs = TaxonRank.objects.filter(parent__isnull=True)
-        else:
-            parents_qs = TaxonRank.objects.filter(parent=parents[0])
-        if len(parents) > 1:
-            for parent in parents[1:]:
-                if parent == 'null':
-                    parents_qs = parents_qs.union(TaxonRank.objects.filter(parent__taxid__isnull=True))
-                else:
-                    parents_qs = parents_qs.union(TaxonRank.objects.filter(parent__taxid=parent))
-        return parents_qs
+        rank = self.request.query_params.get('rank')
+        qs = TaxonRank.objects.all()
+        if rank:
+            qs = qs.filter(rank=rank)
+        if parents:
+            parents = parents.split(',')
+            if parents[0] == 'null':
+                qs = qs.filter(parent__isnull=True)
+            else:
+                qs = qs.filter(parent=parents[0])
+            if len(parents) > 1:
+                for parent in parents[1:]:
+                    if parent == 'null':
+                        qs = qs.union(TaxonRank.objects.filter(parent__taxid__isnull=True))
+                    else:
+                        qs = qs.union(TaxonRank.objects.filter(parent__taxid=parent))
+        return qs
 
 
 class LeftPrimersViewSet(viewsets.ModelViewSet):
@@ -558,18 +561,18 @@ class AssayViewSet(viewsets.ModelViewSet):
                             assay_data = {
                                 "assay_set": assay_set_obj.pk,
                                 "left_primers": {
-                                    "frac_bound": float(raw_content["left-primer-frac-bound"]),
+                                    "frac_bound": round(float(raw_content["left-primer-frac-bound"]),16),
                                     "start_pos": int(raw_content["left-primer-start"])
                                 },
                                 "right_primers": {
-                                    "frac_bound": float(raw_content["right-primer-frac-bound"]),
+                                    "frac_bound": round(float(raw_content["right-primer-frac-bound"]),16),
                                     "start_pos": int(raw_content["right-primer-start"])
                                 },
                                 "guide_set": {
-                                    "frac_bound": float(raw_content["total-frac-bound-by-guides"]),
-                                    "expected_activity": float(raw_content["guide-set-expected-activity"]),
-                                    "median_activity": float(raw_content["guide-set-median-activity"]),
-                                    "fifth_pctile_activity": float(raw_content["guide-set-5th-pctile-activity"])
+                                    "frac_bound": round(float(raw_content["total-frac-bound-by-guides"]),16),
+                                    "expected_activity": round(float(raw_content["guide-set-expected-activity"]),16),
+                                    "median_activity": round(float(raw_content["guide-set-median-activity"]),16),
+                                    "fifth_pctile_activity": round(float(raw_content["guide-set-5th-pctile-activity"]),16)
                                 },
                                 'rank': j,
                                 'objective_value': round(float(raw_content["objective-value"]),16),
