@@ -43,6 +43,10 @@ class TaxonRank(models.Model):
         return len(self.children.all())
 
     @property
+    def num_segments(self):
+        return len(self.children.filter(rank="segment"))
+
+    @property
     def any_assays(self):
         return self.assay_sets.all().exists()
 
