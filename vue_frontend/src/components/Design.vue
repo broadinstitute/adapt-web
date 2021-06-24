@@ -7,6 +7,7 @@
       :multiple="true"
       :close-on-select="false"
       :clear-on-select="false"
+      :loading="loading"
       @select="select"
       @remove="remove"
       track-by="pk"
@@ -28,7 +29,8 @@ export default {
   data() {
     return {
       selectedDesigns: [],
-      taxons: []
+      taxons: [],
+      loading: true,
     }
   },
   async created () {
@@ -56,8 +58,10 @@ export default {
             taxons = parent_response_json.taxons
           }
           else {
-            let msg = await response.text()
-            alert(msg);
+            this.$root.$data.modaltitle = 'Error'
+            this.$root.$data.modalmsg = await parent_response.text()
+            this.$root.$data.modalvariant = 'danger'
+            this.$root.$emit('show-msg');
           }
         }
         this.taxons.push(
@@ -72,9 +76,12 @@ export default {
       }
     }
     else {
-      let msg = await response.text()
-      alert(msg);
+      this.$root.$data.modaltitle = 'Error'
+      this.$root.$data.modalmsg = await response.text()
+      this.$root.$data.modalvariant = 'danger'
+      this.$root.$emit('show-msg');
     }
+    this.loading = false
   },
   methods : {
     select(selectedTaxon) {
