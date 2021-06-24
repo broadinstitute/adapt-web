@@ -39,12 +39,13 @@ export default {
         "X-CSRFToken": csrfToken
       }
     })
+    var taxons = []
     if (response.ok) {
       let response_json = await response.json()
       for (var child in response_json) {
         let name = response_json[child].latin_name
         let rank = response_json[child].rank
-        let taxons = response_json[child].taxons
+        let taxids = response_json[child].taxons
         if (response_json[child].rank=="segment") {
           let parent_response = await fetch('/api/taxonrank/' + response_json[child]['parent'], {
             headers: {
@@ -55,7 +56,7 @@ export default {
             let parent_response_json = await parent_response.json()
             name = parent_response_json.latin_name + " — Segment " + name
             rank = parent_response_json.rank
-            taxons = parent_response_json.taxons
+            taxids = parent_response_json.taxons
           }
           else {
             this.$root.$data.modaltitle = 'Error'
@@ -64,13 +65,13 @@ export default {
             this.$root.$emit('show-msg');
           }
         }
-        this.taxons.push(
+        taxons.push(
           {
             "pk": response_json[child].pk.toString(),
             "name": name,
             "rank": rank,
             "description": response_json[child].description,
-            "taxons": taxons,
+            "taxids": taxids,
           }
         )
       }
@@ -81,15 +82,11 @@ export default {
       this.$root.$data.modalvariant = 'danger'
       this.$root.$emit('show-msg');
     }
-    let vm = this
-    this.sleep(1000).then(() => {vm.loading = false})
+    taxons.sort(function compareFn(firstEl, secondEl) { return firstEl.taxids[0]-secondEl.taxids[0] })
+    this.taxons = taxons
+    this.loading = false
   },
   methods : {
-    sleep(ms) {
-      return new Promise(
-        resolve => setTimeout(resolve, ms)
-      );
-    },
     select(selectedTaxon) {
       this.$root.$data.selectedDesigns.push([selectedTaxon.pk, selectedTaxon.name])
     },
@@ -104,8 +101,8 @@ export default {
         this.$root.$data.selectedDesigns.splice(index, 1);
       }
     },
-    formatTaxa({name, rank, taxons}) {
-      return '[' + rank[0].toUpperCase() + rank.slice(1) + '] ' + name + " (taxid: " + taxons + ")"
+    formatTaxa({name, rank, taxids}) {
+      return '[' + rank[0].toUpperCase() + rank.slice(1) + '] ' + name + " (taxid: " + taxids + ")"
     }
   }
 }

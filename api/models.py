@@ -51,7 +51,7 @@ class TaxonRank(models.Model):
         return self.assay_sets.all().exists()
 
     class Meta:
-        ordering = ['-rank', 'parent__parent__parent__parent__latin_name', 'parent__parent__parent__latin_name', 'parent__parent__latin_name', 'parent__latin_name', 'latin_name']
+        ordering = ['taxons', 'latin_name']
 
 class Taxon(models.Model):
     '''Defines base model for all viral taxonomies with premade designs
