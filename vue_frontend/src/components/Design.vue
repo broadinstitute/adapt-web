@@ -39,7 +39,6 @@ export default {
         "X-CSRFToken": csrfToken
       }
     })
-    var taxons = []
     if (response.ok) {
       let response_json = await response.json()
       for (var child in response_json) {
@@ -65,7 +64,7 @@ export default {
             this.$root.$emit('show-msg');
           }
         }
-        taxons.push(
+        this.taxons.push(
           {
             "pk": response_json[child].pk.toString(),
             "name": name,
@@ -82,7 +81,6 @@ export default {
       this.$root.$data.modalvariant = 'danger'
       this.$root.$emit('show-msg');
     }
-    this.taxons = taxons
     this.loading = false
   },
   methods : {
