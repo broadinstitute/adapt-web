@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import App from './App.vue'
-import { LayoutPlugin, NavbarPlugin, ModalPlugin, TabsPlugin, TablePlugin, ButtonPlugin, OverlayPlugin, BIconChevronDown, BIconPlus, BIconDash, BIconDownload } from 'bootstrap-vue'
+import { LayoutPlugin, NavbarPlugin, ModalPlugin, TabsPlugin, TablePlugin, ButtonPlugin, BIconChevronDown, BIconPlus, BIconDash, BIconDownload } from 'bootstrap-vue'
 import '../../assets/styles.scss'
 
 // Make BootstrapVue Components available throughout page
@@ -10,7 +10,6 @@ Vue.use(ModalPlugin)
 Vue.use(TabsPlugin)
 Vue.use(TablePlugin)
 Vue.use(ButtonPlugin)
-Vue.use(OverlayPlugin)
 Vue.component('b-icon-chevron-down', BIconChevronDown)
 Vue.component('b-icon-plus', BIconPlus)
 Vue.component('b-icon-dash', BIconDash)
