@@ -245,6 +245,19 @@ class TaxonViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     serializer_class = TaxonSerializer
 
+    @action(detail=False)
+    def delete_all(self, request, *args, **kwargs):
+        Assay.objects.all().delete()
+        AssaySet.objects.all().delete()
+        TaxonRank.objects.all().delete()
+        Taxon.objects.all().delete()
+        Guide.objects.all().delete()
+        GuideSet.objects.all().delete()
+        Primer.objects.all().delete()
+        LeftPrimers.objects.all().delete()
+        RightPrimers.objects.all().delete()
+        return Response()
+
     def get_queryset(self):
         taxids = self.request.query_params.get('taxid')
         if not taxids:
@@ -273,7 +286,12 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         parents = self.request.query_params.get('parent')
         rank = self.request.query_params.get('rank')
+        assays = self.request.query_params.get('assays')
         qs = TaxonRank.objects.all()
+        if assays == 'true':
+            qs = qs.filter(assay_sets__isnull=False)
+        elif assays == 'false':
+            qs = qs.filter(assay_sets__isnull=True)
         if rank:
             qs = qs.filter(rank=rank)
         if parents:
@@ -377,14 +395,15 @@ class AssaySetViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         taxonrank = self.request.query_params.get('taxonrank')
         cluster = self.request.query_params.get('cluster')
+        created = self.request.query_params.get('created')
+        qs = AssaySet.objects.all()
         if taxonrank:
-            if cluster:
-                return AssaySet.objects.filter(taxonrank=taxonrank, cluster=cluster).order_by('-created')
-            else:
-                return AssaySet.objects.filter(taxonrank=taxonrank).order_by('-created')
-        elif cluster:
-            return AssaySet.objects.filter(cluster=cluster).order_by('-created')
-        return AssaySet.objects.all().order_by('-created')
+            qs = qs.filter(taxonrank=taxonrank)
+        if cluster:
+            qs = qs.filter(cluster=cluster)
+        if created:
+            qs = qs.filter(created=created)
+        return qs.order_by('-created')
 
 
 class AssayViewSet(viewsets.ModelViewSet):
@@ -399,19 +418,6 @@ class AssayViewSet(viewsets.ModelViewSet):
     permission_classes = [AdminPermissionOrReadOnly]
     serializer_class = AssaySerializer
     queryset = Assay.objects.all()
-
-    @action(detail=False)
-    def delete_all(self, request, *args, **kwargs):
-        Assay.objects.all().delete()
-        AssaySet.objects.all().delete()
-        TaxonRank.objects.all().delete()
-        Taxon.objects.all().delete()
-        Guide.objects.all().delete()
-        GuideSet.objects.all().delete()
-        Primer.objects.all().delete()
-        LeftPrimers.objects.all().delete()
-        RightPrimers.objects.all().delete()
-        return Response()
 
     @action(detail=False, methods=['post'])
     def database_update(self, request, *args, **kwargs):
@@ -451,7 +457,8 @@ class AssayViewSet(viewsets.ModelViewSet):
                         if len(shards_int) != 3:
                             raise ValueError("There are not the correct number of scatter shards "
                                              "(should be 3); check the cromwell ID and the WDL.")
-                        s3_file_paths[shards_int[0]][shards_int[1]][shards_int[2]].append("s3://%s/%s" %(CROMWELL_BUCKET, file["Key"]))
+                        shards2 = tax_to_do[shards_int[2]] if tax_to_do else shards_int[2]
+                        s3_file_paths[shards_int[0]][shards_int[1]][shards2].append("s3://%s/%s" %(CROMWELL_BUCKET, file["Key"]))
                 if file_response["IsTruncated"]:
                     continuation_token = file_response["NextContinuationToken"]
                 else:
@@ -486,17 +493,15 @@ class AssayViewSet(viewsets.ModelViewSet):
                 return taxonrank
             except Http404:
                 pass
+            serializer = TaxonRankSerializer(data=taxonrank_data)
+            serializer.is_valid(raise_exception=True)
+            taxonrank = serializer.save()
             if taxid:
-                data = {'taxid': taxid, 'taxonrank': taxonrank_data}
+                data = {'taxid': taxid, 'taxonrank': taxonrank.pk}
                 serializer = TaxonSerializer(data=data)
                 serializer.is_valid(raise_exception=True)
                 taxon = serializer.save()
-                return taxon.taxonrank
-            else:
-                serializer = TaxonRankSerializer(data=taxonrank_data)
-                serializer.is_valid(raise_exception=True)
-                taxonrank = serializer.save()
-                return taxonrank
+            return taxonrank
 
         for p, sp in enumerate(sps):
             for q, obj in enumerate(objs):

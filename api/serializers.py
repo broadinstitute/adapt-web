@@ -9,11 +9,37 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username')
 
 
-class TaxonRankSerializer(serializers.ModelSerializer):
-    taxon = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all(),
+class TaxonSerializer(serializers.ModelSerializer):
+    taxonrank = serializers.PrimaryKeyRelatedField(
+        queryset=TaxonRank.objects.all(),
         allow_null=True,
         required=False
+    )
+    class Meta:
+        model = Taxon
+        fields = ('taxid', 'taxonrank')
+
+    def create(self, validated_data):
+        taxonrank_data = validated_data.pop('taxonrank')
+        if isinstance(taxonrank_data, TaxonRank):
+            taxonrank = TaxonRank.objects.get(latin_name=taxonrank_data.latin_name, rank=taxonrank_data.rank)
+        else:
+            try:
+                taxonrank = TaxonRank.objects.get(latin_name=taxonrank_data['latin_name'], rank=taxonrank_data['rank'])
+            except TaxonRank.DoesNotExist:
+                taxonrank = TaxonRank.objects.create(**taxonrank_data)
+
+        taxon = Taxon.objects.create(taxonrank=taxonrank, **validated_data)
+
+        return taxon
+
+
+class TaxonRankSerializer(serializers.ModelSerializer):
+    taxons = serializers.PrimaryKeyRelatedField(
+        queryset=Taxon.objects.all(),
+        allow_null=True,
+        required=False,
+        many=True
     )
     parent = serializers.PrimaryKeyRelatedField(
         queryset=TaxonRank.objects.all(),
@@ -22,7 +48,7 @@ class TaxonRankSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = TaxonRank
-        fields = ('pk', 'taxon', 'latin_name', 'rank', 'parent', 'num_children', 'num_segments', 'description', 'any_assays')
+        fields = ('pk', 'latin_name', 'rank', 'parent', 'num_children', 'num_segments', 'description', 'any_assays', 'taxons')
 
 
 class PrimerSerializer(serializers.ModelSerializer):
@@ -122,23 +148,6 @@ class AssaySetSerializer(serializers.ModelSerializer):
         model = AssaySet
         fields = ('pk', 'taxonrank', 'cluster',  'created', 'specific', 'objective', 'assays')
 
-
-class TaxonSerializer(serializers.ModelSerializer):
-    taxonrank = TaxonRankSerializer()
-    class Meta:
-        model = Taxon
-        fields = ('taxid', 'taxonrank')
-
-    def create(self, validated_data):
-        taxonrank_data = validated_data.pop('taxonrank')
-        try:
-            taxonrank = TaxonRank.objects.get(latin_name=taxonrank_data['latin_name'], rank=taxonrank_data['rank'])
-        except TaxonRank.DoesNotExist:
-            taxonrank = TaxonRank.objects.create(**taxonrank_data)
-
-        taxon = Taxon.objects.create(taxonrank=taxonrank, **validated_data)
-
-        return taxon
 
 
 class ADAPTRunSerializer(serializers.HyperlinkedModelSerializer):
