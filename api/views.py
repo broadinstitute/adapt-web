@@ -405,6 +405,14 @@ class AssaySetViewSet(viewsets.ModelViewSet):
             qs = qs.filter(created=created)
         return qs.order_by('-created')
 
+    @action(detail=False, url_path=r'delete_date/(?P<date>[0-9\-]+)')
+    def delete_date(self, request, *args, **kwargs):
+        AssaySet.objects.filter(created=kwargs["date"]).delete()
+        for _ in range(4):
+            taxonrank_pks = [taxrank.pk for taxrank in TaxonRank.objects.all() if (taxrank.num_children == 0 and taxrank.any_assays == False)]
+            TaxonRank.objects.filter(pk__in=taxonrank_pks).delete()
+        return Response()
+
 
 class AssayViewSet(viewsets.ModelViewSet):
     """
