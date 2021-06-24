@@ -60,6 +60,7 @@ class Taxon(models.Model):
         primary_key=True
     )
     taxonrank = models.ForeignKey(TaxonRank,
+        related_name='taxons',
         on_delete=models.CASCADE
     )
 
@@ -186,7 +187,7 @@ class Assay(models.Model):
     )
 
     class Meta:
-        ordering = ['assay_set__taxonrank__taxon__taxid', 'assay_set__created', 'rank']
+        ordering = ['assay_set__taxonrank__latin_name', 'assay_set__created', 'rank']
 
 
 class ADAPTRun(models.Model):
