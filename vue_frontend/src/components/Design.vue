@@ -81,9 +81,15 @@ export default {
       this.$root.$data.modalvariant = 'danger'
       this.$root.$emit('show-msg');
     }
-    this.loading = false
+    let vm = this
+    this.sleep(1000).then(() => {vm.loading = false})
   },
   methods : {
+    sleep(ms) {
+      return new Promise(
+        resolve => setTimeout(resolve, ms)
+      );
+    },
     select(selectedTaxon) {
       this.$root.$data.selectedDesigns.push([selectedTaxon.pk, selectedTaxon.name])
     },
