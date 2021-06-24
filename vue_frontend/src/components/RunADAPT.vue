@@ -87,7 +87,7 @@
                           :file-name-formatter="formatNames"
                           :placeholder="inputs[sec][subsec][input_var].multiple? 'Choose files or drop them here...' : 'Choose file or drop one here...'"
                           :drop-placeholder="inputs[sec][subsec][input_var].multiple? 'Drop files here...' : 'Drop file here...'"
-                          accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln"
+                          accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln, .txt"
                           :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           :state="getValidationState(validationContext)"
                           @change="validationContext.validate"

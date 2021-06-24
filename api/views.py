@@ -663,7 +663,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _check_fasta(file):
-        filetypes = [".fasta", ".fa", ".fna", ".ffn", ".faa", ".frn", ".aln"]
+        filetypes = [".fasta", ".fa", ".fna", ".ffn", ".faa", ".frn", ".aln", ".txt"]
         for filetype in filetypes:
             if file.name.endswith(filetype):
                 return True
