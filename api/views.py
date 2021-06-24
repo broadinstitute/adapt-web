@@ -246,7 +246,7 @@ class TaxonViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     serializer_class = TaxonSerializer
 
-    @action(detail=False)
+    @action(detail=False, methods=['post'])
     def delete_all(self, request, *args, **kwargs):
         Assay.objects.all().delete()
         AssaySet.objects.all().delete()
@@ -408,6 +408,7 @@ class AssaySetViewSet(viewsets.ModelViewSet):
         taxonrank = self.request.query_params.get('taxonrank')
         cluster = self.request.query_params.get('cluster')
         created = self.request.query_params.get('created')
+        assays = self.request.query_params.get('assays')
         qs = AssaySet.objects.all()
         if taxonrank:
             qs = qs.filter(taxonrank=taxonrank)
@@ -415,9 +416,22 @@ class AssaySetViewSet(viewsets.ModelViewSet):
             qs = qs.filter(cluster=cluster)
         if created:
             qs = qs.filter(created=created)
+        if assays == 'true':
+            qs = qs.filter(assays__isnull=False)
+        elif assays == 'false':
+            qs = qs.filter(assays__isnull=True)
         return qs.order_by('-created')
 
-    @action(detail=False, url_path=r'delete_date/(?P<date>[0-9\-]+)')
+    @action(detail=False, methods=['post'])
+    def clean_up(self, request, *args, **kwargs):
+        AssaySet.objects.filter(assays__isnull=True).delete()
+
+        for _ in range(4):
+            taxonrank_pks = [taxrank.pk for taxrank in TaxonRank.objects.all() if (taxrank.num_children == 0 and taxrank.any_assays == False)]
+            TaxonRank.objects.filter(pk__in=taxonrank_pks).delete()
+        return Response()
+
+    @action(detail=False, methods=['post'], url_path=r'delete_date/(?P<date>[0-9\-]+)')
     def delete_date(self, request, *args, **kwargs):
         AssaySet.objects.filter(created=kwargs["date"]).delete()
         for _ in range(4):
@@ -569,6 +583,8 @@ class AssayViewSet(viewsets.ModelViewSet):
                         except Http404:
                             pass
                         lines = output_file.splitlines()
+                        if len(lines) < 2:
+                            continue
                         headers = lines[0].split('\t')
                         assay_set_data = {
                             'taxonrank': taxonrank_obj.pk,
