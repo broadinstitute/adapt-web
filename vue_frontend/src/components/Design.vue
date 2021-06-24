@@ -82,7 +82,6 @@ export default {
       this.$root.$data.modalvariant = 'danger'
       this.$root.$emit('show-msg');
     }
-    taxons.sort(function compareFn(firstEl, secondEl) { return firstEl.taxids[0]-secondEl.taxids[0] })
     this.taxons = taxons
     this.loading = false
   },

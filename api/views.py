@@ -18,6 +18,7 @@ from django.http import HttpResponse, JsonResponse, FileResponse, Http404
 from django.core.files import File
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
+from django.db.models import Case, When
 
 from rest_framework import viewsets, generics, mixins, permissions
 from rest_framework import status as httpstatus
@@ -284,16 +285,21 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
     serializer_class = TaxonRankSerializer
 
     def get_queryset(self):
+        designed = self.request.query_params.get('designed')
+        if designed:
+            qs = TaxonRank.objects.filter(assay_sets__isnull=False).annotate(
+                name=Case(
+                    When(rank="segment", then="parent__latin_name"),
+                    default="latin_name",
+                )).order_by("name")
+
+            print(qs[0].name)
+            return qs
+
         parents = self.request.query_params.get('parent')
         rank = self.request.query_params.get('rank')
         assays = self.request.query_params.get('assays')
         qs = TaxonRank.objects.all()
-        if assays == 'true':
-            qs = qs.filter(assay_sets__isnull=False)
-        elif assays == 'false':
-            qs = qs.filter(assay_sets__isnull=True)
-        if rank:
-            qs = qs.filter(rank=rank)
         if parents:
             parents = parents.split(',')
             if parents[0] == 'null':
@@ -306,6 +312,12 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
                         qs = qs.union(TaxonRank.objects.filter(parent__taxid__isnull=True))
                     else:
                         qs = qs.union(TaxonRank.objects.filter(parent__taxid=parent))
+        if assays == 'true':
+            qs = qs.filter(assay_sets__isnull=False)
+        elif assays == 'false':
+            qs = qs.filter(assay_sets__isnull=True)
+        if rank:
+            qs = qs.filter(rank=rank)
         return qs
 
 
