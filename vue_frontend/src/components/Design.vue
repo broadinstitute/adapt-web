@@ -34,7 +34,7 @@ export default {
     }
   },
   async created () {
-    let response = await fetch('/api/taxonrank?assays=true', {
+    let response = await fetch('/api/taxonrank?designed=true', {
       headers: {
         "X-CSRFToken": csrfToken
       }
