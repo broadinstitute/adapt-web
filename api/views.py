@@ -453,6 +453,154 @@ class AssayViewSet(viewsets.ModelViewSet):
     serializer_class = AssaySerializer
     queryset = Assay.objects.all()
 
+    @staticmethod
+    def save_by_rank(name, taxrank, taxid=None, parent=None):
+        if taxrank not in LINEAGE_RANKS:
+            if taxrank == 'no rank' and parent.rank == 'species':
+                rank = 'subspecies'
+            else:
+                return parent
+        else:
+            rank = taxrank
+        taxonrank_data = {'latin_name': name, 'rank': rank}
+        if parent:
+            taxonrank_data['parent'] = parent.pk
+        try:
+            taxonrank = get_object_or_404(TaxonRank, **taxonrank_data)
+            return taxonrank
+        except Http404:
+            pass
+        serializer = TaxonRankSerializer(data=taxonrank_data)
+        serializer.is_valid(raise_exception=True)
+        taxonrank = serializer.save()
+        if taxid:
+            data = {'taxid': taxid, 'taxonrank': taxonrank.pk}
+            serializer = TaxonSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return taxonrank
+
+    @staticmethod
+    def update(s3_file_paths, obj, sp, start_time, taxid, tax_seg):
+        """
+        Updates the database given a job ID from Cromwell
+
+        """
+        try:
+            taxon_obj = get_object_or_404(Taxon, pk=int(taxid))
+            taxonrank_obj = taxon_obj.taxonrank
+        except Http404:
+            params = {'db': 'taxonomy', 'id': int(taxid)}
+            tax_xml = requests.get(NCBI_URL, params=params).text
+            tax_ET = ET.fromstring(tax_xml)[0]
+            tax_name = tax_ET.find('ScientificName').text
+            tax_rank = tax_ET.find('Rank').text
+            lineage = tax_ET.find('LineageEx')
+            parent = None
+            for ancestor in lineage.findall('Taxon'):
+                ancestor_id = ancestor.find('TaxId').text
+                ancestor_name = ancestor.find('ScientificName').text
+                ancestor_rank = ancestor.find('Rank').text
+                if ancestor_rank in LINEAGE_RANKS:
+                    parent = AssayViewSet.save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
+            taxonrank_obj = AssayViewSet.save_by_rank(tax_name, tax_rank, taxid=taxid, parent=parent)
+        if tax_seg != 'None':
+            taxonrank_obj = AssayViewSet.save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
+
+        output_files_encoded = _files(s3_file_paths)
+        if isinstance(output_files_encoded, Response):
+            return output_files_encoded
+        output_files = [output_file.read().decode("utf-8") for output_file in output_files_encoded]
+
+        for i, output_file in enumerate(output_files):
+            try:
+                get_list_or_404(AssaySet,
+                    taxonrank=taxonrank_obj.pk,
+                    created=start_time,
+                    specific=sp,
+                    objective=obj,
+                    cluster=i)
+                continue
+            except Http404:
+                pass
+            lines = output_file.splitlines()
+            if len(lines) < 2:
+                continue
+            headers = lines[0].split('\t')
+            assay_set_data = {
+                'taxonrank': taxonrank_obj.pk,
+                'created': start_time,
+                'specific': sp,
+                'objective': obj,
+                'cluster': i,
+            }
+            assay_set = AssaySetSerializer(data=assay_set_data)
+            assay_set.is_valid(raise_exception=True)
+            assay_set_obj = assay_set.save()
+            for j, line in enumerate(lines[1:]):
+                raw_content = {headers[k]: val for k,val in enumerate(line.split('\t'))}
+
+                assay_data = {
+                    "assay_set": assay_set_obj.pk,
+                    "left_primers": {
+                        "frac_bound": round(float(raw_content["left-primer-frac-bound"]),16),
+                        "start_pos": int(raw_content["left-primer-start"])
+                    },
+                    "right_primers": {
+                        "frac_bound": round(float(raw_content["right-primer-frac-bound"]),16),
+                        "start_pos": int(raw_content["right-primer-start"])
+                    },
+                    "guide_set": {
+                        "frac_bound": round(float(raw_content["total-frac-bound-by-guides"]),16),
+                        "expected_activity": round(float(raw_content["guide-set-expected-activity"]),16),
+                        "median_activity": round(float(raw_content["guide-set-median-activity"]),16),
+                        "fifth_pctile_activity": round(float(raw_content["guide-set-5th-pctile-activity"]),16)
+                    },
+                    'rank': j,
+                    'objective_value': round(float(raw_content["objective-value"]),16),
+                    'amplicon_start': int(raw_content["target-start"]),
+                    'amplicon_end': int(raw_content["target-end"]),
+                }
+                assay = AssaySerializer(data=assay_data)
+                assay.is_valid(raise_exception=True)
+                assay_obj = assay.save()
+
+                for target in raw_content["left-primer-target-sequences"].split(" "):
+                    primer_data = {
+                        "target": target,
+                        "left_primer_set": assay_obj.left_primers.pk
+                    }
+                    primer = PrimerSerializer(data=primer_data)
+                    primer.is_valid(raise_exception=True)
+                    primer.save()
+
+                for target in raw_content["right-primer-target-sequences"].split(" "):
+                    primer_data = {
+                        "target": target,
+                        "right_primer_set": assay_obj.right_primers.pk
+                    }
+                    primer = PrimerSerializer(data=primer_data)
+                    primer.is_valid(raise_exception=True)
+                    primer.save()
+
+                start_poses = [
+                    [int(start_pos_i) for start_pos_i in start_pos[1:-1].split(", ")] \
+                for start_pos in raw_content["guide-target-sequence-positions"].split(" ")]
+                expected_activities = [
+                    float(expected_activity) \
+                for expected_activity in raw_content["guide-expected-activities"].split(" ")]
+
+                for k, target in enumerate(raw_content["guide-target-sequences"].split(" ")):
+                    guide_data = {
+                        "start_pos": start_poses[k],
+                        "expected_activity": expected_activities[k],
+                        "target": target,
+                        "guide_set": assay_obj.guide_set.pk
+                    }
+                    guide = GuideSerializer(data=guide_data)
+                    guide.is_valid(raise_exception=True)
+                    guide.save()
+
     @action(detail=False, methods=['post'])
     def database_update(self, request, *args, **kwargs):
         """
@@ -661,6 +809,24 @@ class AssayViewSet(viewsets.ModelViewSet):
                                 guide.save()
         return Response({"id": request.data["id"]}, status=httpstatus.HTTP_201_CREATED)
 
+    @action(detail=False, methods=['post'])
+    def single_update(self, request, *args, **kwargs):
+        """
+        Updates the database given s3 file paths, the objective, the specificity,
+        the start, and the tax ID
+
+        """
+        AssayViewSet.update(
+            request.data["s3_file_paths"],
+            request.data["obj"],
+            request.data["sp"],
+            request.data["start"][:10],
+            request.data["taxid"],
+            request.data["taxseg"]
+        )
+
+        return Response({"id": request.data["taxid"]}, status=httpstatus.HTTP_201_CREATED)
+
     def get_queryset(self):
         assay_set_str = self.request.query_params.get('assay_set')
         if not assay_set_str:
@@ -671,6 +837,7 @@ class AssayViewSet(viewsets.ModelViewSet):
             for assay_set in assay_sets[1:]:
                 assay_qs = assay_qs.union(Assay.objects.filter(assay_set=assay_set))
         return assay_qs
+
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):
     """
