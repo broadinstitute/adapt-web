@@ -755,7 +755,7 @@ export default {
             write_aln: {
               order: 1,
               type: 'boolean',
-              value: false,
+              value: true,
               fields: 'Output Alignment',
               rules: '',
               cols: 4
