@@ -46,23 +46,9 @@ export default {
         let rank = response_json[child].rank
         let taxids = response_json[child].taxons
         if (response_json[child].rank=="segment") {
-          let parent_response = await fetch('/api/taxonrank/' + response_json[child]['parent'], {
-            headers: {
-              "X-CSRFToken": csrfToken
-            }
-          })
-          if (parent_response.ok) {
-            let parent_response_json = await parent_response.json()
-            name = parent_response_json.latin_name + " — Segment " + name
-            rank = parent_response_json.rank
-            taxids = parent_response_json.taxons
-          }
-          else {
-            this.$root.$data.modaltitle = 'Error'
-            this.$root.$data.modalmsg = await parent_response.text()
-            this.$root.$data.modalvariant = 'danger'
-            this.$root.$emit('show-msg');
-          }
+          rank = response_json[child].parent_info[0]
+          name = response_json[child].parent_info[1] + " — Segment " + name
+          taxids = response_json[child].parent_info[2]
         }
         this.taxons.push(
           {

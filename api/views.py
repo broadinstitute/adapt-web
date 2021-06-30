@@ -291,9 +291,8 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
                 name=Case(
                     When(rank="segment", then="parent__latin_name"),
                     default="latin_name",
-                )).order_by("name")
+                )).order_by("name", "latin_name")
 
-            print(qs[0].name)
             return qs
 
         parents = self.request.query_params.get('parent')
