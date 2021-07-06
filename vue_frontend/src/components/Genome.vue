@@ -19,19 +19,16 @@ export default {
   data() {
     return {
       width: 800,
-      height: 800,
+      height: 400,
       margin: {
         top: 50,
         right: 50,
         left: 50,
         bottom: 50,
       },
-      alignment: [
-        {
-          acc: "KM822128",
-          seq: "CATGGGGCAGATTATTACATTCTTTCAAGAAGTGCCACATGTAATAGAGGAAGTCATGAACATTGTGCTAATTGCGCTTTCTCTATTGGCAATCTTGAAGGGCTTGTATAACATCGCTACATGTGGGATTATTGGATTGGTTGCCTTTTTATTCTTGTGTGGCAAGTCTTGTTCCCTAACCCTT---AAAGGGGGATATGAGCTGCAAACCTTAGAATTAAATATGGAGACCCTAAACATGACCATGCCCTTATCATGCACCAAGAACAGCAGTCATCATTACATAAGAGTGGGCAATGAGACTGGATTAGAATTGACTTTAACTAACACCAGCATTATAAATCACAAATTTTGCAACTTATCCGATGCTCACAAAAAGAATCTTTATGATCATGCTCTCATGAGCATCATCTCAACATTCCATCTATCCATTCCAAACTTCAATCAGTATGAAGCCATGAGTTGTGATTTCAATGGAGGGAAAATCAGTGTGCAATACAACCTCTCTCATTCCTATGCTGGGGATGCGGCCGAACACTGTGGGACAGTTGCCAACGGAGTGTTGCAAACATTTATGAGAATGGCCTGGGGTGGAAGATACATTGCATTAGACTCAGGAAAGGGAAACTGGGACTGTATAATGACCAGCTACCAGTACCTGATAATTCAAAATACAACATGGGAGGACCACTGCCAATTCTCAAGACCGTCTCCTATCGGGTACCTTGGCCTTTTGTCACAAAGGACAAGAGATATATATATAAGTAGGAGGCTCTTGGGGACCTTCACCTGGACATTGTCAGATTCTGAGGGCAATGAAACACCAGGTGGTTATTGTTTAACCAGGTGGATGCTAATTGAAGCAGAACTCAAGTGTTTTGGGAATACAGCTGTGGCAAAATGCAATGAGAAGCATGATGAGGAGTTTTGTGACATGCTGAGATTGTTTGATTTCAACAAGCAAGCAATCCGTAGGTTGAAGGCTGAGGCCCAGATGAGTATTCAATTAATAAATAAAGCCGTGAATGCCTTAATCAATGATCAATTAATCATGAAGAACCATTTAAGAGACATCATGGGCATTCCCTACTGCAATTACAGCAAGTATTGGTACCTTAATCATACTAGTAGCGGGAGAACATCACTACCAAAGTGTTGGCTTATATCCAATGGGTCATATCTAAATGAAACCCAGTTCTCTGATGACATAGAACAGCAAGCCGACAATATGATCACAGAGATGCTTCAGAAAGAATACATTGAAAGACAAGGGAAAACGCCCTTGGGACTAGTGGACATTTTCATCTTTAGCACAAGCTTTTATCTGATCAGCATTTTCTTGCATTTAATTAAAATCCCTACACATCGACACATCGTTGGGAAACCCTGTCCCAAACCCCATAGACTAAATCACATGGGAGTATGTTCCTGTGGACTGTACAAACACCCTGGTGTTCCAACAAAGTGGAAGAGAT-TACAGAACGACTTTAGGGGTGCTGGTCCTGAAGACCATGTCTCTGGGAAGTACTGCCCTCAGTGTTGTGATGTTCAAACTACCAGTAGTAGCTGCATCAAACATGATGCAGTCCAGTAAAGCGCAATGTGGGGTGATTTCCTCTTTTCCACCCCTCTTTTTCTTCTCAACGACTACTCCCGTGTGCATGTGACACAAGTCTTTGTATTGGTCCCACACAGCATTTTCAAACTTCCTTGAATCTGCTTTGCTCAAAGAAATATCAATCAATTTGATGTCTCTTCTCCCTTGAGACTCCAACAGCTTTTTGATGTCATCTGACCCCTGGCAGGTCAACACCATATTGCGGGGAAGTGCCTCTATGACAGCACTTGTCAGCCCGGGTTGTGTGGAAAAAAGATCTGTAACATCTATCCCATGTGAGTACTTAGCATCCTGTTTGAATTGCTTAAGGTCAGTAGGTTCTCTAAAAAAGTGTATGTAACAACCAGAGCTTGGTTGAAACAAAGCAATCTCCACTGGGTCTTCAGGCCTGCCCTCAATATCTATCCATGTTTTGCTACTTGGGTCCAACTGTAACATACAATCTTTTAGTGTCATCAGTTGAGAATAGGTCAACCCAGCATTTAGACCTGCAGCCTGCAAGCTTTTATTGGAACCAGCGCTATTTAGTTTCGGTGGTTTGTTGTCAGATTCCAAATCAACAAGAGTGTTTTCCCAAGCTCTCCCAGTAATTGATGTTCTTGATGCAATATACGGCCAACCTTCACCTGAAAGGCAGATCTTATAGAGGATGTTCTCATATGGGTTTCTTTCACCAGGAGTGTCAGAAATGAACATTCCCAGTGATCTTTTGACCTTCAGAATAGATTTCAAAATACCGTCCATTGTTTGTGGTGACACTTTTATTGTTTCCAACATGTTGCCCCCATCAAGCATGCAAGCACCAGCTTTAACTGCAGCCCCCAGACTGAAGTTGTAACCTGAGATGTTCAGGGAACTCTTTTTTGTGTCAACCATTCCTAGTATAGGGTGACTCTGAGTGAGCATGTCTAGATCTGAAGAGTTCGGGTACTTTGCTGTGTAAATCAAACCTAAATCTGTTAAAGCTTGCACAGCATCATTGAGGTCCACTTGCCCTTGTTTGGTGAGGCACGCCAAGGTGAGGCTTGGCATGGTTCCAAATTGGTTATTGAGTAATTCTGCATTTTTTACGTCCCAAACCCTGACGACACCATCCCCACCTGTCCTATTTCCTTGAGGTCCACCTGACATCCCAATCATGCTCAAGAGAGCCCTCCTTTGATCAAGCTGTTGTGAGCTTAAATTCCCCATGTAAACACCTGAGCTCAAAGGCCTTTCTGTCCTTATGACTTTGGACTTGAGTTTTTCCAGGTCCGCTGCCAAAGTTATTAGATCATCTGAACTCAAGGTGCCGACCCTTAAGACATTCTTCTGTTGAGTTGACTTCAGTTCAACAAGATTGTTGACAGCTTGATTCAGATCCCTCAGTCGCTTTAGGTCTGCATCATCTCTCTTCTGCTTGCGCATCAGCCTCTGCACATTGCTGACCTCAGAAAAGTCAAGGCCATGCAGGAGAGCCTGAGCATCTTTGACAACTTGCAACTTTATGTTAGAACAGTAACCAGATAGTTCCCTTCGTAAGGACTGAGTCCAAAGGAATGATTTGATTTCCTTGGAGTTGCTCA",
-        },
-      ],
+      baseline: 100,
+      yspace: 33,
+      alignmentLength: 3184,
       annotations: [
         {
           type: "CDS",
@@ -62,6 +59,24 @@ export default {
           end: 1605,
         },
       ],
+      assays: [
+        {
+          amplicon_start: 1500,
+          amplicon_end: 1588
+        },
+        {
+          amplicon_start: 500,
+          amplicon_end: 588
+        },
+        {
+          amplicon_start: 2500,
+          amplicon_end: 2588
+        },
+        {
+          amplicon_start: 1550,
+          amplicon_end: 1638
+        },
+      ],
       // target: (this.result.amplicon_start + this.result.amplicon_end)/2,
       // left_primer_seq: this.result.left_primers.primers[0].target,
       // right_primer_seq: this.result.right_primers.primers[0].target,
@@ -87,8 +102,7 @@ export default {
         d3.interpolateCool(0.3),
         d3.interpolateCool(0.7),
       ]);
-      // const mint = getComputedStyle(document.documentElement)
-      //   .getPropertyValue('--mint');
+
       const svg = d3
         .select('#genome-' + vm.cluster_id)
         .append("svg")
@@ -96,63 +110,109 @@ export default {
         .append("g")
         .style(
           "transform",
-          `translate(${vm.width/2}px, ${vm.height/2}px)`
+          `translate(${vm.margin.left}px, ${vm.height/2}px)`
         )
         .style("font-family", "PT Mono")
         .style("letter-spacing", '0.03em');
 
       var x = d3.scaleLinear()
-        .domain([0, vm.alignment[0].seq.length])
-        .range([0, 2*Math.PI])
+        .domain([0, vm.alignmentLength])
+        .range([0, this.width-this.margin.right-this.margin.left])
 
-      var arc = d3.arc()
-        .innerRadius(function (d) {
-          if (d.type == "CDS") {
-            return 270
-          } else {
-            return 230
-          }
-        })
-        .outerRadius(function (d) {
-          if (d.type == "CDS") {
-            return 300
-          } else {
-            return 260
-          }
-        })
-        .startAngle(d => x(d.start))
-        .endAngle(d => x(d.end))
-        // .padAngle(0.01)
-        // .padRadius(270)
+      var annotationPath = function (annotation, y, h) {
+        return [
+         [x(annotation.start), y],
+         [x(annotation.start), y+h],
+         [x(annotation.end), y+h],
+         [x(annotation.end), y]
+        ]
+      }
+      let t = [0]
+      let interval =  Math.max(Math.trunc(this.alignmentLength/5000)*500, 250)
+      while (t[t.length-1] < this.alignmentLength) {
+        t.push(t[t.length-1] + interval)
+      }
+      t[t.length-1] = this.alignmentLength
+      const line = d3
+        .line()
+        .x((d) => d[0])
+        .y((d) => d[1])
 
-      var i = 0
-      for (let annotation of vm.annotations) {
+      var i = 1
+      var assayY = this.baseline - (this.yspace*2) - 12
+      if (this.annotations.length == 0) {
+        assayY = this.baseline - this.yspace
+      }
+      for (let assay of vm.assays) {
+        let ampliconCenter = x((assay.amplicon_start + assay.amplicon_end)/2)
         svg
-          .append("path")
-          .attr("d", arc(annotation))
-          .attr("fill", color(i))
+          .append("line")
+          .style("stroke", "#000d5455")
+          .style("stroke-width", 1)
+          .attr("x1", ampliconCenter)
+          .attr("y1", assayY + 6)
+          .attr("x2", ampliconCenter)
+          .attr("y2", vm.baseline);
+
+        svg
+          .append("text")
+          .attr("text-anchor", "middle")
+          .style("fill", "#000d54AA")
+          .style("font-size", "0.8rem")
+          .attr("y", assayY)
+          .attr("x", ampliconCenter)
+          .text(i);
         i++
       }
 
-        // arc(vm.annotations.filter(annotation => annotation.type == "CDS")))
-      // const red = getComputedStyle(document.documentElement)
-      //   .getPropertyValue('--red');
-      // const orange = getComputedStyle(document.documentElement)
-      //   .getPropertyValue('--orange');
-      // const lemon = getComputedStyle(document.documentElement)
-      //   .getPropertyValue('--lemon');
-      // const navy = getComputedStyle(document.documentElement)
-      //   .getPropertyValue('--navy');
-      // const info = getComputedStyle(document.documentElement)
-      //   .getPropertyValue('--info');
+      i = 0
+      for (let annotation of vm.annotations) {
+        var y = this.baseline - this.yspace;
+        var textColor = "black";
+        if (annotation.type != "CDS") {
+            y = y - this.yspace;
+            textColor = "white";
+        }
+        svg
+          .append("path")
+          .style("fill", color(i))
+          .style("stroke", color(i))
+          .style("stroke-width", 1)
+          .style("opacity", .9)
+          .attr("d", line(annotationPath(annotation, y, 25)));
 
-      // var activityColorScale = d3.scaleLinear()
-      //   .domain([0, 1.5, 3, 4])
-      //   .range([red, orange, lemon, mint]);
+        svg
+          .append("text")
+          .attr("text-anchor", "middle")
+          .style("fill", textColor)
+          .style("font-size", "0.7rem")
+          .attr("y", y+17)
+          .attr("x", x((annotation.start+annotation.end)/2))
+          .text(annotation.product);
+        i++
+      }
 
-      // var fracBoundColorScale = d3.scaleLinear()
-      //   .domain([0, .375, .75, 1])
-      //   .range([red, orange, lemon, mint]);
+      const xAxisGenerator = d3
+        .axisBottom()
+        .scale(x)
+        .tickValues(t)
+
+      var xAxis = svg
+        .append("g")
+        .call(xAxisGenerator)
+        .style("transform", `translateY(${this.baseline}px)`)
+
+      xAxis.selectAll(".tick text")
+        .style("font-size","0.6rem");
+
+      xAxis.select(".tick:last-of-type line")
+        .attr("y2","14");
+      xAxis.select(".tick:last-of-type text")
+        .attr("y","18");
+      xAxis.select(".tick:first-of-type line")
+        .attr("y2","14");
+      xAxis.select(".tick:first-of-type text")
+        .attr("y","18");
     },
   },
 }
