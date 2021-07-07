@@ -50,7 +50,23 @@ FAILED_STATES = ["Failed", "Aborted"]
 OBJECTIVES = ["maximize-activity", "minimize-guides"]
 MAX_ALGS = ["random-greedy", "greedy"]
 FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
-VALID_BASES = {'G', 'A', 'T', 'C', 'R', 'Y', 'M', 'K', 'S', 'W', 'H', 'B', 'V', 'D', 'N'}
+# Store the unambiguous bases that make up each
+# ambiguous base in the IUPAC notation
+FASTA_CODES = {'A': set(('A')),
+               'T': set(('T')),
+               'C': set(('C')),
+               'G': set(('G')),
+               'K': set(('G', 'T')),
+               'M': set(('A', 'C')),
+               'R': set(('A', 'G')),
+               'Y': set(('C', 'T')),
+               'S': set(('C', 'G')),
+               'W': set(('A', 'T')),
+               'B': set(('C', 'G', 'T')),
+               'V': set(('A', 'C', 'G')),
+               'H': set(('A', 'C', 'T')),
+               'D': set(('A', 'G', 'T')),
+               'N': set(('A', 'T', 'C', 'G'))}
 
 
 BOOL_OPT_INPUT_VARS = [
@@ -108,7 +124,7 @@ LINEAGE_RANKS = ['family', 'genus', 'species', 'subspecies', 'segment']
 
 def _valid_genome(genome):
     for char in genome:
-        if char not in VALID_BASES:
+        if char not in FASTA_CODES:
             return False
     return True
 
@@ -122,7 +138,8 @@ def _format(val):
 
 def _metadata(cromwell_id):
     if cromwell_id.startswith('example'):
-        return {'outputs': {"adapt_web.guides": ['s3://adaptwebstorage/example_files/example_results.tsv']}}
+        return {'outputs': {"adapt_web.guides": ['s3://adaptwebstorage/example_files/example_results.tsv'],
+                            "adapt_web.alns": ['s3://adaptwebstorage/example_files/example_alignment.fasta']}}
     try:
         cromwell_response = requests.get("%s/%s/metadata" %(SERVER_URL, cromwell_id), verify=False)
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
@@ -167,7 +184,7 @@ def _files(s3_file_paths):
     return output_files
 
 
-def _file_to_dict(output_file):
+def _result_file_to_dict(output_file):
     content = {}
     lines = output_file.splitlines()
     headers = lines[0].split('\t')
@@ -219,6 +236,56 @@ def _file_to_dict(output_file):
             } \
         for j in range(len(targets))]
     return content
+
+def _add_base_to_counts(base, counts):
+    if base in counts:
+        counts[base] += 1
+    elif base in FASTA_CODES:
+        for base_option in FASTA_CODES[base]:
+            counts[base_option] += 1.0 / len(FASTA_CODES[base])
+
+
+def _alignment_to_summary(alignment_file):
+    summary = []
+    seq = []
+    i = 0
+
+    # Code if you don't want entropy
+    first = True
+
+    for line in alignment_file.splitlines():
+        line = line.rstrip()
+        if line.startswith('>'):
+            # Code if you don't want entropy
+            if first:
+                first = False
+                continue
+            else:
+                break
+            # Code if you want entropy
+            # i = 0
+            # seq = "".join(seq)
+            # if len(summary) == 0:
+            #     summary = [{'A': 0, 'C': 0, 'G': 0, 'T': 0, '-': 0}
+            #                for _ in seq]
+            # assert(len(seq) == len(summary))
+            # for i, base in enumerate(seq):
+            #     _add_base_to_counts(base, summary[i])
+            # seq = []
+        else:
+            # Append the sequence
+            seq.append(line)
+
+    seq = "".join(seq)
+    if len(summary) == 0:
+        summary = [{'A': 0, 'C': 0, 'G': 0, 'T': 0, '-': 0}
+                   for _ in seq]
+
+    assert(len(seq) == len(summary))
+    for i, base in enumerate(seq):
+        _add_base_to_counts(base, summary[i])
+
+    return summary
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -885,7 +952,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 elif input_var.startswith('require_flanking'):
                     if not _valid_genome(value):
                         content = "'%s' is an invalid flanking sequence; each character must be one of " \
-                            "<ul><li>%s</li></ul>" %(value, '</li><li>'.join(VALID_BASES))
+                            "<ul><li>%s</li></ul>" %(value, '</li><li>'.join(FASTA_CODES.keys()))
                         break
                 elif input_var == 'nickname':
                     if len(value) > 50:
@@ -980,19 +1047,26 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 if isinstance(metadata_response, Response):
                     return metadata_response
                 # Download files from S3
-                if data_format == 'aln':
+                if data_format in ['aln', 'aln_sum']:
                     files = _files(metadata_response["outputs"]["adapt_web.alns"])
                 else:
                     files = _files(metadata_response["outputs"]["adapt_web.guides"])
                 if isinstance(files, Response):
                     return files
 
-                if data_format == 'json':
+                if data_format in ['json', 'aln_sum']:
+                    # try:
                     output_files = [output_file.read().decode("utf-8") for output_file in files]
                     content = {}
+                    conversion_function = _result_file_to_dict if data_format == 'json' else _alignment_to_summary
                     for i, output_file in enumerate(output_files):
-                        content[i] = _file_to_dict(output_file)
+                        content[i] = conversion_function(output_file)
                     response = Response(content)
+                    # except Exception:
+                    #     content = {'Incorrect output formatting': "Job output is incorrectly "
+                    #         "formatted, possibly indicating file corruption. Please "
+                    #         "contact %s with your run ID to resolve the issue." %CONTACT}
+                    #     response = Response(content, status=httpstatus.HTTP_500_INTERNAL_SERVER_ERROR)
                 else:
                     if len(files) == 0:
                         content = {'No output': "Job output does not exist. "
@@ -1208,7 +1282,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         rsp = Response(serializer.data, status=httpstatus.HTTP_201_CREATED)
         return rsp
 
-    @action(detail=False, url_path=r'id_prefix/(?P<idprefix>[a-z0-9\-]+)/(?P<action>[a-z]+)')
+    @action(detail=False, url_path=r'id_prefix/(?P<idprefix>[a-z0-9\-]+)/(?P<action>[a-z\_]+)')
     def id_prefix(self, request, *args, **kwargs):
         """
         Performs one of the actions below based on a run ID prefix specified in request
@@ -1231,9 +1305,11 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 return self._get_results(adaptrun, 'json')
             elif kwargs["action"] == 'download':
                 return self._get_results(adaptrun, 'file')
-            elif kwargs["action"] == 'alignment':
+            elif kwargs["action"] in ['alignment', 'alignment_summary']:
                 if adaptrun.alignment:
-                    return self._get_results(adaptrun, 'aln')
+                    if kwargs["action"] == 'alignment':
+                        return self._get_results(adaptrun, 'aln')
+                    return self._get_results(adaptrun, 'aln_sum')
                 else:
                     content = {'Input Error': "There is no alignment for this run. "
                     "To generate an alignment, use the 'Output Alignment' setting in "
@@ -1244,7 +1320,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 return Response(ADAPTRunSerializer(adaptrun).data)
             else:
                 content = {'Input Error': "Action '%s' is not a valid action. "
-                "Action must be 'status', 'results', or 'download'." %kwargs["action"]}
+                "Action must be 'status', 'results', 'download', 'alignment', or 'alignment_summary'." %kwargs["action"]}
 
         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
 
@@ -1292,6 +1368,24 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         adaptrun = self.get_object()
         if adaptrun.alignment:
             response = self._get_results(adaptrun, 'aln')
+            return response
+        content = {'Input Error': "There is no alignment for this run. "
+        "To generate an alignment, use the 'Output Alignment' setting in "
+        "the Advanced options section (Alignments can only outputted for "
+        "taxonomic ID input)."}
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True)
+    def alignment_summary(self, request, *args, **kwargs):
+        """
+        Produces a file of the alignments to download
+
+        Makes a fasta if there is only one file and a ZIP otherwise.
+        Function called at the "alignment" API endpoint.
+        """
+        adaptrun = self.get_object()
+        if adaptrun.alignment:
+            response = self._get_results(adaptrun, 'aln_sum')
             return response
         content = {'Input Error': "There is no alignment for this run. "
         "To generate an alignment, use the 'Output Alignment' setting in "
