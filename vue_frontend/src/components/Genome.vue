@@ -81,6 +81,7 @@ export default {
         t.push(t[t.length-1] + interval)
       }
       t[t.length-1] = this.alignmentLength
+      let closeTick = ((t[t.length-1] - t[t.length-2])/interval) < .3
       const line = d3
         .line()
         .x((d) => d[0])
@@ -151,16 +152,23 @@ export default {
         .style("transform", `translateY(${this.baseline}px)`)
 
       xAxis.selectAll(".tick text")
-        .style("font-size","0.6rem");
+        .style("font-size","0.5rem");
+
+      if (closeTick) {
+        xAxis.select(".tick:nth-last-child(2) text")
+          .attr("transform", "translate(-6,0)");
+      }
 
       xAxis.select(".tick:last-of-type line")
-        .attr("y2","14");
+        .attr("y2","16");
       xAxis.select(".tick:last-of-type text")
-        .attr("y","18");
+        .attr("y","19")
+        .style("font-size","0.6rem");
       xAxis.select(".tick:first-of-type line")
-        .attr("y2","14");
+        .attr("y2","16");
       xAxis.select(".tick:first-of-type text")
-        .attr("y","18");
+        .attr("y","19")
+        .style("font-size","0.6rem");
     },
   },
 }
