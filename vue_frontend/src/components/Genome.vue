@@ -13,75 +13,23 @@ import * as d3 from "d3";
 export default {
   name: 'Genome',
   props: {
-    // resulttable: Object,
-    cluster_id: String
+    cluster_id: String,
+    alignmentLength: Number,
+    assays: Array,
   },
   data() {
     return {
       width: 800,
-      height: 400,
+      height: 150,
       margin: {
-        top: 50,
+        top: 0,
         right: 50,
         left: 50,
-        bottom: 50,
+        bottom: 0,
       },
-      baseline: 100,
+      baseline: 30,
       yspace: 33,
-      alignmentLength: 3184,
-      annotations: [
-        {
-          type: "CDS",
-          gene: "GPC",
-          product: "glycoprotein precursor",
-          start: 71,
-          end: 1543,
-        },
-        {
-          type: "mat_peptide",
-          gene: "GPC",
-          product: "glycoprotein GP1",
-          start: 71,
-          end: 838,
-        },
-        {
-          type: "mat_peptide",
-          gene: "GPC",
-          product: "glycoprotein GP2",
-          start: 839,
-          end: 1540,
-        },
-        {
-          type: "CDS",
-          gene: "NP",
-          product: "nucleoprotein",
-          start: 3314,
-          end: 1605,
-        },
-      ],
-      assays: [
-        {
-          amplicon_start: 1500,
-          amplicon_end: 1588
-        },
-        {
-          amplicon_start: 500,
-          amplicon_end: 588
-        },
-        {
-          amplicon_start: 2500,
-          amplicon_end: 2588
-        },
-        {
-          amplicon_start: 1550,
-          amplicon_end: 1638
-        },
-      ],
-      // target: (this.result.amplicon_start + this.result.amplicon_end)/2,
-      // left_primer_seq: this.result.left_primers.primers[0].target,
-      // right_primer_seq: this.result.right_primers.primers[0].target,
-      // guide_start: this.result.guide_set.guides[0].start_pos[0],
-      // guide_seq: this.result.guide_set.guides[0].target,
+      annotations: [],
     };
   },
   mounted() {

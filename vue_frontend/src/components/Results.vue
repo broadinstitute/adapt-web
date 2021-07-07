@@ -167,7 +167,8 @@ export default {
               this.$root.$data.runid = this.runid;
               this.$root.$data.alignment = detail_response_json.alignment
               this.$root.$emit('show-assays');
-              this.loading = false;
+              var vm = this
+              this.$root.$on('finish-assays', () => {vm.loading=false});
             } else {
               this.errorMsg(response);
               this.loading = false;
