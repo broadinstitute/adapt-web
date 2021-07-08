@@ -25,17 +25,26 @@ export default {
     aln_sum: Array,
   },
   data() {
-    let width = 750
-    let height = 150
     let margin= {
-      "top": 0,
+      "top": 35,
       "right": 10,
       "left": 10,
       "bottom": 50,
     }
 
+    let width = 750
     let boundedWidth = width - margin.left - margin.right
-    let boundedHeight = height - margin.top - margin.bottom
+
+    let numOligos = this.result.left_primers.primers.length +
+                    this.result.right_primers.primers.length +
+                    this.result.guide_set.guides.length
+
+    let baseline = 20
+    let oligoHeight = 10
+    let shift = 4
+
+    let boundedHeight = baseline + numOligos*oligoHeight + (numOligos-1)*shift
+    let height = boundedHeight + margin.top + margin.bottom
 
     let xDomain = [this.result.amplicon_start - 10, this.result.amplicon_end + 10]
     let xRange = [0, boundedWidth]
@@ -47,22 +56,23 @@ export default {
     let yScale = function (d) {
       return boundedHeight-d
     };
-
     let line = d3
       .line()
       .x((d) => xScale(d[0]))
       .y((d) => yScale(d[1]))
     return {
+      "baseline": baseline,
+      "oligoHeight": oligoHeight,
+      "shift": shift,
       "width": width,
       "height": height,
       "boundedHeight": boundedHeight,
       "boundedWidth": boundedWidth,
       "margin": margin,
       "target": [this.result.amplicon_start, this.result.amplicon_end],
-      "left_primer_seq": this.result.left_primers.primers[0].target,
-      "right_primer_seq": this.result.right_primers.primers[0].target,
-      "guide_start": this.result.guide_set.guides[0].start_pos[0],
-      "guide_seq": this.result.guide_set.guides[0].target,
+      "leftPrimers": this.result.left_primers.primers,
+      "rightPrimers": this.result.right_primers.primers,
+      "guides": this.result.guide_set.guides,
       "xDomain": xDomain,
       "xRange": xRange,
       "xScale": xScale,
@@ -148,55 +158,69 @@ export default {
         .domain([0, .375, .75, 1])
         .range([vm.red, vm.orange, vm.lemon, vm.mint]);
 
-      const baseline = 20
-      const height = 10
-      const shift = 8
-      const leftPrimerLine = [
-        [vm.target[0], baseline+2*shift+2*height-1],
-        [vm.target[0] + vm.left_primer_seq.length, baseline+2*shift+2*height],
-        [vm.target[0] + vm.left_primer_seq.length, baseline+2*shift+3*height],
-        [vm.target[0], baseline+2*shift+3*height+1],
-      ]
-      const guideLine = [
-        [vm.guide_start, baseline+shift+height],
-        [vm.guide_start, baseline+shift+2*height],
-        [vm.guide_start + vm.guide_seq.length, baseline+shift+2*height],
-        [vm.guide_start + vm.guide_seq.length, baseline+shift+height]
-      ]
-      const rightPrimerLine = [
-        [vm.target[1] - vm.right_primer_seq.length, baseline],
-        [vm.target[1], baseline-1],
-        [vm.target[1], baseline+height+1],
-        [vm.target[1] - vm.right_primer_seq.length, baseline+height],
-      ]
+      let bottomOligo = vm.baseline
+      let rightPrimerLines = []
+      let rightPrimerPaths = []
+      for (let rightPrimer of vm.rightPrimers) {
+        let rightPrimerLine = [
+          [vm.target[1] - rightPrimer.target.length, bottomOligo],
+          [vm.target[1] - rightPrimer.target.length, bottomOligo+vm.oligoHeight],
+          [vm.target[1], bottomOligo+vm.oligoHeight+1],
+          [vm.target[1], bottomOligo-1],
+        ]
+        rightPrimerLines.push(rightPrimerLine)
+        rightPrimerPaths.push(svg
+          .append("path")
+          .attr("d", vm.line(rightPrimerLine))
+          .style(
+            "transform",
+            `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
+        ))
+        vm.oligo_bases(rightPrimer.target, vm.target[1] - rightPrimer.target.length, bottomOligo+vm.oligoHeight/2, svg)
+        bottomOligo += vm.shift + vm.oligoHeight
+      }
 
-      var guidePath = svg
-        .append("path")
-        .attr("d", vm.line(guideLine))
-        .style(
-          "transform",
-          `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
-        );
+      let guideLines = []
+      let guidePaths = []
+      for (let guide of vm.guides) {
+        let guideLine = [
+          [guide.start_pos[0], bottomOligo],
+          [guide.start_pos[0], bottomOligo+vm.oligoHeight],
+          [guide.start_pos[0] + guide.target.length, bottomOligo+vm.oligoHeight],
+          [guide.start_pos[0] + guide.target.length, bottomOligo]
+        ]
+        guideLines.push(guideLine)
+        guidePaths.push(svg
+          .append("path")
+          .attr("d", vm.line(guideLine))
+          .style(
+            "transform",
+            `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
+        ))
+        vm.oligo_bases(guide.target, guide.start_pos[0], bottomOligo+vm.oligoHeight/2, svg)
+        bottomOligo += vm.shift + vm.oligoHeight
+      }
 
-      var leftPrimerPath = svg
-        .append("path")
-        .attr("d", vm.line(leftPrimerLine))
-        .style(
-          "transform",
-          `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
-        );
-
-      var rightPrimerPath = svg
-        .append("path")
-        .attr("d", vm.line(rightPrimerLine))
-        .style(
-          "transform",
-          `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
-        );
-
-      vm.oligo_bases(vm.left_primer_seq, vm.target[0], baseline+shift*2+height*5/2, svg)
-      vm.oligo_bases(vm.guide_seq, vm.guide_start, baseline+shift+height*3/2, svg)
-      vm.oligo_bases(vm.right_primer_seq, vm.target[1]-vm.right_primer_seq.length, baseline+height/2, svg)
+      let leftPrimerLines = []
+      let leftPrimerPaths = []
+      for (let leftPrimer of vm.leftPrimers) {
+        let leftPrimerLine = [
+          [vm.target[0], bottomOligo-1],
+          [vm.target[0], bottomOligo+vm.oligoHeight+1],
+          [vm.target[0] + leftPrimer.target.length, bottomOligo+vm.oligoHeight],
+          [vm.target[0] + leftPrimer.target.length, bottomOligo],
+        ]
+        leftPrimerLines.push(leftPrimerLine)
+        leftPrimerPaths.push(svg
+          .append("path")
+          .attr("d", vm.line(leftPrimerLine))
+          .style(
+            "transform",
+            `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
+        ))
+        vm.oligo_bases(leftPrimer.target, vm.target[0], bottomOligo+vm.oligoHeight/2, svg)
+        bottomOligo += vm.shift + vm.oligoHeight
+      }
 
       var tooltipgroup = svg
         .append("g")
@@ -216,11 +240,17 @@ export default {
         .attr("class", "tooltip")
         .style("font-size", ".5rem");
 
-      vm.oligo_tooltip(guidePath, "Start Position: " + guideLine[0][0], tooltip, tooltipbox, activityColorScale(vm.result.guide_set.expected_activity), ["Expected Activity: " + vm.result.guide_set.expected_activity])
+      for (let i in guidePaths) {
+        vm.oligo_tooltip(guidePaths[i], "Start Position: " + guideLines[i][0][0], tooltip, tooltipbox, activityColorScale(vm.result.guide_set.expected_activity), ["Expected Activity: " + vm.result.guide_set.expected_activity])
+      }
 
-      vm.oligo_tooltip(leftPrimerPath, "Start Position: " + leftPrimerLine[0][0], tooltip, tooltipbox, fracBoundColorScale(vm.result.left_primers.frac_bound), ["Fraction Bound: " + vm.result.left_primers.frac_bound])
+      for (let i in leftPrimerPaths) {
+        vm.oligo_tooltip(leftPrimerPaths[i], "Start Position: " + leftPrimerLines[i][0][0], tooltip, tooltipbox, fracBoundColorScale(vm.result.left_primers.frac_bound), ["Fraction Bound: " + vm.result.left_primers.frac_bound])
+      }
 
-      vm.oligo_tooltip(rightPrimerPath, "Start Position: " + rightPrimerLine[0][0], tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound])
+      for (let i in rightPrimerPaths) {
+        vm.oligo_tooltip(rightPrimerPaths[i], "Start Position: " + rightPrimerLines[i][0][0], tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound])
+      }
 
       tooltipbox
         .on('mouseover', function () {
