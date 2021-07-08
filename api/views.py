@@ -251,27 +251,27 @@ def _alignment_to_summary(alignment_file):
     i = 0
 
     # Code if you don't want entropy
-    first = True
+    # first = True
 
     for line in alignment_file.splitlines():
         line = line.rstrip()
         if line.startswith('>'):
             # Code if you don't want entropy
-            if first:
-                first = False
-                continue
-            else:
-                break
+            # if first:
+            #     first = False
+            #     continue
+            # else:
+            #     break
             # Code if you want entropy
-            # i = 0
-            # seq = "".join(seq)
-            # if len(summary) == 0:
-            #     summary = [{'A': 0, 'C': 0, 'G': 0, 'T': 0, '-': 0}
-            #                for _ in seq]
-            # assert(len(seq) == len(summary))
-            # for i, base in enumerate(seq):
-            #     _add_base_to_counts(base, summary[i])
-            # seq = []
+            i = 0
+            seq = "".join(seq)
+            if len(summary) == 0:
+                summary = [{'A': 0, 'C': 0, 'G': 0, 'T': 0, '-': 0}
+                           for _ in seq]
+            assert(len(seq) == len(summary))
+            for i, base in enumerate(seq):
+                _add_base_to_counts(base, summary[i])
+            seq = []
         else:
             # Append the sequence
             seq.append(line)
