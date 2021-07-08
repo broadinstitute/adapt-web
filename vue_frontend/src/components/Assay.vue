@@ -150,13 +150,19 @@ export default {
         .attr("y","17")
         .style("font-size","0.5rem");
 
-      var activityColorScale = d3.scaleLinear()
+      var colorScale = d3.piecewise(d3.interpolateRgb.gamma(2.2), [vm.red, vm.orange, vm.lemon, vm.mint])
+      var activityScale = d3.scaleLinear()
         .domain([0, 1.5, 3, 4])
-        .range([vm.red, vm.orange, vm.lemon, vm.mint]);
-
-      var fracBoundColorScale = d3.scaleLinear()
+        .range([0, 1/3, 2/3, 1]);
+      var activityColorScale = function (d) {
+        return colorScale(activityScale(d))
+      }
+      var fracBoundScale = d3.scaleLinear()
         .domain([0, .375, .75, 1])
-        .range([vm.red, vm.orange, vm.lemon, vm.mint]);
+        .range([0, 1/3, 2/3, 1]);
+      var fracBoundColorScale = function (d) {
+        return colorScale(fracBoundScale(d))
+      }
 
       let bottomOligo = vm.baseline
       let rightPrimerLines = []
@@ -241,7 +247,7 @@ export default {
         .style("font-size", ".5rem");
 
       for (let i in guidePaths) {
-        vm.oligo_tooltip(guidePaths[i], "Start Position: " + guideLines[i][0][0], tooltip, tooltipbox, activityColorScale(vm.result.guide_set.expected_activity), ["Expected Activity: " + vm.result.guide_set.expected_activity])
+        vm.oligo_tooltip(guidePaths[i], "Start Position: " + guideLines[i][0][0], tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ["Expected Activity: " + vm.result.guide_set.guides[i].expected_activity])
       }
 
       for (let i in leftPrimerPaths) {
@@ -259,7 +265,7 @@ export default {
            .style("opacity", 1);
           tooltipbox.transition()
            .duration(200)
-           .style("opacity", .8);
+           .style("opacity", .9);
         })
         .on('mouseout', function () {
           tooltip.transition()
@@ -304,6 +310,7 @@ export default {
           .attr("text-anchor", "middle")
           .style("fill", vm.navy)
           .style("font-size", "0.35rem")
+          .style("font-weight", "700")
           .html(seq[b])
           .style("font-family", "Overpass Mono")
           .attr("x", vm.xScale(x+parseInt(b)))
@@ -313,13 +320,14 @@ export default {
       }
     },
     oligo_tooltip(oligoPath, line1Text, tooltip, tooltipbox, color, extraLinesText) {
+      let vm = this
       oligoPath
         .attr("stroke", "none")
         .attr("fill", color)
         .on('mouseover', function () {
           tooltipbox.transition()
             .duration(200)
-            .style("opacity", .8);
+            .style("opacity", .94);
           tooltip.transition()
             .duration(200)
             .style("opacity", 1);
@@ -340,8 +348,8 @@ export default {
           }
 
           let bboxOligoLine = this.getBBox()
-
-          let tooltipX = bboxOligoLine.x + bboxOligoLine.width/2
+          console.log(bboxOligoLine)
+          let tooltipX = bboxOligoLine.x + bboxOligoLine.width/2 + (vm.xScale(0)-vm.xScale(.5))
 
           tooltip
             .attr("x", tooltipX)
