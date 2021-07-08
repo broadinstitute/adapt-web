@@ -46,7 +46,7 @@ export default {
     let boundedHeight = baseline + numOligos*oligoHeight + (numOligos-1)*shift
     let height = boundedHeight + margin.top + margin.bottom
 
-    let xDomain = [this.result.amplicon_start - 10, this.result.amplicon_end + 10]
+    let xDomain = [this.result.amplicon_start - 10, this.result.amplicon_end + 9]
     let xRange = [0, boundedWidth]
 
     let xScale = d3
@@ -116,8 +116,38 @@ export default {
       while (t[t.length-1] < vm.target[1]) {
         t.push(t[t.length-1] + interval)
       }
-      t[t.length-1] = vm.target[1]
+      t[t.length-1] = vm.target[1]-1
       let closeTick = ((t[t.length-1] - t[t.length-2])/interval) < .2
+
+      var darkInfo = d3.color(vm.info).darker(.6)
+
+      var startLine = svg
+        .append("line")
+        .style("stroke", vm.info)
+        .style("stroke-width", 1)
+        .style("opacity", 0);
+
+      var startTextBox = svg
+        .append("text")
+        .attr("text-anchor", "middle")
+        .style("font-weight", "700")
+        .style("fill", darkInfo)
+        .style("font-size", ".5rem")
+        .style("opacity", 0);
+
+      var endLine = svg
+        .append("line")
+        .style("stroke", vm.info)
+        .style("stroke-width", 1)
+        .style("opacity", 0);
+
+      var endTextBox = svg
+        .append("text")
+        .attr("text-anchor", "middle")
+        .style("font-weight", "700")
+        .style("fill", darkInfo)
+        .style("font-size", ".5rem")
+        .style("opacity", 0);
 
       const xAxisGenerator = d3
         .axisBottom()
@@ -247,15 +277,19 @@ export default {
         .style("font-size", ".5rem");
 
       for (let i in guidePaths) {
-        vm.oligo_tooltip(guidePaths[i], "Start Position: " + guideLines[i][0][0], tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ["Expected Activity: " + vm.result.guide_set.guides[i].expected_activity])
+        if (vm.guides[i].start_pos.length > 1) {
+          vm.oligo_tooltip(guidePaths[i], "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ["Expected Activity: " + vm.result.guide_set.guides[i].expected_activity], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+        } else {
+          vm.oligo_tooltip(guidePaths[i], "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), [], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+        }
       }
 
       for (let i in leftPrimerPaths) {
-        vm.oligo_tooltip(leftPrimerPaths[i], "Start Position: " + leftPrimerLines[i][0][0], tooltip, tooltipbox, fracBoundColorScale(vm.result.left_primers.frac_bound), ["Fraction Bound: " + vm.result.left_primers.frac_bound])
+        vm.oligo_tooltip(leftPrimerPaths[i], "Fraction Bound: " + vm.result.left_primers.frac_bound, tooltip, tooltipbox, fracBoundColorScale(vm.result.left_primers.frac_bound), [], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
       }
 
       for (let i in rightPrimerPaths) {
-        vm.oligo_tooltip(rightPrimerPaths[i], "Start Position: " + rightPrimerLines[i][0][0], tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound])
+        vm.oligo_tooltip(rightPrimerPaths[i], "Fraction Bound: " + vm.result.right_primers.frac_bound, tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), [], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
 
       tooltipbox
@@ -319,7 +353,7 @@ export default {
           .attr("pointer-events", "none");
       }
     },
-    oligo_tooltip(oligoPath, line1Text, tooltip, tooltipbox, color, extraLinesText) {
+    oligo_tooltip(oligoPath, line1Text, tooltip, tooltipbox, color, extraLinesText, startLine, startTextBox, startText, endLine, endTextBox, endText) {
       let vm = this
       oligoPath
         .attr("stroke", "none")
@@ -348,7 +382,6 @@ export default {
           }
 
           let bboxOligoLine = this.getBBox()
-          console.log(bboxOligoLine)
           let tooltipX = bboxOligoLine.x + bboxOligoLine.width/2 + (vm.xScale(0)-vm.xScale(.5))
 
           tooltip
@@ -368,6 +401,38 @@ export default {
             .attr("y", bboxText.y - 5)
             .attr("width", bboxText.width + 10)
             .attr("height",  bboxText.height + 10)
+
+          startLine.transition()
+            .duration(200)
+            .style("opacity", 1);
+          startTextBox.transition()
+            .duration(200)
+            .style("opacity", 1);
+          startLine
+            .attr("x1", bboxOligoLine.x)
+            .attr("y1", bboxOligoLine.y)
+            .attr("x2", bboxOligoLine.x)
+            .attr("y2", vm.boundedHeight + 21.5);
+          startTextBox
+            .html(startText)
+            .attr("x", bboxOligoLine.x)
+            .attr("y", vm.boundedHeight + 33);
+
+          endLine.transition()
+            .duration(200)
+            .style("opacity", 1);
+          endTextBox.transition()
+            .duration(200)
+            .style("opacity", 1);
+          endLine
+            .attr("x1", bboxOligoLine.x+bboxOligoLine.width+(vm.xScale(0)-vm.xScale(1)))
+            .attr("y1", bboxOligoLine.y)
+            .attr("x2", bboxOligoLine.x+bboxOligoLine.width+(vm.xScale(0)-vm.xScale(1)))
+            .attr("y2", vm.boundedHeight + 21.5);
+          endTextBox
+            .html(endText)
+            .attr("x", bboxOligoLine.x+bboxOligoLine.width+(vm.xScale(0)-vm.xScale(1)))
+            .attr("y", vm.boundedHeight + 33);
         })
         .on('mouseout', function () {
           tooltip.transition()
@@ -376,6 +441,20 @@ export default {
           tooltipbox.transition()
            .duration(200)
            .style("opacity", 0);
+
+          startLine.transition()
+            .duration(200)
+            .style("opacity", 0);
+          startTextBox.transition()
+            .duration(200)
+            .style("opacity", 0);
+
+          endLine.transition()
+            .duration(200)
+            .style("opacity", 0);
+          endTextBox.transition()
+            .duration(200)
+            .style("opacity", 0);
         });
     },
   },
