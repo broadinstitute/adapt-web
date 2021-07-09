@@ -88,6 +88,8 @@ export default {
         .getPropertyValue('--mint'),
       "navy": getComputedStyle(document.documentElement)
         .getPropertyValue('--navy'),
+      "violet": getComputedStyle(document.documentElement)
+        .getPropertyValue('--violet'),
       "info": getComputedStyle(document.documentElement)
         .getPropertyValue('--info'),
     };
@@ -120,6 +122,7 @@ export default {
       let closeTick = ((t[t.length-1] - t[t.length-2])/interval) < .2
 
       var darkInfo = d3.color(vm.info).darker(.6)
+      var lightInfo = d3.color(vm.info).brighter(.25)
 
       var startLine = svg
         .append("line")
@@ -180,19 +183,15 @@ export default {
         .attr("y","17")
         .style("font-size","0.5rem");
 
-      var colorScale = d3.piecewise(d3.interpolateRgb.gamma(2.2), [vm.red, vm.orange, vm.lemon, vm.mint])
-      var activityScale = d3.scaleLinear()
+      var activityColorScale = d3.scaleLinear()
         .domain([0, 1.5, 3, 4])
-        .range([0, 1/3, 2/3, 1]);
-      var activityColorScale = function (d) {
-        return colorScale(activityScale(d))
-      }
-      var fracBoundScale = d3.scaleLinear()
+        .interpolate(d3.interpolateRgb.gamma(2.2))
+        .range([vm.red, vm.orange, vm.lemon, vm.mint])
+
+      var fracBoundColorScale = d3.scaleLinear()
         .domain([0, .375, .75, 1])
-        .range([0, 1/3, 2/3, 1]);
-      var fracBoundColorScale = function (d) {
-        return colorScale(fracBoundScale(d))
-      }
+        .interpolate(d3.interpolateRgb.gamma(2.2))
+        .range([vm.red, vm.orange, vm.lemon, vm.mint])
 
       let bottomOligo = vm.baseline
       let rightPrimerLines = []
@@ -265,15 +264,17 @@ export default {
         .append("rect")
         .attr("rx", 5)
         .attr("ry", 5)
+        .attr("pointer-events", "none")
         .attr("stroke", "#00000000")
         .attr("stroke-width", 10)
-        .style("fill", vm.info);
+        .style("fill", lightInfo);
 
       var tooltip = tooltipgroup
         .append("text")
         .attr("text-anchor", "middle")
         .style("fill", vm.navy)
         .attr("class", "tooltip")
+        .attr("pointer-events", "none")
         .style("font-size", ".5rem");
 
       for (let i in guidePaths) {
@@ -292,32 +293,23 @@ export default {
         vm.oligo_tooltip(rightPrimerPaths[i], "Fraction Bound: " + vm.result.right_primers.frac_bound, tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), [], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
 
-      tooltipbox
-        .on('mouseover', function () {
-          tooltip.transition()
-           .duration(200)
-           .style("opacity", 1);
-          tooltipbox.transition()
-           .duration(200)
-           .style("opacity", .9);
-        })
-        .on('mouseout', function () {
-          tooltip.transition()
-           .duration(200)
-           .style("opacity", 0);
-          tooltipbox.transition()
-           .duration(200)
-           .style("opacity", 0);
-        });
-
       if (vm.aln_sum.length != 0) {
+        let total = 0
+        for (let i in vm.aln_sum[0]) {
+          total += vm.aln_sum[0][i]
+        }
+        var entropyColorScale =d3.scaleLinear()
+          .domain([0, 1.7])
+          .interpolate(d3.interpolateRgb.gamma(2.2))
+          .range([vm.violet, vm.red])
         for (let b in Array(this.xDomain[1]+1-this.xDomain[0]).fill(this.xDomain[0])) {
+          let bases = this.aln_sum[parseInt(b) + this.xDomain[0]]
           svg
             .append("text")
             .attr("text-anchor", "middle")
-            .style("fill", vm.navy)
+            .style("fill", entropyColorScale(vm.entropy(bases, total)))
             .style("font-size", ".5rem")
-            .html(this.max_base(this.aln_sum[parseInt(b) + this.xDomain[0]]))
+            .html(this.max_base(bases))
             .style("font-family", "Overpass Mono")
             .attr("x", this.xScale(parseInt(b) + this.xDomain[0]))
             .attr("y", `${this.boundedHeight}px`)
@@ -325,6 +317,15 @@ export default {
             .attr("pointer-events", "none");
         }
       }
+    },
+    entropy(bases, total) {
+      return Object.values(bases).map(x => {
+        let p = x/total;
+        if (p==0) {
+          return 0
+        }
+        return -p * Math.log(p)
+      }).reduce((a, b) => a+b)
     },
     max_base(bases) {
       return Object.keys(bases).reduce((a, b) => bases[a] > bases[b] ? a : b);
