@@ -26,7 +26,7 @@ export default {
   },
   data() {
     let margin= {
-      "top": 35,
+      "top": 60,
       "right": 10,
       "left": 10,
       "bottom": 50,
@@ -207,6 +207,8 @@ export default {
         rightPrimerPaths.push(svg
           .append("path")
           .attr("d", vm.line(rightPrimerLine))
+          .attr("stroke", "#00000000")
+          .attr("stroke-width", 20)
           .style(
             "transform",
             `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
@@ -228,6 +230,8 @@ export default {
         guidePaths.push(svg
           .append("path")
           .attr("d", vm.line(guideLine))
+          .attr("stroke", "#00000000")
+          .attr("stroke-width", 20)
           .style(
             "transform",
             `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
@@ -249,6 +253,8 @@ export default {
         leftPrimerPaths.push(svg
           .append("path")
           .attr("d", vm.line(leftPrimerLine))
+          .attr("stroke", "#00000000")
+          .attr("stroke-width", 20)
           .style(
             "transform",
             `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
@@ -264,9 +270,7 @@ export default {
         .append("rect")
         .attr("rx", 5)
         .attr("ry", 5)
-        .attr("pointer-events", "none")
-        .attr("stroke", "#00000000")
-        .attr("stroke-width", 10)
+        // .attr("pointer-events", "none")
         .style("fill", lightInfo);
 
       var tooltip = tooltipgroup
@@ -274,24 +278,83 @@ export default {
         .attr("text-anchor", "middle")
         .style("fill", vm.navy)
         .attr("class", "tooltip")
-        .attr("pointer-events", "none")
+        // .attr("pointer-events", "none")
         .style("font-size", ".5rem");
 
       for (let i in guidePaths) {
+        var bases = vm.complement(vm.guides[i].target, true)
+        var blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
+
         if (vm.guides[i].start_pos.length > 1) {
-          vm.oligo_tooltip(guidePaths[i], "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ["Expected Activity: " + vm.result.guide_set.guides[i].expected_activity], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:', tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'', "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         } else {
-          vm.oligo_tooltip(guidePaths[i], "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), [], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:',  tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'', "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         }
       }
 
       for (let i in leftPrimerPaths) {
-        vm.oligo_tooltip(leftPrimerPaths[i], "Fraction Bound: " + vm.result.left_primers.frac_bound, tooltip, tooltipbox, fracBoundColorScale(vm.result.left_primers.frac_bound), [], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
+        bases = vm.complement(vm.result.left_primers.primers[i].target, false)
+        blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
+        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, fracBoundColorScale(vm.result.left_primers.frac_bound), ['5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'', "Fraction Bound: " + vm.result.left_primers.frac_bound, blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
       }
 
       for (let i in rightPrimerPaths) {
-        vm.oligo_tooltip(rightPrimerPaths[i], "Fraction Bound: " + vm.result.right_primers.frac_bound, tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), [], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
+        blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+vm.result.right_primers.primers[i].target+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
+        vm.oligo_tooltip(rightPrimerPaths[i], '5\'-'+vm.result.right_primers.primers[i].target+'-3\'', tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound, blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
+
+      tooltip
+        .on('mouseover', function () {
+          tooltip.transition()
+           .duration(200)
+           .style("opacity", 1);
+          tooltipbox.transition()
+           .duration(200)
+           .style("opacity", .94);
+        })
+        .on('mouseout', function () {
+          tooltip.transition()
+            .duration(200)
+            .style("opacity", 0)
+            .on("end", function() {
+              tooltip.html('');
+            });
+          tooltipbox.transition()
+            .duration(200)
+            .style("opacity", 0)
+            .on("end", function() {
+              tooltipbox
+                .attr("width", 0)
+                .attr("height", 0);
+            });
+        });
+
+      tooltipbox
+        .on('mouseover', function () {
+          tooltip.transition()
+           .duration(200)
+           .style("opacity", 1);
+          tooltipbox.transition()
+           .duration(200)
+           .style("opacity", .94);
+        })
+        .on('mouseout', function () {
+          tooltip.transition()
+            .duration(200)
+            .style("opacity", 0)
+            .on("end", function() {
+              tooltip
+                .html('');
+            });
+          tooltipbox.transition()
+            .duration(200)
+            .style("opacity", 0)
+            .on("end", function() {
+              tooltipbox
+                .attr("width", 0)
+                .attr("height", 0);
+            });
+        });
 
       if (vm.aln_sum.length != 0) {
         let total = 0
@@ -337,6 +400,23 @@ export default {
       }
       return bases
     },
+    complement(bases, rna=false) {
+      return Array.prototype.map.call(bases, x => {
+        if (x == 'G') {
+          return 'C'
+        } else if (x == 'C') {
+          return 'G'
+        } else if (x == 'A') {
+          if (rna) {
+            return 'U'
+          } else {
+            return 'T'
+          }
+        } else {
+          return 'A'
+        }
+      }).join('');
+    },
     oligo_bases(seq, x, y, svg) {
       let vm = this
       for (let b in seq) {
@@ -357,7 +437,6 @@ export default {
     oligo_tooltip(oligoPath, line1Text, tooltip, tooltipbox, color, extraLinesText, startLine, startTextBox, startText, endLine, endTextBox, endText) {
       let vm = this
       oligoPath
-        .attr("stroke", "none")
         .attr("fill", color)
         .on('mouseover', function () {
           tooltipbox.transition()
@@ -368,7 +447,7 @@ export default {
             .style("opacity", 1);
           tooltip
             .html(line1Text)
-            .attr("pointer-events", "none");
+            // .attr("pointer-events", "none");
 
           let bboxTextLine = tooltip.node().getBBox()
 
@@ -376,7 +455,7 @@ export default {
           for (let extraLineText in extraLinesText){
             let extraLine = tooltip
               .append("tspan")
-              .attr("pointer-events", "none")
+              // .attr("pointer-events", "none")
               .attr("text-anchor", "middle")
               .html(extraLinesText[extraLineText]);
             extraLines.push(extraLine);
@@ -396,6 +475,17 @@ export default {
           }
 
           let bboxText = tooltip.node().getBBox();
+          if (bboxText.x < 5) {
+            tooltipX += 5 - bboxText.x
+            tooltip
+              .attr("x", tooltipX)
+            for (let extraLine in extraLines) {
+              extraLines[extraLine]
+                .attr("x", tooltipX)
+            }
+            bboxText = tooltip.node().getBBox();
+          }
+
 
           tooltipbox
             .attr("x", bboxText.x - 5)
@@ -415,7 +505,7 @@ export default {
             .attr("x2", bboxOligoLine.x)
             .attr("y2", vm.boundedHeight + 21.5);
           startTextBox
-            .html(startText)
+            .html(startText.toLocaleString())
             .attr("x", bboxOligoLine.x)
             .attr("y", vm.boundedHeight + 33);
 
@@ -431,17 +521,26 @@ export default {
             .attr("x2", bboxOligoLine.x+bboxOligoLine.width+(vm.xScale(0)-vm.xScale(1)))
             .attr("y2", vm.boundedHeight + 21.5);
           endTextBox
-            .html(endText)
+            .html(endText.toLocaleString())
             .attr("x", bboxOligoLine.x+bboxOligoLine.width+(vm.xScale(0)-vm.xScale(1)))
             .attr("y", vm.boundedHeight + 33);
         })
         .on('mouseout', function () {
           tooltip.transition()
-           .duration(200)
-           .style("opacity", 0);
+            .duration(200)
+            .style("opacity", 0)
+            .on("end", function() {
+              tooltip
+                .html('');
+            });
           tooltipbox.transition()
-           .duration(200)
-           .style("opacity", 0);
+            .duration(200)
+            .style("opacity", 0)
+            .on("end", function() {
+              tooltipbox
+                .attr("width", 0)
+                .attr("height", 0);
+            });
 
           startLine.transition()
             .duration(200)
