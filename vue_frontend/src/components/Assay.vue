@@ -17,6 +17,8 @@ export default {
     cluster_id: String,
     aln_sum: Array,
     genomeHeight: Number,
+    activityColorScale: Function,
+    fracBoundColorScale: Function,
   },
   data() {
     let margin= {
@@ -189,15 +191,6 @@ export default {
         .attr("y","17")
         .style("font-size","0.5rem");
 
-      var activityColorScale = d3.scaleLinear()
-        .domain([0, 1.5, 3, 4])
-        .interpolate(d3.interpolateRgb.gamma(2.2))
-        .range([vm.red, vm.orange, vm.lemon, vm.mint])
-
-      var fracBoundColorScale = d3.scaleLinear()
-        .domain([0, .375, .75, 1])
-        .interpolate(d3.interpolateRgb.gamma(2.2))
-        .range([vm.red, vm.orange, vm.lemon, vm.mint])
 
       let bottomOligo = vm.baseline
       let rightPrimerLines = []
@@ -292,21 +285,21 @@ export default {
         var blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
 
         if (vm.guides[i].start_pos.length > 1) {
-          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:', tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:', tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         } else {
-          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:',  tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:',  tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         }
       }
 
       for (let i in leftPrimerPaths) {
         bases = vm.complement(vm.result.left_primers.primers[i].target, false)
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, fracBoundColorScale(vm.result.left_primers.frac_bound), ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + vm.result.left_primers.frac_bound, blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
+        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.left_primers.frac_bound), ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + vm.result.left_primers.frac_bound, blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
       }
 
       for (let i in rightPrimerPaths) {
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+vm.result.right_primers.primers[i].target+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound, blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
+        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound, blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
 
       tooltip

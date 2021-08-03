@@ -20,10 +20,10 @@
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <template v-if='aln_sum[label[0]]'>
                 <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="[]"/>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(20 + 20*cluster.length + (annotations.length>0)*80)*(width/800)"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(20 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale"/>
               </template>
               <template v-else>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale"/>
               </template>
             </div>
           </div>
@@ -45,6 +45,7 @@ const csrfToken = Cookies.get('csrftoken')
 import Assay from '@/components/Assay.vue'
 import Genome from '@/components/Genome.vue'
 import AssayTable from '@/components/AssayTable.vue'
+import * as d3 from "d3";
 
 export default {
   name: 'AssayModal',
@@ -54,6 +55,24 @@ export default {
     AssayTable,
   },
   data() {
+    var red = getComputedStyle(document.documentElement)
+      .getPropertyValue('--red')
+    var orange = getComputedStyle(document.documentElement)
+      .getPropertyValue('--orange')
+    var lemon = getComputedStyle(document.documentElement)
+      .getPropertyValue('--lemon')
+    var mint = getComputedStyle(document.documentElement)
+      .getPropertyValue('--mint')
+    var activityColorScale = d3.scaleLinear()
+      .domain([0, 1.5, 3, 4])
+      .interpolate(d3.interpolateRgb.gamma(2.2))
+      .range([red, orange, lemon, mint])
+
+    var fracBoundColorScale = d3.scaleLinear()
+      .domain([0, .375, .75, 1])
+      .interpolate(d3.interpolateRgb.gamma(2.2))
+      .range([red, orange, lemon, mint])
+
     return {
       resulttable: {},
       labels: [],
@@ -61,6 +80,8 @@ export default {
       alignment: false,
       aln_sum: {},
       width: 0,
+      "activityColorScale": activityColorScale,
+      "fracBoundColorScale": fracBoundColorScale,
     }
   },
   mounted() {
