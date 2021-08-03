@@ -1,19 +1,7 @@
 <template>
    <b-modal id="assay-modal" size="xl" title="Assay Options" hide-footer class="" scrollable>
     <b-tabs content-class="mt-4" justified pills>
-      <b-tab title="Table" active>
-        <div id="clusters-table" v-if="resulttable" :key="updated">
-          <div v-for="label in labels" :key="label[0]">
-            <h2 v-if="label[1]!=''" style="text-align: center;">{{ label[1] }}</h2>
-            <br/>
-            <!-- <b-button size="sm" @click.prevent="download_file(label[1])" pill variant="link"><b-icon-download aria-label="Download" font-scale="1.75"></b-icon-download></b-button> -->
-            <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
-              <AssayTable :cluster="cluster" :cluster_id="label[0] + index"/>
-            </div>
-          </div>
-        </div>
-      </b-tab>
-      <b-tab title="Visualization">
+      <b-tab title="Visualization" active>
         <div id="clusters-viz" :key="updated">
           <div v-for="label in labels" :key="label[0]">
             <h2 v-if="label[1]!=''" style="text-align: center;">{{ label[1] }}</h2>
@@ -25,6 +13,17 @@
               <template v-else>
                 <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale"/>
               </template>
+            </div>
+          </div>
+        </div>
+      </b-tab>
+      <b-tab title="Table">
+        <div id="clusters-table" v-if="resulttable" :key="updated">
+          <div v-for="label in labels" :key="label[0]">
+            <h2 v-if="label[1]!=''" style="text-align: center;">{{ label[1] }}</h2>
+            <br/>
+            <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
+              <AssayTable :cluster="cluster" :cluster_id="label[0] + index"/>
             </div>
           </div>
         </div>
@@ -100,13 +99,15 @@ export default {
       }
       vm.annotations = vm.$root.$data.annotations;
       vm.updated += 1
-      await vm.$bvModal.show("assay-modal")
-      vm.$nextTick(function () {
-        document.getElementById('clusters-viz').addEventListener('click', () => {
-          vm.width = document.getElementsByClassName('modal-body')[0].scrollWidth;
+      vm.$nextTick(async function () {
+        await vm.$bvModal.show("assay-modal")
+        vm.$nextTick(function () {
+          document.getElementById('clusters-viz').addEventListener('click', () => {
+            vm.width = document.getElementsByClassName('modal-body')[0].scrollWidth;
+          })
         })
-      })
-      vm.$root.$emit('finish-assays');
+        vm.$root.$emit('finish-assays');
+      });
     })
   },
   methods: {
