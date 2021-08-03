@@ -61,7 +61,7 @@
                     v-for="input_var in get_sub(inputs[sec][subsec])"
                     :key="inputs[sec][subsec][input_var].order"
                     :sm="inputs[sec][subsec][input_var].cols ? inputs[sec][subsec][input_var].cols : 12"
-                    align-self="center"
+                    :align-self="inputs[sec][subsec][input_var].type == 'boolean'? 'center' : false"
                   >
                     <b-form-group
                       class="field"
