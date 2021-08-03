@@ -89,6 +89,7 @@ export default {
     return {
       runids: [],
       runid: '',
+      nickname: '',
       loading: false,
     }
   },
@@ -110,6 +111,7 @@ export default {
       }
       this.runids.sort((a,b) => b.time-a.time)
       this.runid = this.runids[0].id
+      this.nickname = this.runids[0].nickname
       if (Cookies.get('submitted') == 'true') {
         Cookies.remove('submitted')
         this.$root.$data.modaltitle = 'Job submitted!'
@@ -133,6 +135,11 @@ export default {
       let response
       if (detail_response.ok) {
         let detail_response_json = await detail_response.json();
+        if (detail_response_json.nickname != '') {
+          this.nickname = detail_response_json.nickname
+        } else {
+          this.nickname = this.runid
+        }
         switch(detail_response_json.status) {
           case 'Submitted':
             this.$root.$data.modaltitle = 'Job Submitted';
@@ -155,7 +162,7 @@ export default {
               }
             })
             if (response.ok) {
-              this.$root.$data.labels = [[this.runid, this.runid]]
+              this.$root.$data.labels = [[this.runid, this.nickname]]
               let resultjson = await response.json();
               Vue.set(this.$root.$data.resulttable, this.runid, {})
               for (var cluster in resultjson) {

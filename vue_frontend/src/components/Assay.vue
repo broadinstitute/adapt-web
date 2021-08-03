@@ -1,15 +1,8 @@
 <template>
   <transition appear name="fade">
     <div class="assay">
-      <b-row align-v="center">
-        <b-col cols=1 class="text-center">
-          <h4>{{result.rank + 1}}</h4>
-        </b-col>
-        <b-col cols=12>
-          <div class="visualization" :id="'visualization-' + cluster_id + '-' + result.rank.toString()">
-          </div>
-        </b-col>
-      </b-row>
+        <a class="anchor" :id="'anchor-' + cluster_id + '-' + result.rank.toString()" :style="{'top': (-genomeHeight).toString()+'px'}"></a>
+        <div class="visualization" :id="'visualization-' + cluster_id + '-' + result.rank.toString()"></div>
     </div>
   </transition>
 </template>
@@ -23,12 +16,13 @@ export default {
     result: Object,
     cluster_id: String,
     aln_sum: Array,
+    genomeHeight: Number,
   },
   data() {
     let margin= {
       "top": 60,
-      "right": 10,
-      "left": 10,
+      "right": 0,
+      "left": 0,
       "bottom": 50,
     }
 
@@ -41,7 +35,7 @@ export default {
 
     let baseline = 20
     let oligoHeight = 10
-    let shift = 4
+    let shift = 6.5
 
     let boundedHeight = baseline + numOligos*oligoHeight + (numOligos-1)*shift
     let height = boundedHeight + margin.top + margin.bottom
@@ -77,6 +71,7 @@ export default {
       "xRange": xRange,
       "xScale": xScale,
       "yScale": yScale,
+      "primerShift": 4,
       "line": line,
       "red": getComputedStyle(document.documentElement)
         .getPropertyValue('--red'),
@@ -109,7 +104,7 @@ export default {
           "transform",
           `translate(${vm.margin.left}px, ${vm.margin.top}px)`
         )
-        .style("font-family", "PT Mono")
+        .style("font-family", "Overpass Mono")
         .style("letter-spacing", '0.03em');
 
       let t = [vm.target[0]]
@@ -123,6 +118,17 @@ export default {
 
       var darkInfo = d3.color(vm.info).darker(.6)
       var lightInfo = d3.color(vm.info).brighter(.25)
+
+      svg
+        .append("text")
+        .attr("text-anchor", "middle")
+        .style("font-weight", "700")
+        .style("fill", darkInfo)
+        .style("font-family", "Montserrat")
+        .style("font-size", "1rem")
+        .html((vm.result.rank+1).toString())
+        .attr("x", vm.xScale(this.result.amplicon_start - 5))
+        .attr("y", -15);
 
       var startLine = svg
         .append("line")
@@ -200,8 +206,8 @@ export default {
         let rightPrimerLine = [
           [vm.target[1] - rightPrimer.target.length, bottomOligo],
           [vm.target[1] - rightPrimer.target.length, bottomOligo+vm.oligoHeight],
-          [vm.target[1], bottomOligo+vm.oligoHeight+1],
-          [vm.target[1], bottomOligo-1],
+          [vm.target[1], bottomOligo+vm.oligoHeight+vm.primerShift],
+          [vm.target[1], bottomOligo-vm.primerShift/2],
         ]
         rightPrimerLines.push(rightPrimerLine)
         rightPrimerPaths.push(svg
@@ -244,8 +250,8 @@ export default {
       let leftPrimerPaths = []
       for (let leftPrimer of vm.leftPrimers) {
         let leftPrimerLine = [
-          [vm.target[0], bottomOligo-1],
-          [vm.target[0], bottomOligo+vm.oligoHeight+1],
+          [vm.target[0], bottomOligo-vm.primerShift/2],
+          [vm.target[0], bottomOligo+vm.oligoHeight+vm.primerShift],
           [vm.target[0] + leftPrimer.target.length, bottomOligo+vm.oligoHeight],
           [vm.target[0] + leftPrimer.target.length, bottomOligo],
         ]
@@ -286,21 +292,21 @@ export default {
         var blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
 
         if (vm.guides[i].start_pos.length > 1) {
-          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:', tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'', "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:', tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         } else {
-          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:',  tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'', "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:',  tooltip, tooltipbox, activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         }
       }
 
       for (let i in leftPrimerPaths) {
         bases = vm.complement(vm.result.left_primers.primers[i].target, false)
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, fracBoundColorScale(vm.result.left_primers.frac_bound), ['5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'', "Fraction Bound: " + vm.result.left_primers.frac_bound, blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
+        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, fracBoundColorScale(vm.result.left_primers.frac_bound), ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + vm.result.left_primers.frac_bound, blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
       }
 
       for (let i in rightPrimerPaths) {
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+vm.result.right_primers.primers[i].target+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(rightPrimerPaths[i], '5\'-'+vm.result.right_primers.primers[i].target+'-3\'', tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound, blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
+        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound, blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
 
       tooltip
@@ -486,7 +492,6 @@ export default {
             bboxText = tooltip.node().getBBox();
           }
 
-
           tooltipbox
             .attr("x", bboxText.x - 5)
             .attr("y", bboxText.y - 5)
@@ -501,7 +506,7 @@ export default {
             .style("opacity", 1);
           startLine
             .attr("x1", bboxOligoLine.x)
-            .attr("y1", bboxOligoLine.y)
+            .attr("y1", bboxOligoLine.y+bboxOligoLine.height/2)
             .attr("x2", bboxOligoLine.x)
             .attr("y2", vm.boundedHeight + 21.5);
           startTextBox
@@ -517,7 +522,7 @@ export default {
             .style("opacity", 1);
           endLine
             .attr("x1", bboxOligoLine.x+bboxOligoLine.width+(vm.xScale(0)-vm.xScale(1)))
-            .attr("y1", bboxOligoLine.y)
+            .attr("y1", bboxOligoLine.y+bboxOligoLine.height/2)
             .attr("x2", bboxOligoLine.x+bboxOligoLine.width+(vm.xScale(0)-vm.xScale(1)))
             .attr("y2", vm.boundedHeight + 21.5);
           endTextBox

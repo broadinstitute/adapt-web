@@ -53,6 +53,7 @@ $footer-height:                     6rem;
 * {
   letter-spacing: 0.04em;
   font-family: $font-family-sans-serif;
+  scroll-behavior: smooth;
 }
 
 :focus {
@@ -122,7 +123,7 @@ text {
 }
 
 .scroll-shade {
-  box-shadow: 0 1px 20px -1px rgba(0,0,0,.1);
+  box-shadow: 0 6px 10px -10px rgba(0,0,0,0.2);
 }
 
 #body {
@@ -226,6 +227,12 @@ button:not(.list-group-item):not(.taxon) {
   transform: rotate(180deg);
 }
 
+a.anchor {
+    display: block;
+    position: relative;
+    visibility: hidden;
+}
+
 .f-1, .family {
   font-size: 2rem;
 }
@@ -265,6 +272,12 @@ button:not(.list-group-item):not(.taxon) {
 
 .selected:hover, .selected:focus {
   background-color: rgba(lighten($success, 60%), 0.75);
+}
+
+.scrolling-sticky {
+  position: sticky;
+  top: -20px;
+  z-index: 100;
 }
 
 .taxon {

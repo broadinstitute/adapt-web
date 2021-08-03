@@ -1,7 +1,7 @@
 <template>
   <transition appear name="fade">
-    <div class="genome">
-      <div class="genome-viz" :id="'genome-' + cluster_id">
+    <div :class="[{'scrolling-sticky': scrollY > 0, 'scroll-shade': scrollY > 150}, 'genome']">
+      <div class="genome-viz" :id="'genome-' + cluster_id"  style="background-color:white">
       </div>
     </div>
   </transition>
@@ -16,11 +16,12 @@ export default {
     cluster_id: String,
     alignmentLength: Number,
     assays: Array,
+    annotations: Array,
   },
   data() {
     return {
       width: 800,
-      height: 150,
+      height: 20 + 20*this.assays.length,
       margin: {
         top: 0,
         right: 50,
@@ -29,7 +30,8 @@ export default {
       },
       baseline: 30,
       yspace: 33,
-      annotations: [],
+      assayLinks: [],
+      scrollY: 0,
     };
   },
   mounted() {
@@ -50,6 +52,10 @@ export default {
         d3.interpolateCool(0.3),
         d3.interpolateCool(0.7),
       ]);
+
+      if (vm.annotations.length > 0) {
+        vm.height += 80
+      }
 
       const svg = d3
         .select('#genome-' + vm.cluster_id)
@@ -90,8 +96,17 @@ export default {
       var i = 1
       var assayY = this.baseline - (this.yspace*2) - 12
       if (this.annotations.length == 0) {
-        assayY = this.baseline - this.yspace
+        assayY = this.baseline - this.yspace*.75
       }
+
+      // From Assay.vue
+      let baseline = 20
+      let oligoHeight = 10
+      let shift = 6.5
+      let marginTopBottom = 110
+
+      var assayHeight = []
+
       for (let assay of vm.assays) {
         let ampliconCenter = x((assay.amplicon_start + assay.amplicon_end)/2)
         svg
@@ -103,16 +118,57 @@ export default {
           .attr("x2", ampliconCenter)
           .attr("y2", vm.baseline);
 
-        svg
+        let numOligos = assay.left_primers.primers.length +
+                        assay.right_primers.primers.length +
+                        assay.guide_set.guides.length
+        assayHeight.push((baseline + numOligos*oligoHeight + (numOligos-1)*shift + marginTopBottom))
+
+        let href = '#anchor-' + vm.cluster_id + '-' + (i-1).toString()
+        vm.assayLinks.push(svg
+          .append("a")
+          .attr("href", href)
           .append("text")
           .attr("text-anchor", "middle")
           .style("fill", "#000d54AA")
           .style("font-size", "0.8rem")
           .attr("y", assayY)
           .attr("x", ampliconCenter)
-          .text(i);
+          .text(i));
         i++
+        assayY -= 10
       }
+
+      document.getElementsByClassName('modal-body')[0].addEventListener('scroll', () => {
+        let modalBody = document.getElementsByClassName('modal-body')[0]
+        let pageWidth = document.getElementsByClassName('genome-viz')[0].scrollWidth;
+        let scaledGenomeHeight = vm.height*pageWidth/vm.width;
+        vm.scrollY = modalBody.scrollTop;
+        let scrollTop = vm.scrollY + scaledGenomeHeight
+        let scrollBottom = vm.scrollY + modalBody.clientHeight;
+        for (let assayIndex in vm.assays) {
+          if (vm.scrollY == 0) {
+            vm.assayLinks[assayIndex]
+              .transition()
+              .duration(200)
+              .style("font-size", "0.8rem");
+          } else {
+            let assayElement = document.getElementById('visualization-' + vm.cluster_id + '-' + assayIndex.toString())
+            let assayTop = assayElement.offsetTop;
+            let assayBottom = assayElement.offsetTop + assayElement.offsetHeight;
+            if ((assayTop >= scrollTop) && (assayBottom <= scrollBottom)) {
+              vm.assayLinks[assayIndex]
+                .transition()
+                .duration(200)
+                .style("font-size", "1rem");
+            } else {
+              vm.assayLinks[assayIndex]
+                .transition()
+                .duration(200)
+                .style("font-size", "0.8rem");
+            }
+          }
+        }
+      })
 
       i = 0
       for (let annotation of vm.annotations) {

@@ -2,9 +2,10 @@
    <b-modal id="assay-modal" size="xl" title="Assay Options" hide-footer class="" scrollable>
     <b-tabs content-class="mt-4" justified pills>
       <b-tab title="Table" active>
-        <div id="clusters" v-if="resulttable" :key="updated">
+        <div id="clusters-table" v-if="resulttable" :key="updated">
           <div v-for="label in labels" :key="label[0]">
-            <h2 v-if="label[1]!=''">{{ label[1] }}</h2>
+            <h2 v-if="label[1]!=''" style="text-align: center;">{{ label[1] }}</h2>
+            <br/>
             <!-- <b-button size="sm" @click.prevent="download_file(label[1])" pill variant="link"><b-icon-download aria-label="Download" font-scale="1.75"></b-icon-download></b-button> -->
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <AssayTable :cluster="cluster" :cluster_id="label[0] + index"/>
@@ -13,13 +14,13 @@
         </div>
       </b-tab>
       <b-tab title="Visualization">
-        <div id="clusters" :key="updated">
+        <div id="clusters-viz" :key="updated">
           <div v-for="label in labels" :key="label[0]">
-            <h2 v-if="label[1]!=''">{{ label[1] }}</h2>
+            <h2 v-if="label[1]!=''" style="text-align: center;">{{ label[1] }}</h2>
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <template v-if='aln_sum[label[0]]'>
-                <Genome :cluster_id="label[0]" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster"/>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]"/>
+                <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="[]"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(20 + 20*cluster.length + (annotations.length>0)*80)*(width/800)"/>
               </template>
               <template v-else>
                 <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]"/>
@@ -59,6 +60,7 @@ export default {
       updated: 0,
       alignment: false,
       aln_sum: {},
+      width: 0,
     }
   },
   mounted() {
@@ -78,6 +80,11 @@ export default {
       vm.annotations = vm.$root.$data.annotations;
       vm.updated += 1
       await vm.$bvModal.show("assay-modal")
+      vm.$nextTick(function () {
+        document.getElementById('clusters-viz').addEventListener('click', () => {
+          vm.width = document.getElementsByClassName('modal-body')[0].scrollWidth;
+        })
+      })
       vm.$root.$emit('finish-assays');
     })
   },
