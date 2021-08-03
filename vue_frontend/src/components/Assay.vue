@@ -285,21 +285,21 @@ export default {
         var blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
 
         if (vm.guides[i].start_pos.length > 1) {
-          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:', tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:', tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity.toFixed(4), blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         } else {
-          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:',  tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity, blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:',  tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity.toFixed(4), blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         }
       }
 
       for (let i in leftPrimerPaths) {
         bases = vm.complement(vm.result.left_primers.primers[i].target, false)
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.left_primers.frac_bound), ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + vm.result.left_primers.frac_bound, blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
+        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.left_primers.frac_bound), ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + vm.result.left_primers.frac_bound.toFixed(4), blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
       }
 
       for (let i in rightPrimerPaths) {
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+vm.result.right_primers.primers[i].target+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound, blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
+        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound.toFixed(4), blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
 
       tooltip
@@ -360,10 +360,12 @@ export default {
         for (let i in vm.aln_sum[0]) {
           total += vm.aln_sum[0][i]
         }
-        var entropyColorScale =d3.scaleLinear()
+        var entropyScale = d3.scaleLinear()
           .domain([0, 1.7])
-          .interpolate(d3.interpolateRgb.gamma(2.2))
-          .range([vm.violet, vm.red])
+          .range([0,1])
+        var entropyColorScale = function (t) {
+          return d3.interpolateWarm(entropyScale(t));
+        }
         for (let b in Array(this.xDomain[1]+1-this.xDomain[0]).fill(this.xDomain[0])) {
           let bases = this.aln_sum[parseInt(b) + this.xDomain[0]]
           svg

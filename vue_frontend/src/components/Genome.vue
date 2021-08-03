@@ -150,7 +150,8 @@ export default {
             vm.assayLinks[assayIndex]
               .transition()
               .duration(200)
-              .style("font-size", "0.8rem");
+              .style("font-size", "0.8rem")
+              .style("font-weight", "300");
           } else {
             let assayElement = document.getElementById('visualization-' + vm.cluster_id + '-' + assayIndex.toString())
             let assayTop = assayElement.offsetTop;
@@ -159,12 +160,14 @@ export default {
               vm.assayLinks[assayIndex]
                 .transition()
                 .duration(200)
-                .style("font-size", "1rem");
+                .style("font-size", "1.2rem")
+                .style("font-weight", "700");
             } else {
               vm.assayLinks[assayIndex]
                 .transition()
                 .duration(200)
-                .style("font-size", "0.8rem");
+                .style("font-size", "0.8rem")
+                .style("font-weight", "300");
             }
           }
         }
