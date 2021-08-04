@@ -20,6 +20,7 @@ export default {
     activityColorScale: Function,
     fracBoundColorScale: Function,
     objectiveColorScale: Function,
+    entropyColorScale: Function,
   },
   data() {
     let margin= {
@@ -108,12 +109,12 @@ export default {
           `translate(${vm.margin.left}px, ${vm.margin.top}px)`
         )
         .style("font-family", "Overpass Mono")
-        .style("letter-spacing", '0.03em');
+        .style("letter-spacing", '0.04em');
 
       let t = [vm.target[0]]
       let ampliconLength = vm.target[1]-vm.target[0]
       let interval =  Math.max(Math.trunc(ampliconLength/50)*10, 20)
-      while (t[t.length-1] < vm.target[1]) {
+      while (t[t.length-1] < vm.target[1]-1) {
         t.push(t[t.length-1] + interval)
       }
       t[t.length-1] = vm.target[1]-1
@@ -385,18 +386,12 @@ export default {
         for (let i in vm.aln_sum[0]) {
           total += vm.aln_sum[0][i]
         }
-        var entropyScale = d3.scaleLinear()
-          .domain([0, 1.7])
-          .range([0,1])
-        var entropyColorScale = function (t) {
-          return d3.interpolateWarm(entropyScale(t));
-        }
         for (let b in Array(this.xDomain[1]-this.xDomain[0]).fill(this.xDomain[0])) {
           let bases = this.aln_sum[parseInt(b) + this.xDomain[0]]
           svg
             .append("text")
             .attr("text-anchor", "middle")
-            .style("fill", entropyColorScale(vm.entropy(bases, total)))
+            .style("fill", vm.entropyColorScale(vm.entropy(bases, total)))
             .style("font-size", ".5rem")
             .html(this.max_base(bases))
             .style("font-family", "Overpass Mono")
@@ -502,8 +497,18 @@ export default {
           }
 
           let bboxText = tooltip.node().getBBox();
+          // If the tooltip would go out of the borders, shift it in
           if (bboxText.x < 5) {
             tooltipX += 5 - bboxText.x
+            tooltip
+              .attr("x", tooltipX)
+            for (let extraLine in extraLines) {
+              extraLines[extraLine]
+                .attr("x", tooltipX)
+            }
+            bboxText = tooltip.node().getBBox();
+          } else if ((bboxText.x + bboxText.width) > vm.boundedWidth-5) {
+            tooltipX -= bboxText.x + bboxText.width - vm.boundedWidth + 5
             tooltip
               .attr("x", tooltipX)
             for (let extraLine in extraLines) {

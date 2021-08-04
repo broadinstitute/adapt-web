@@ -66,8 +66,8 @@ export default {
           "transform",
           `translate(${vm.margin.left}px, ${vm.height/2}px)`
         )
-        .style("font-family", "PT Mono")
-        .style("letter-spacing", '0.03em');
+        .style("font-family", "Overpass Mono")
+        .style("letter-spacing", '0.04em');
 
       var x = d3.scaleLinear()
         .domain([0, vm.alignmentLength])
