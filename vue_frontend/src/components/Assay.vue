@@ -19,12 +19,13 @@ export default {
     genomeHeight: Number,
     activityColorScale: Function,
     fracBoundColorScale: Function,
+    objectiveColorScale: Function,
   },
   data() {
     let margin= {
       "top": 60,
       "right": 0,
-      "left": 0,
+      "left": 40,
       "bottom": 50,
     }
 
@@ -42,7 +43,7 @@ export default {
     let boundedHeight = baseline + numOligos*oligoHeight + (numOligos-1)*shift
     let height = boundedHeight + margin.top + margin.bottom
 
-    let xDomain = [this.result.amplicon_start - 10, this.result.amplicon_end + 9]
+    let xDomain = [this.result.amplicon_start - 10, this.result.amplicon_end + 10]
     let xRange = [0, boundedWidth]
 
     let xScale = d3
@@ -121,16 +122,40 @@ export default {
       var darkInfo = d3.color(vm.info).darker(.6)
       var lightInfo = d3.color(vm.info).brighter(.25)
 
+      // Rank Textbox
       svg
         .append("text")
         .attr("text-anchor", "middle")
         .style("font-weight", "700")
-        .style("fill", darkInfo)
+        .style("fill", vm.navy)
         .style("font-family", "Montserrat")
         .style("font-size", "1rem")
         .html((vm.result.rank+1).toString())
-        .attr("x", vm.xScale(this.result.amplicon_start - 5))
+        .attr("x", 0)
         .attr("y", -15);
+
+      // Objective Value Textboxes
+      svg
+        .append("text")
+        .attr("text-anchor", "middle")
+        .style("fill", darkInfo)
+        .style("font-family", "Montserrat")
+        .style("font-size", "0.6rem")
+        .html("Quality:")
+        .attr("x", 0)
+        .attr("y", 12);
+
+      svg
+        .append("text")
+        .attr("text-anchor", "middle")
+        .style("fill", d3.color(vm.objectiveColorScale(vm.result.objective_value)).darker(.3))
+        .style("font-weight", "700")
+        .style("font-family", "Montserrat")
+        .style("font-size", "0.8rem")
+        .html(Number.parseFloat(vm.result.objective_value).toFixed(4).toString())
+        .attr("x", 0)
+        .attr("y", 30);
+
 
       var startLine = svg
         .append("line")
@@ -285,21 +310,21 @@ export default {
         var blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
 
         if (vm.guides[i].start_pos.length > 1) {
-          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:', tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity.toFixed(4), blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:', tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Alternate Start Positions: " + vm.guides[i].start_pos.slice(1), "Expected Activity: " + Number.parseFloat(vm.result.guide_set.guides[i].expected_activity).toFixed(4), blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         } else {
-          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:',  tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Expected Activity: " + vm.result.guide_set.guides[i].expected_activity.toFixed(4), blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
+          vm.oligo_tooltip(guidePaths[i], 'LwaCas13a crRNA:',  tooltip, tooltipbox, vm.activityColorScale(vm.result.guide_set.guides[i].expected_activity), ['<a style="font-family: Overpass Mono">5\'-GAUUUAGACUACCCCAAAAACGAAGGGGACUAAAAC'+bases+'-3\'</a>', "Expected Activity: " + Number.parseFloat(vm.result.guide_set.guides[i].expected_activity).toFixed(4), blast_link], startLine, startTextBox, guideLines[i][0][0], endLine, endTextBox, guideLines[i][2][0]-1)
         }
       }
 
       for (let i in leftPrimerPaths) {
         bases = vm.complement(vm.result.left_primers.primers[i].target, false)
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.left_primers.frac_bound), ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + vm.result.left_primers.frac_bound.toFixed(4), blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
+        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.left_primers.frac_bound), ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + Number.parseFloat(vm.result.left_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
       }
 
       for (let i in rightPrimerPaths) {
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+vm.result.right_primers.primers[i].target+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + vm.result.right_primers.frac_bound.toFixed(4), blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
+        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + Number.parseFloat(vm.result.right_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
 
       tooltip
@@ -366,7 +391,7 @@ export default {
         var entropyColorScale = function (t) {
           return d3.interpolateWarm(entropyScale(t));
         }
-        for (let b in Array(this.xDomain[1]+1-this.xDomain[0]).fill(this.xDomain[0])) {
+        for (let b in Array(this.xDomain[1]-this.xDomain[0]).fill(this.xDomain[0])) {
           let bases = this.aln_sum[parseInt(b) + this.xDomain[0]]
           svg
             .append("text")
@@ -375,6 +400,7 @@ export default {
             .style("font-size", ".5rem")
             .html(this.max_base(bases))
             .style("font-family", "Overpass Mono")
+            .style("opacity", Math.min(b, this.xDomain[1]-this.xDomain[0]-b)/10)
             .attr("x", this.xScale(parseInt(b) + this.xDomain[0]))
             .attr("y", `${this.boundedHeight}px`)
             .attr("alignment-baseline", "central")

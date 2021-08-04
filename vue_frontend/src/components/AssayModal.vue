@@ -8,10 +8,10 @@
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <template v-if='aln_sum[label[0]]'>
                 <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="[]"/>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(20 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(20 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale"/>
               </template>
               <template v-else>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale"/>
               </template>
             </div>
           </div>
@@ -72,6 +72,11 @@ export default {
       .interpolate(d3.interpolateRgb.gamma(2.2))
       .range([red, orange, lemon, mint])
 
+    var objectiveColorScale = d3.scaleLinear()
+      .domain([0, 1.95, 3.9, 5.2])
+      .interpolate(d3.interpolateRgb.gamma(2.2))
+      .range([red, orange, lemon, mint])
+
     return {
       resulttable: {},
       labels: [],
@@ -81,6 +86,7 @@ export default {
       width: 0,
       "activityColorScale": activityColorScale,
       "fracBoundColorScale": fracBoundColorScale,
+      "objectiveColorScale": objectiveColorScale,
     }
   },
   mounted() {
