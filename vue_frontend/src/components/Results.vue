@@ -15,6 +15,13 @@
                 </b-list-group-item>
               </b-list-group>
               <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="button" variant="outline-secondary" class="mt-3" name="clear-ids">Clear Run IDs</b-button>
+              <div class="text-center" v-show="runids.length == 0">
+                <br>
+                <h5>No previous runs</h5>
+                <br>
+                <p>Check out the <a href="/">Run page</a> to try running ADAPT yourself.</p>
+                <p>Type "<a href="" v-on:click.prevent.stop.self="setRunID('example-success')">example-success</a>" as a Run ID to see an example of what ADAPT's output looks like.</p>
+              </div>
               <br>
             </b-col>
             <b-col cols=0 md=1>

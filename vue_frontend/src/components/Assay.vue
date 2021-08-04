@@ -141,7 +141,7 @@ export default {
         .style("fill", darkInfo)
         .style("font-family", "Montserrat")
         .style("font-size", "0.6rem")
-        .html("Quality:")
+        .html("Score:")
         .attr("x", 0)
         .attr("y", 12);
 
