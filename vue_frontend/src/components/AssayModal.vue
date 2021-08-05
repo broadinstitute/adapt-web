@@ -8,10 +8,12 @@
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <template v-if='aln_sum[label[0]]'>
                 <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="[]"/>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(20 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <ColorLegend :genomeHeight="(15 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(65 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
               <template v-else>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <ColorLegend :genomeHeight='0' :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="50*width/800" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
             </div>
           </div>
@@ -40,8 +42,8 @@
 const Cookies = require('js-cookie')
 // Needs CSRF for the server to accept the request
 const csrfToken = Cookies.get('csrftoken')
-// import Vue from 'vue'
 import Assay from '@/components/Assay.vue'
+import ColorLegend from '@/components/ColorLegend.vue'
 import Genome from '@/components/Genome.vue'
 import AssayTable from '@/components/AssayTable.vue'
 import * as d3 from "d3";
@@ -50,6 +52,7 @@ export default {
   name: 'AssayModal',
   components: {
     Assay,
+    ColorLegend,
     Genome,
     AssayTable,
   },
@@ -73,16 +76,17 @@ export default {
       .range([red, orange, lemon, mint])
 
     var objectiveColorScale = d3.scaleLinear()
-      .domain([0, 1.95, 3.9, 5.2])
+      .domain([0, 1.875, 3.75, 5])
       .interpolate(d3.interpolateRgb.gamma(2.2))
       .range([red, orange, lemon, mint])
 
     var entropyScale = d3.scaleLinear()
-      .domain([0, 1.7])
-      .range([0,1])
+      .domain([0, 2])
+      .range([0, 1])
     var entropyColorScale = function (t) {
-      return d3.interpolateWarm(entropyScale(t));
+      return d3.interpolatePlasma(entropyScale(t));
     }
+
     return {
       resulttable: {},
       labels: [],
@@ -115,8 +119,9 @@ export default {
       vm.$nextTick(async function () {
         await vm.$bvModal.show("assay-modal")
         vm.$nextTick(function () {
-          document.getElementById('clusters-viz').addEventListener('click', () => {
-            vm.width = document.getElementsByClassName('modal-body')[0].scrollWidth;
+          var modalBody = document.getElementsByClassName('modal-body')[0]
+          modalBody.addEventListener('scroll', () => {
+            vm.width = modalBody.scrollWidth;
           })
         })
         vm.$root.$emit('finish-assays');
