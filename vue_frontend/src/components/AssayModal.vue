@@ -8,7 +8,7 @@
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <template v-if='aln_sum[label[0]]'>
                 <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="[]"/>
-                <ColorLegend :genomeHeight="(15 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <ColorLegend :genomeHeight="(15 + 20*cluster.length + (annotations.length>0)*80)" :genomeHeightScale="(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
                 <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(65 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
               <template v-else>
