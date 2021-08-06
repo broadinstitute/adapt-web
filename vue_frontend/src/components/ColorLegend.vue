@@ -1,6 +1,6 @@
 <template>
   <transition appear name="fade">
-    <div :class="[{'scroll-shade': scrollY > 150}, 'scrolling-sticky', 'py-2']" :style="{'top': (genomeHeight*genomeHeightScale-20)+'px', 'background-color': 'white'}">
+    <div :class="['py-2',]" :style="{'background-color': 'white'}">
       <b-row align-v="center">
         <b-col cols=2 class="text-center f-4">
           Legend
@@ -22,7 +22,7 @@
               <div class="frac-bound-legend" id="frac-bound-legend">
               </div>
             </b-col>
-            <b-col v-show="genomeHeight>0" class="text-center f-5">
+            <b-col v-show="genome" class="text-center f-5">
               <small><i>Entropy:</i></small>
               <div class="entropy-legend" id="entropy-legend">
               </div>
@@ -40,8 +40,7 @@ import * as d3 from "d3";
 export default {
   name: 'ColorLegend',
   props: {
-    genomeHeight: Number,
-    genomeHeightScale: Number,
+    genome: Boolean,
     activityColorScale: Function,
     fracBoundColorScale: Function,
     objectiveColorScale: Function,
@@ -53,7 +52,6 @@ export default {
       width: 90,
       marginX: 5,
       tickHeight: 10,
-      scrollY: 0,
     };
   },
   mounted() {
@@ -62,12 +60,6 @@ export default {
   methods: {
     init() {
       const vm = this
-
-      // Keep track of scroll height
-      var modalBody = document.getElementsByClassName('modal-body')[0]
-      modalBody.addEventListener('scroll', () => {
-        vm.scrollY = modalBody.scrollTop;
-      })
 
       vm.legend(vm.objectiveColorScale, '#score-legend', [0, 5], [0, 1, 2, 3, 4, 5], 0)
       vm.legend(vm.activityColorScale, '#activity-legend', [0, 4], [0, 1, 2, 3, 4], 0)

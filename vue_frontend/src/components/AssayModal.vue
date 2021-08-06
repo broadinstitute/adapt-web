@@ -1,6 +1,6 @@
 <template>
-   <b-modal id="assay-modal" size="xl" title="Assay Options" hide-footer class="" scrollable>
-    <b-tabs content-class="mt-4" justified pills>
+   <b-modal id="assay-modal" size="xl" title="Assay Options" class="" scrollable :hide-footer="tabIndex > 0">
+    <b-tabs content-class="mt-4" justified pills v-model="tabIndex">
       <b-tab title="Visualization" active>
         <div id="clusters-viz" :key="updated">
           <div v-for="label in labels" :key="label[0]">
@@ -8,12 +8,10 @@
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <template v-if='aln_sum[label[0]]'>
                 <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="[]"/>
-                <ColorLegend :genomeHeight="(15 + 20*cluster.length + (annotations.length>0)*80)" :genomeHeightScale="(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(65 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(20 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
               <template v-else>
-                <ColorLegend :genomeHeight='0' :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="50*width/800" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
             </div>
           </div>
@@ -35,6 +33,11 @@
         <b-nav-item v-if='alignment' role="presentation" @click.prevent="download_file('alignment')" href="#">Alignment <b-icon-download aria-label="Download"></b-icon-download></b-nav-item>
       </template>
     </b-tabs>
+    <template #modal-footer>
+      <div class="w-100">
+        <ColorLegend :genome="Object.keys(aln_sum).length > 0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+        </div>
+    </template>
   </b-modal>
 </template>
 
@@ -88,6 +91,7 @@ export default {
     }
 
     return {
+      tabIndex: 0,
       resulttable: {},
       labels: [],
       updated: 0,
@@ -108,6 +112,7 @@ export default {
     this.$root.$data.annotations = []
     var vm = this
     vm.$root.$on('show-assays', async function() {
+      vm.aln_sum = {}
       vm.resulttable = vm.$root.$data.resulttable;
       vm.labels = vm.$root.$data.labels;
       vm.alignment = vm.$root.$data.alignment;
@@ -205,3 +210,8 @@ export default {
   }
 }
 </script>
+<style>
+.modal-footer {
+  box-shadow: 0 6px 10px 2px rgba(0,0,0,0.2);
+}
+</style>

@@ -1,6 +1,6 @@
 <template>
   <transition appear name="fade">
-    <div class="scrolling-sticky genome" :style="{'top': '-20px'}">
+    <div :class="[{'scroll-shade': scrollY > 150}, 'scrolling-sticky', 'genome']" :style="{'top': '-20px'}">
       <div class="genome-viz" :id="'genome-' + cluster_id"  style="background-color:white">
       </div>
     </div>
@@ -30,6 +30,7 @@ export default {
       },
       baseline: 30,
       yspace: 33,
+      scrollY: 0,
       assayLinks: [],
     };
   },
@@ -141,11 +142,11 @@ export default {
       modalBody.addEventListener('scroll', () => {
         let pageWidth = document.getElementsByClassName('genome-viz')[0].scrollWidth;
         let scaledGenomeHeight = vm.height*pageWidth/vm.width;
-        let scrollY = modalBody.scrollTop;
-        let scrollTop = scrollY + scaledGenomeHeight
-        let scrollBottom = scrollY + modalBody.clientHeight;
+        vm.scrollY = modalBody.scrollTop;
+        let scrollTop = vm.scrollY + scaledGenomeHeight
+        let scrollBottom = vm.scrollY + modalBody.clientHeight;
         for (let assayIndex in vm.assays) {
-          if (scrollY == 0) {
+          if (vm.scrollY == 0) {
             vm.assayLinks[assayIndex]
               .transition()
               .duration(200)
