@@ -62,7 +62,7 @@
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('results')}})" :disabled="loading" size="lg" type="submit" variant="outline-secondary" class="mt-2" name="show_submit">Show Results</b-button>
+                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {callServerWrap()}})" :disabled="loading" size="lg" type="submit" variant="outline-secondary" class="mt-2" name="show_submit">Show Results</b-button>
               </b-overlay>
             </b-col>
           </b-row>
@@ -131,7 +131,18 @@ export default {
     }
   },
   methods: {
-    async call_server() {
+    async callServerWrap() {
+      var vm = this
+      vm.callServer().then(success => {
+        if (success) {
+          vm.$root.$emit('show-assays');
+          vm.$root.$on('finish-assays', () => {vm.loading=false});
+        } else {
+          vm.loading=false
+        }
+      })
+    },
+    async callServer() {
       this.loading = true
 
       let detail_response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/detail/', {
@@ -179,16 +190,16 @@ export default {
                 }
               }
               this.$root.$data.runid = this.runid;
-              this.$root.$data.alignment = detail_response_json.alignment
-              this.$root.$emit('show-assays');
-              var vm = this
-              this.$root.$on('finish-assays', () => {vm.loading=false});
+              if (detail_response_json.alignment) {
+                await this.summarize_alignment()
+              }
+              this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname);
+              return true;
             } else {
               this.errorMsg(response);
-              this.loading = false;
             }
             this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname);
-            return response;
+            break;
           case 'Failed':
           case 'Aborted':
           case 'Aborting':
@@ -202,8 +213,6 @@ export default {
       } else {
         this.errorMsg(detail_response);
       }
-      this.loading = false;
-      return detail_response;
     },
     async errorMsg(response) {
       let contentType = response.headers.get("content-type");
@@ -257,6 +266,18 @@ export default {
         Cookies.set('runid', runid_strs.join())
       } else {
         Cookies.remove('runid')
+      }
+    },
+    async summarize_alignment() {
+      let response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/alignment_summary/', {
+        headers: {
+          "X-CSRFToken": csrfToken
+        }
+      })
+      if (response.ok) {
+        this.$root.$data.aln_sum[this.runid] = await response.json()
+      } else {
+        this.errorMsg(response)
       }
     },
   }

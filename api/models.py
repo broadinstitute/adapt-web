@@ -142,6 +142,10 @@ class AssaySet(models.Model):
         choices=OBJ_CHOICES,
     )
     cluster = models.PositiveSmallIntegerField(default=0)
+    s3_aln_path = models.TextField(
+        default="",
+        blank=True
+    )
 
 class Assay(models.Model):
     '''Defines base model for an assay for a virus

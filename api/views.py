@@ -505,6 +505,25 @@ class AssaySetViewSet(viewsets.ModelViewSet):
             TaxonRank.objects.filter(pk__in=taxonrank_pks).delete()
         return Response()
 
+    @action(detail=True)
+    def alignment_summary(self, request, *args, **kwargs):
+        """
+        Produces a file of the alignments to download
+
+        Makes a fasta if there is only one file and a ZIP otherwise.
+        Function called at the "alignment" API endpoint.
+        """
+        assay_set = self.get_object()
+        if assay_set.s3_aln_path:
+            output_files = _files([assay_set.s3_aln_path])[0].read().decode("utf-8")
+            content = _alignment_to_summary(output_file)
+            response = Response(content)
+            return response
+        content = {'Input Error': "There is no alignment for this assay. "
+        "This virus design has likely not been updated recently; you may "
+        "want to run this virus again on the 'Run' page of this site."}
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
 
 class AssayViewSet(viewsets.ModelViewSet):
     """
@@ -547,11 +566,17 @@ class AssayViewSet(viewsets.ModelViewSet):
         return taxonrank
 
     @staticmethod
-    def update(s3_file_paths, obj, sp, start_time, taxid, tax_seg):
+    def update(s3_file_paths, obj, sp, start_time, taxid, tax_seg, alns=None):
         """
         Updates the database given a job ID from Cromwell
 
         """
+        if alns:
+            if len(alns) != len(s3_file_paths):
+                return Response({'Input Error': "If alignments are provided, "
+                                 "there must be the same number of alignments "
+                                 "as output file paths."},
+                                status=httpstatus.HTTP_400_BAD_REQUEST)
         try:
             taxon_obj = get_object_or_404(Taxon, pk=int(taxid))
             taxonrank_obj = taxon_obj.taxonrank
@@ -592,6 +617,7 @@ class AssayViewSet(viewsets.ModelViewSet):
             lines = output_file.splitlines()
             if len(lines) < 2:
                 continue
+            aln = alns[i] if alns else ''
             headers = lines[0].split('\t')
             assay_set_data = {
                 'taxonrank': taxonrank_obj.pk,
@@ -882,13 +908,16 @@ class AssayViewSet(viewsets.ModelViewSet):
         the start, and the tax ID
 
         """
+        alns = request.data["s3_aln_paths"] \
+            if ("s3_aln_paths" in request.data) else None
         AssayViewSet.update(
             request.data["s3_file_paths"],
             request.data["obj"],
             request.data["sp"],
             request.data["start"][:10],
             request.data["taxid"],
-            request.data["taxseg"]
+            request.data["taxseg"],
+            alns=alns
         )
 
         return Response({"id": request.data["taxid"]}, status=httpstatus.HTTP_201_CREATED)

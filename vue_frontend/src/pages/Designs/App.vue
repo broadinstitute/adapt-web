@@ -21,7 +21,7 @@
               blur="5px"
               spinner-variant="secondary"
             >
-              <b-button pill block v-on:click.prevent="display()" size="lg" type="submit" variant="outline-secondary" name="display_submit" :disabled="selectedDesigns.length==0">Show Assays</b-button>
+              <b-button pill block v-on:click.prevent="displayWrap()" size="lg" type="submit" variant="outline-secondary" name="display_submit" :disabled="selectedDesigns.length==0">Show Assays</b-button>
             </b-overlay>
           </b-col>
         </b-row>
@@ -64,6 +64,13 @@ export default {
     }
   },
   methods : {
+    async displayWrap() {
+      var vm = this
+      vm.display().then(() => {
+        vm.$root.$emit('show-assays');
+        vm.loading = false;
+      });
+    },
     async display() {
       this.loading = true
       var vm = this
@@ -92,28 +99,53 @@ export default {
                 for (let rank in resultjson) {
                   vm.$root.$data.resulttable[taxon][cluster].push(resultjson[rank]);
                 }
+                if (set_resultjson[0]['s3_aln_path'] != "") {
+                  await vm.summarize_alignment(set_resultjson[0]['pk'], taxon, cluster)
+                }
               } else {
-                this.$root.$data.modaltitle = 'Error'
-                this.$root.$data.modalmsg = await response.text()
-                this.$root.$data.modalvariant = 'danger'
-                this.$root.$emit('show-msg');
+                vm.errorMsg(response)
               }
             }
             else {
               break;
             }
           } else {
-            this.$root.$data.modaltitle = 'Error'
-            this.$root.$data.modalmsg = await set_response.text()
-            this.$root.$data.modalvariant = 'danger'
-            this.$root.$emit('show-msg');
+            vm.errorMsg(set_response)
+            break;
           }
           cluster += 1
         }
       }
-      this.$root.$emit('show-assays');
-      this.loading = false
-    }
+    },
+    async summarize_alignment(pk, taxon, cluster) {
+      let response = await fetch('/api/assayset/' + pk + '/alignment_summary/', {
+        headers: {
+          "X-CSRFToken": csrfToken
+        }
+      })
+      if (response.ok) {
+        if (!(taxon in this.$root.$data.aln_sum)) {
+          this.$root.$data.aln_sum[taxon] = {}
+        }
+        this.$root.$data.aln_sum[taxon][cluster] = await response.json()
+      } else {
+        this.errorMsg(response)
+      }
+    },
+    async errorMsg(response) {
+      let contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        let response_json = await response.json()
+        this.$root.$data.modaltitle = Object.keys(response_json)[0]
+        this.$root.$data.modalmsg = response_json[this.$root.$data.modaltitle]
+      }
+      else {
+        this.$root.$data.modaltitle = 'Error'
+        this.$root.$data.modalmsg = await response.text()
+      }
+      this.$root.$data.modalvariant = 'danger'
+      this.$root.$emit('show-msg');
+    },
   }
 }
 </script>
