@@ -40,6 +40,10 @@ class TaxonRank(models.Model):
     def num_children(self):
         return len(self.children.all())
 
+    @property
+    def any_assays(self):
+        return self.assay_sets.all().exists()
+
     class Meta:
         ordering = ['latin_name']
 
