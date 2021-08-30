@@ -36,6 +36,10 @@ class TaxonRank(models.Model):
         else:
             return None
 
+    @property
+    def num_children(self):
+        return len(self.children.all())
+
     class Meta:
         ordering = ['latin_name']
 
