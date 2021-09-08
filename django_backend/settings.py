@@ -30,7 +30,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "23.21.232.223",
-    "adapt-playground.sabetilab.org"
+    "adapt.run"
 ]
 
 
