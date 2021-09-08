@@ -625,6 +625,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                 'specific': sp,
                 'objective': obj,
                 'cluster': i,
+                's3_aln_path': aln,
             }
             assay_set = AssaySetSerializer(data=assay_set_data)
             assay_set.is_valid(raise_exception=True)
