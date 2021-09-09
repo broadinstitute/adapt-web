@@ -176,7 +176,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-STATIC_ROOT = "/var/www/adapt.run/static/"
+STATIC_ROOT = "/home/ubuntu/static/"
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
