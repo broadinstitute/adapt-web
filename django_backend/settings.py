@@ -111,7 +111,7 @@ LOGGING = {
         'file': {
             'level': 'WARNING',
             'class': 'logging.FileHandler',
-            'filename': '~/django_warning.log',
+            'filename': '/home/ubuntu/django_warning.log',
         },
     },
     'loggers': {
