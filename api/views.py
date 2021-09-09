@@ -515,7 +515,7 @@ class AssaySetViewSet(viewsets.ModelViewSet):
         """
         assay_set = self.get_object()
         if assay_set.s3_aln_path:
-            output_files = _files([assay_set.s3_aln_path])[0].read().decode("utf-8")
+            output_file = _files([assay_set.s3_aln_path])[0].read().decode("utf-8")
             content = _alignment_to_summary(output_file)
             response = Response(content)
             return response
