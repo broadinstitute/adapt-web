@@ -354,7 +354,7 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         designed = self.request.query_params.get('designed')
         if designed:
-            qs = TaxonRank.objects.filter(assay_sets__isnull=False).annotate(
+            qs = TaxonRank.objects.filter(assay_sets__isnull=False).distinct().annotate(
                 name=Case(
                     When(rank="segment", then="parent__latin_name"),
                     default="latin_name",
@@ -369,19 +369,19 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
         if parents:
             parents = parents.split(',')
             if parents[0] == 'null':
-                qs = qs.filter(parent__isnull=True)
+                qs = qs.filter(parent__isnull=True).distinct()
             else:
                 qs = qs.filter(parent=parents[0])
             if len(parents) > 1:
                 for parent in parents[1:]:
                     if parent == 'null':
-                        qs = qs.union(TaxonRank.objects.filter(parent__taxid__isnull=True))
+                        qs = qs | TaxonRank.objects.filter(parent__isnull=True).distinct()
                     else:
-                        qs = qs.union(TaxonRank.objects.filter(parent__taxid=parent))
+                        qs = qs | TaxonRank.objects.filter(parent=parent).distinct()
         if assays == 'true':
-            qs = qs.filter(assay_sets__isnull=False)
+            qs = qs.filter(assay_sets__isnull=False).distinct()
         elif assays == 'false':
-            qs = qs.filter(assay_sets__isnull=True)
+            qs = qs.filter(assay_sets__isnull=True).distinct()
         if rank:
             qs = qs.filter(rank=rank)
         return qs
@@ -483,14 +483,14 @@ class AssaySetViewSet(viewsets.ModelViewSet):
         if created:
             qs = qs.filter(created=created)
         if assays == 'true':
-            qs = qs.filter(assays__isnull=False)
+            qs = qs.filter(assays__isnull=False).distinct()
         elif assays == 'false':
-            qs = qs.filter(assays__isnull=True)
+            qs = qs.filter(assays__isnull=True).distinct()
         return qs.order_by('-created')
 
     @action(detail=False, methods=['post'])
     def clean_up(self, request, *args, **kwargs):
-        AssaySet.objects.filter(assays__isnull=True).delete()
+        AssaySet.objects.filter(assays__isnull=True).distinct().delete()
 
         for _ in range(4):
             taxonrank_pks = [taxrank.pk for taxrank in TaxonRank.objects.all() if (taxrank.num_children == 0 and taxrank.any_assays == False)]
