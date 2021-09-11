@@ -287,3 +287,14 @@ a.anchor {
   color: $body-color;
   text-decoration: none;
 }
+
+.multiselect__option--selected.multiselect__option--highlight {
+  background: #f3f3f3;
+  color: #35495e;
+}
+
+.multiselect__option--selected.multiselect__option--highlight:after {
+  background: #f3f3f3;
+  content: attr(data-deselect);
+  color: #35495e;
+}
