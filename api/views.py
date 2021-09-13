@@ -1162,7 +1162,12 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 if data_format in ['aln', 'aln_sum']:
                     files = _files(metadata_response["outputs"]["adapt_web.alns"])
                 elif data_format == 'ann':
-                    files = _files(metadata_response["outputs"]["adapt_web.anns"])
+                    if "adapt_web.anns" in metadata_response["outputs"]:
+                        files = _files(metadata_response["outputs"]["adapt_web.anns"])
+                    else:
+                        content = {'Input Error': "There are no annotations for this run. "
+                        "This is likely an older run made with a former version; please try rerunning."}
+                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
                 else:
                     files = _files(metadata_response["outputs"]["adapt_web.guides"])
                 if isinstance(files, Response):

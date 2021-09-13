@@ -289,8 +289,10 @@ export default {
       })
       if (response.ok) {
         this.$root.$data.ann[this.runid] = await response.json()
-      } else {
+      } else if (response.status != 400) {
         this.errorMsg(response)
+      } else {
+        this.$root.$data.ann[this.runid] = {0: []}
       }
     },
   }

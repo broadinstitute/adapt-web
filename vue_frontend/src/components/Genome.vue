@@ -21,14 +21,14 @@ export default {
   data() {
     return {
       width: 800,
-      height: 10 + 16*this.assays.length,
+      height: 100 + 8*this.assays.length,
       margin: {
         top: 0,
         right: 50,
         left: 50,
         bottom: 0,
       },
-      baseline: 45,
+      baseline: 20 + 2*this.assays.length,
       yspace: 33,
       scrollY: 0,
       assayLinks: [],
@@ -54,7 +54,8 @@ export default {
       ]);
 
       if (vm.annotations.length > 0) {
-        vm.height += 85
+        vm.height += 40
+        vm.baseline += 15
       }
 
       const svg = d3
@@ -156,7 +157,7 @@ export default {
             let assayElement = document.getElementById('visualization-' + vm.cluster_id + '-' + assayIndex.toString())
             let assayTop = assayElement.offsetTop;
             let assayBottom = assayElement.offsetTop + assayElement.offsetHeight;
-            if ((assayTop >= scrollTop) && (assayBottom <= scrollBottom)) {
+            if ((assayTop >= scrollTop-50) && (assayBottom <= scrollBottom+50)) {
               vm.assayLinks[assayIndex]
                 .transition()
                 .duration(200)
