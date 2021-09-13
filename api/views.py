@@ -519,9 +519,49 @@ class AssaySetViewSet(viewsets.ModelViewSet):
             content = _alignment_to_summary(output_file)
             response = Response(content)
             return response
-        content = {'Input Error': "There is no alignment for this assay. "
+        content = {'Input Error': "There is no alignment for this assay set. "
         "This virus design has likely not been updated recently; you may "
         "want to run this virus again on the 'Run' page of this site."}
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False)
+    def alignment(self, request, *args, **kwargs):
+        """
+        Produces a file of the alignments to download
+
+        Makes a fasta if there is only one taxon and a ZIP otherwise.
+        Function called at the "alignment" API endpoint.
+        """
+        try:
+            pks = [int(i) for i in request.query_params.get('pk').split(',')]
+        except ValueError:
+            content = {'Input Error': "Primary keys must be a comma separated list of integers"}
+            return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                assay_sets = [AssaySet.objects.get(pk=pk) for pk in pks]
+            except AssaySet.DoesNotExist:
+                content = {'Input Error': "At least one of these keys does not point to an assay set."}
+            else:
+                assay_sets_with_alns = [assay_set for assay_set in assay_sets if assay_set.s3_aln_path]
+                if len(assay_sets_with_alns) > 0:
+                    files = _files([assay_set.s3_aln_path for assay_set in assay_sets_with_alns])
+                    output_files = [file.read().decode("utf-8") for file in files]
+                    output_type = "application/zip"
+                    # Create the zip file in memory only
+                    zipped_output = BytesIO()
+                    with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
+                        for i, output_file in enumerate(output_files):
+                            print(assay_sets_with_alns[i].taxonrank.latin_name)
+                            zipped_output_a.writestr("%s.fasta" %(assay_sets_with_alns[i].taxonrank.latin_name), output_file)
+                        zipped_output.seek(0)
+                    filename = "alignments" + ".zip"
+                    response = FileResponse(zipped_output, content_type=output_type)
+                    response['Content-Disposition'] = 'attachment; filename=%s' % filename
+                    return response
+                content = {'Input Error': "There are no alignments for these assay sets. "
+                    "This virus design has likely not been updated recently; you may "
+                    "want to run this virus again on the 'Run' page of this site."}
         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
 
 

@@ -126,8 +126,10 @@ export default {
       if (response.ok) {
         if (!(taxon in this.$root.$data.aln_sum)) {
           this.$root.$data.aln_sum[taxon] = {}
+          this.$root.$data.aln_sum[taxon].pk = pk
         }
         this.$root.$data.aln_sum[taxon][cluster] = await response.json()
+        this.$root.$data.aln_sum[taxon].pk = pk
       } else {
         this.errorMsg(response)
       }

@@ -30,7 +30,7 @@
       </b-tab>
        <template #tabs-end>
         <b-nav-item role="presentation" @click.prevent="download_file('download')" href="#">Results <b-icon-download aria-label="Download"></b-icon-download></b-nav-item>
-        <b-nav-item v-if='alignment' role="presentation" @click.prevent="download_file('alignment')" href="#">Alignment <b-icon-download aria-label="Download"></b-icon-download></b-nav-item>
+        <b-nav-item v-if='Object.keys(aln_sum).length > 0' role="presentation" @click.prevent="download_file('alignment')" href="#">Alignment <b-icon-download aria-label="Download"></b-icon-download></b-nav-item>
       </template>
     </b-tabs>
     <template #modal-footer>
@@ -95,7 +95,6 @@ export default {
       resulttable: {},
       labels: [],
       updated: 0,
-      alignment: false,
       aln_sum: {},
       width: 0,
       "activityColorScale": activityColorScale,
@@ -131,22 +130,37 @@ export default {
   },
   methods: {
     async download_file(endpoint) {
+      const vm = this
       let url
       let filename
-      if (this.$root.$data.runid=='') {
+      if (vm.$root.$data.runid=='' && endpoint=='download'){
         let obj = {}
-        for (let label of this.labels) {
-          obj[label[1]] = this.$root.$data.resulttable[label[0]]
+        for (let label of vm.labels) {
+          obj[label[1]] = vm.$root.$data.resulttable[label[0]]
         }
         let json = JSON.stringify(obj);
         url = "data:text/plain;charset=utf-8," + encodeURIComponent(json);
         filename = 'designs.json'
       } else {
-        let response = await fetch('/api/adaptrun/id_prefix/' + this.$root.$data.runid + '/' + endpoint + '/', {
-          headers: {
-            "X-CSRFToken": csrfToken
-          }
-        })
+        let response
+        if (vm.$root.$data.runid=='') {
+          let pks = vm.labels.filter(function (label) {
+            return label[0] in vm.aln_sum
+          }).map(function (label) {
+            return vm.aln_sum[label[0]].pk
+          }).join()
+          response = await fetch('/api/assayset/' + endpoint + '/?pk=' + pks, {
+            headers: {
+              "X-CSRFToken": csrfToken
+            }
+          })
+        } else {
+          response = await fetch('/api/adaptrun/id_prefix/' + vm.$root.$data.runid + '/' + endpoint + '/', {
+            headers: {
+              "X-CSRFToken": csrfToken
+            }
+          })
+        }
         if (response.ok) {
           let blob = await response.blob()
           url = window.URL.createObjectURL(new Blob([blob]))
@@ -159,15 +173,15 @@ export default {
           let contentType = response.headers.get("content-type");
           if (contentType && contentType.indexOf("application/json") !== -1) {
             let response_json = await response.json()
-            this.$root.$data.modaltitle = Object.keys(response_json)[0]
-            this.$root.$data.modalmsg = response_json[this.$root.$data.modaltitle]
+            vm.$root.$data.modaltitle = Object.keys(response_json)[0]
+            vm.$root.$data.modalmsg = response_json[this.$root.$data.modaltitle]
           }
           else {
-            this.$root.$data.modaltitle = 'Error'
-            this.$root.$data.modalmsg = await response.text()
+            vm.$root.$data.modaltitle = 'Error'
+            vm.$root.$data.modalmsg = await response.text()
           }
-          this.$root.$data.modalvariant = 'danger'
-          this.$bvModal.show("msg-modal")
+          vm.$root.$data.modalvariant = 'danger'
+          vm.$bvModal.show("msg-modal")
           return
         }
       }
