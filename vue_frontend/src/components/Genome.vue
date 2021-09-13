@@ -1,6 +1,6 @@
 <template>
   <transition appear name="fade">
-    <div :class="[{'scroll-shade': scrollY > 150}, 'scrolling-sticky', 'genome']" :style="{'top': '-20px'}">
+    <div :class="[{'scroll-shade': scrollY > 150}, 'scrolling-sticky', 'genome']" :style="{'top': '-18px'}">
       <div class="genome-viz" :id="'genome-' + cluster_id"  style="background-color:white">
       </div>
     </div>
@@ -21,14 +21,14 @@ export default {
   data() {
     return {
       width: 800,
-      height: 20 + 20*this.assays.length,
+      height: 10 + 16*this.assays.length,
       margin: {
         top: 0,
         right: 50,
         left: 50,
         bottom: 0,
       },
-      baseline: 30,
+      baseline: 45,
       yspace: 33,
       scrollY: 0,
       assayLinks: [],
@@ -54,7 +54,7 @@ export default {
       ]);
 
       if (vm.annotations.length > 0) {
-        vm.height += 80
+        vm.height += 85
       }
 
       const svg = d3
@@ -94,7 +94,7 @@ export default {
         .y((d) => d[1])
 
       var i = 1
-      var assayY = this.baseline - (this.yspace*2) - 12
+      var assayY = this.baseline - (this.yspace*2) - 20
       if (this.annotations.length == 0) {
         assayY = this.baseline - this.yspace*.75
       }
@@ -112,7 +112,7 @@ export default {
         svg
           .append("line")
           .style("stroke", "#000d5455")
-          .style("stroke-width", 1)
+          .style("stroke-width", .5)
           .attr("x1", ampliconCenter)
           .attr("y1", assayY + 6)
           .attr("x2", ampliconCenter)
@@ -130,12 +130,12 @@ export default {
           .append("text")
           .attr("text-anchor", "middle")
           .style("fill", "#000d54AA")
-          .style("font-size", "0.8rem")
+          .style("font-size", "0.6rem")
           .attr("y", assayY)
           .attr("x", ampliconCenter)
           .text(i));
         i++
-        assayY -= 10
+        assayY -= 8
       }
 
       var modalBody = document.getElementsByClassName('modal-body')[0]
@@ -150,7 +150,7 @@ export default {
             vm.assayLinks[assayIndex]
               .transition()
               .duration(200)
-              .style("font-size", "0.8rem")
+              .style("font-size", "0.6rem")
               .style("font-weight", "300");
           } else {
             let assayElement = document.getElementById('visualization-' + vm.cluster_id + '-' + assayIndex.toString())
@@ -160,13 +160,13 @@ export default {
               vm.assayLinks[assayIndex]
                 .transition()
                 .duration(200)
-                .style("font-size", "1.2rem")
+                .style("font-size", "0.75rem")
                 .style("font-weight", "700");
             } else {
               vm.assayLinks[assayIndex]
                 .transition()
                 .duration(200)
-                .style("font-size", "0.8rem")
+                .style("font-size", "0.6rem")
                 .style("font-weight", "300");
             }
           }
@@ -174,29 +174,68 @@ export default {
       })
 
       i = 0
+      let annotationLines = []
       for (let annotation of vm.annotations) {
-        var y = this.baseline - this.yspace;
+        let ypos = this.baseline - this.yspace;
         var textColor = "black";
         if (annotation.type != "CDS") {
-            y = y - this.yspace;
-            textColor = "white";
+            ypos = ypos - this.yspace;
+            // textColor = "white";
         }
-        svg
+        let annotationLine = svg
           .append("path")
           .style("fill", color(i))
           .style("stroke", color(i))
           .style("stroke-width", 1)
           .style("opacity", .9)
-          .attr("d", line(annotationPath(annotation, y, 25)));
-
-        svg
+          .attr("d", line(annotationPath(annotation, ypos, 25)));
+        annotationLines.push(annotationLine)
+        // let annotationCenter = (parseInt(annotation.end)+parseInt(annotation.start))/2
+        i++
+      }
+      i = 0
+      for (let annotationLine of annotationLines) {
+        let annotation = vm.annotations[i]
+        let ypos = this.baseline - this.yspace;
+        // let xpos = x(annotation.start)
+        // let textanch = "left";
+        let textanch = "middle"
+        let xpos = x((parseInt(annotation.end)+parseInt(annotation.start))/2)
+        if (annotation.type != "CDS") {
+            ypos = ypos - this.yspace - 25;
+        } else {
+            textanch = "middle"
+            xpos = x((parseInt(annotation.end)+parseInt(annotation.start))/2)
+            // textColor = "white";
+        }
+        let annotationText = svg
           .append("text")
-          .attr("text-anchor", "middle")
+          .attr("text-anchor", textanch)
           .style("fill", textColor)
           .style("font-size", "0.7rem")
-          .attr("y", y+17)
-          .attr("x", x((annotation.start+annotation.end)/2))
-          .text(annotation.product);
+          .attr("y", ypos+17)
+          .attr("x", xpos)
+          .text(annotation.product)
+          .attr("pointer-events", "none");
+        if (annotation.type != "CDS") {
+          annotationText.style("opacity", 0);
+          annotationLine
+          .on('mouseover', function () {
+            annotationText.transition()
+             .duration(200)
+             .style("opacity", 1);
+          })
+          .on('mouseout', function () {
+            annotationText.transition()
+              .duration(200)
+              .style("opacity", 0);
+          });
+        }
+        let bboxAnnotationText = annotationText.node().getBBox()
+        if (bboxAnnotationText.x < 5) {
+          xpos += 5-bboxAnnotationText.x
+          annotationText.attr("x", xpos)
+        }
         i++
       }
 

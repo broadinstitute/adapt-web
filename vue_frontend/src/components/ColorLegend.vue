@@ -1,28 +1,28 @@
 <template>
   <transition appear name="fade">
-    <div :class="['py-2',]" :style="{'background-color': 'white'}">
+    <div :style="{'background-color': 'white'}">
       <b-row align-v="center">
-        <b-col cols=2 class="text-center f-4">
+        <b-col cols=2 class="text-center f-5">
           Legend
         </b-col>
         <b-col cols=10>
           <b-row style="margin-left: -45px; margin-right: 15px;">
-            <b-col class="text-center f-5">
+            <b-col class="text-center f-6">
               <small><i>Score:</i></small>
               <div class="score-legend" id="score-legend">
               </div>
             </b-col>
-            <b-col class="text-center f-5">
+            <b-col class="text-center f-6">
               <small><i>Activity:</i></small>
               <div class="activity-legend" id="activity-legend">
               </div>
             </b-col>
-            <b-col class="text-center f-5">
+            <b-col class="text-center f-6">
               <small><i>Fraction Bound:</i></small>
               <div class="frac-bound-legend" id="frac-bound-legend">
               </div>
             </b-col>
-            <b-col v-show="genome" class="text-center f-5">
+            <b-col v-show="genome" class="text-center f-6">
               <small><i>Entropy:</i></small>
               <div class="entropy-legend" id="entropy-legend">
               </div>

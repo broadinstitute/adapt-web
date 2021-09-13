@@ -100,7 +100,15 @@ export default {
                   vm.$root.$data.resulttable[taxon][cluster].push(resultjson[rank]);
                 }
                 if (set_resultjson[0]['s3_aln_path'] != "") {
-                  await vm.summarize_alignment(set_resultjson[0]['pk'], taxon, cluster)
+                  await vm.summarize_alignment(set_resultjson[0]['pk'], taxon)
+                }
+                if (set_resultjson[0]['s3_ann_path'] != "") {
+                  await vm.get_annotation(set_resultjson[0]['pk'], taxon)
+                } else {
+                  if (!(taxon in this.$root.$data.ann)) {
+                    this.$root.$data.ann[taxon] = {}
+                  }
+                  this.$root.$data.ann[taxon][cluster] = []
                 }
               } else {
                 vm.errorMsg(response)
@@ -117,7 +125,22 @@ export default {
         }
       }
     },
-    async summarize_alignment(pk, taxon, cluster) {
+    async get_annotation(pk, taxon) {
+      let response = await fetch('/api/assayset/' + pk + '/annotation/', {
+        headers: {
+          "X-CSRFToken": csrfToken
+        }
+      })
+      if (response.ok) {
+        if (!(taxon in this.$root.$data.ann)) {
+          this.$root.$data.ann[taxon] = {}
+        }
+        this.$root.$data.ann[taxon] = await response.json()
+      } else {
+        this.errorMsg(response)
+      }
+    },
+    async summarize_alignment(pk, taxon) {
       let response = await fetch('/api/assayset/' + pk + '/alignment_summary/', {
         headers: {
           "X-CSRFToken": csrfToken
@@ -128,7 +151,7 @@ export default {
           this.$root.$data.aln_sum[taxon] = {}
           this.$root.$data.aln_sum[taxon].pk = pk
         }
-        this.$root.$data.aln_sum[taxon][cluster] = await response.json()
+        this.$root.$data.aln_sum[taxon] = await response.json()
         this.$root.$data.aln_sum[taxon].pk = pk
       } else {
         this.errorMsg(response)

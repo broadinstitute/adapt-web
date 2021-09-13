@@ -193,6 +193,7 @@ export default {
               if (detail_response_json.alignment) {
                 await this.summarize_alignment()
               }
+              await this.get_annotation()
               this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname);
               return true;
             } else {
@@ -276,6 +277,18 @@ export default {
       })
       if (response.ok) {
         this.$root.$data.aln_sum[this.runid] = await response.json()
+      } else {
+        this.errorMsg(response)
+      }
+    },
+    async get_annotation() {
+      let response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/annotation/', {
+        headers: {
+          "X-CSRFToken": csrfToken
+        }
+      })
+      if (response.ok) {
+        this.$root.$data.ann[this.runid] = await response.json()
       } else {
         this.errorMsg(response)
       }

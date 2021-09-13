@@ -139,7 +139,8 @@ def _format(val):
 def _metadata(cromwell_id):
     if cromwell_id.startswith('example'):
         return {'outputs': {"adapt_web.guides": ['s3://adaptwebstorage/example_files/example_results.tsv'],
-                            "adapt_web.alns": ['s3://adaptwebstorage/example_files/example_alignment.fasta']}}
+                            "adapt_web.alns": ['s3://adaptwebstorage/example_files/example_alignment.fasta'],
+                            "adapt_web.anns": ['s3://adaptwebstorage/example_files/example_annotation.tsv']}}
     try:
         cromwell_response = requests.get("%s/%s/metadata" %(SERVER_URL, cromwell_id), verify=False)
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
@@ -236,6 +237,16 @@ def _result_file_to_dict(output_file):
             } \
         for j in range(len(targets))]
     return content
+
+
+def _tsv_to_dicts(tsv_file):
+    content = []
+    lines = tsv_file.splitlines()
+    headers = lines[0].split('\t')
+    for line in lines[1:]:
+        content.append({headers[k]: val for k,val in enumerate(line.split('\t'))})
+    return content
+
 
 def _add_base_to_counts(base, counts):
     if base in counts:
@@ -506,6 +517,26 @@ class AssaySetViewSet(viewsets.ModelViewSet):
         return Response()
 
     @action(detail=True)
+    def annotation(self, request, *args, **kwargs):
+        """
+        Produces a summary of the alignments to display on the site
+
+        Makes a fasta if there is only one file and a ZIP otherwise.
+        Function called at the "alignment_summary" API endpoint.
+        """
+        assay_set = self.get_object()
+        content = {}
+        if assay_set.s3_ann_path:
+            output_file = _files([assay_set.s3_ann_path])[0].read().decode("utf-8")
+            content[0] = _tsv_to_dicts(output_file)
+            response = Response(content)
+            return response
+        content = {'Input Error': "There are no annotations for this assay set. "
+        "This virus design has likely not been updated recently; you may "
+        "want to run this virus again on the 'Run' page of this site."}
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True)
     def alignment_summary(self, request, *args, **kwargs):
         """
         Produces a summary of the alignments to display on the site
@@ -514,9 +545,10 @@ class AssaySetViewSet(viewsets.ModelViewSet):
         Function called at the "alignment_summary" API endpoint.
         """
         assay_set = self.get_object()
+        content = {}
         if assay_set.s3_aln_path:
             output_file = _files([assay_set.s3_aln_path])[0].read().decode("utf-8")
-            content = _alignment_to_summary(output_file)
+            content[0] = _alignment_to_summary(output_file)
             response = Response(content)
             return response
         content = {'Input Error': "There is no alignment for this assay set. "
@@ -552,7 +584,6 @@ class AssaySetViewSet(viewsets.ModelViewSet):
                     zipped_output = BytesIO()
                     with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
                         for i, output_file in enumerate(output_files):
-                            print(assay_sets_with_alns[i].taxonrank.latin_name)
                             zipped_output_a.writestr("%s.fasta" %(assay_sets_with_alns[i].taxonrank.latin_name), output_file)
                         zipped_output.seek(0)
                     filename = "alignments" + ".zip"
@@ -1130,16 +1161,23 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 # Download files from S3
                 if data_format in ['aln', 'aln_sum']:
                     files = _files(metadata_response["outputs"]["adapt_web.alns"])
+                elif data_format == 'ann':
+                    files = _files(metadata_response["outputs"]["adapt_web.anns"])
                 else:
                     files = _files(metadata_response["outputs"]["adapt_web.guides"])
                 if isinstance(files, Response):
                     return files
 
-                if data_format in ['json', 'aln_sum']:
+                if data_format in ['json', 'aln_sum', 'ann']:
                     # try:
                     output_files = [output_file.read().decode("utf-8") for output_file in files]
                     content = {}
-                    conversion_function = _result_file_to_dict if data_format == 'json' else _alignment_to_summary
+                    if data_format == 'json':
+                        conversion_function = _result_file_to_dict
+                    elif data_format == 'ann':
+                        conversion_function = _tsv_to_dicts
+                    else:
+                        conversion_function = _alignment_to_summary
                     for i, output_file in enumerate(output_files):
                         content[i] = conversion_function(output_file)
                     response = Response(content)
@@ -1386,6 +1424,8 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 return self._get_results(adaptrun, 'json')
             elif kwargs["action"] == 'download':
                 return self._get_results(adaptrun, 'file')
+            elif kwargs["action"] == 'annotation':
+                return self._get_results(adaptrun, 'ann')
             elif kwargs["action"] in ['alignment', 'alignment_summary']:
                 if adaptrun.alignment:
                     if kwargs["action"] == 'alignment':
@@ -1401,7 +1441,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 return Response(ADAPTRunSerializer(adaptrun).data)
             else:
                 content = {'Input Error': "Action '%s' is not a valid action. "
-                "Action must be 'status', 'results', 'download', 'alignment', or 'alignment_summary'." %kwargs["action"]}
+                "Action must be 'status', 'results', 'download', 'alignment', 'alignment_summary' or 'annotation'." %kwargs["action"]}
 
         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
 
@@ -1436,6 +1476,18 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         """
         adaptrun = self.get_object()
         response = self._get_results(adaptrun, 'file')
+        return response
+
+    @action(detail=True)
+    def annotation(self, request, *args, **kwargs):
+        """
+        Produces a file of the results to download
+
+        Makes a TSV if there is only one file and a ZIP otherwise.
+        Function called at the "download" API endpoint.
+        """
+        adaptrun = self.get_object()
+        response = self._get_results(adaptrun, 'ann')
         return response
 
     @action(detail=True)

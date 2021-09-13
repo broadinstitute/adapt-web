@@ -7,8 +7,8 @@
             <h2 v-if="label[1]!=''" style="text-align: center;">{{ label[1] }}</h2>
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <template v-if='aln_sum[label[0]]'>
-                <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="[]"/>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(20 + 20*cluster.length + (annotations.length>0)*80)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="ann[label[0]][index]"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(10 + 16*cluster.length + (ann[label[0]][index].length>0)*85)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
               <template v-else>
                 <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
@@ -96,6 +96,7 @@ export default {
       labels: [],
       updated: 0,
       aln_sum: {},
+      ann: {},
       width: 0,
       "activityColorScale": activityColorScale,
       "fracBoundColorScale": fracBoundColorScale,
@@ -107,14 +108,14 @@ export default {
     var vm = this
     vm.$root.$data.resulttable = {}
     vm.$root.$data.aln_sum = {}
+    vm.$root.$data.ann = {}
     vm.$root.$data.labels = []
     vm.$root.$data.runid = ''
-    vm.$root.$data.annotations = []
     vm.$root.$on('show-assays', async function() {
       vm.resulttable = vm.$root.$data.resulttable;
       vm.aln_sum = vm.$root.$data.aln_sum
+      vm.ann = vm.$root.$data.ann
       vm.labels = vm.$root.$data.labels;
-      vm.annotations = vm.$root.$data.annotations;
       vm.updated += 1
       vm.$nextTick(async function () {
         await vm.$bvModal.show("assay-modal")
