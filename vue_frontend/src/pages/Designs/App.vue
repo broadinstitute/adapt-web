@@ -7,7 +7,7 @@
       <b-col cols=12 md=10>
         <transition appear name="fade">
           <b-row class="mb-2 px-3 pt-4 mt-2">
-            <b-col cols=12 align="center" class="f-1 pb-5">Type in taxa to see crRNA/RPA primer assay designs.</b-col>
+            <b-col cols=12 align="center" class="f-1 pb-5">Type taxa to view diagnostic assay designs for Cas13-based detection.</b-col>
             <b-col cols=12><Design class="px-3"></Design></b-col>
           </b-row>
         </transition>

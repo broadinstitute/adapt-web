@@ -44,7 +44,7 @@ CROMWELL_BUCKET = "adapt-cromwell-54"
 with open('./api/aws_config.txt') as f:
     AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY = f.read().splitlines()
 
-CONTACT = "ppillai@broadinstitute.org"
+CONTACT = "adapt@broadinstitute.org"
 SUCCESSFUL_STATES = ["Succeeded"]
 FAILED_STATES = ["Failed", "Aborted"]
 OBJECTIVES = ["maximize-activity", "minimize-guides"]
@@ -508,10 +508,10 @@ class AssaySetViewSet(viewsets.ModelViewSet):
     @action(detail=True)
     def alignment_summary(self, request, *args, **kwargs):
         """
-        Produces a file of the alignments to download
+        Produces a summary of the alignments to display on the site
 
         Makes a fasta if there is only one file and a ZIP otherwise.
-        Function called at the "alignment" API endpoint.
+        Function called at the "alignment_summary" API endpoint.
         """
         assay_set = self.get_object()
         if assay_set.s3_aln_path:
@@ -726,7 +726,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                     list_objs_args['ContinuationToken'] = continuation_token
                 file_response = S3.list_objects_v2(**list_objs_args)
                 for file in file_response["Contents"]:
-                    if file["Key"].endswith("guides.tsv.0"):
+                    if file["Key"].endswith("guides.tsv.0") or file["Key"].endswith("guides.0.tsv"):
                         shards_str = re.findall(r"shard-\d+", file["Key"])
                         shards_int = [int(shard_str[6:]) for shard_str in shards_str]
                         if len(shards_int) != 3:
