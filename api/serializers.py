@@ -146,7 +146,7 @@ class AssaySetSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = AssaySet
-        fields = ('pk', 'taxonrank', 'cluster',  'created', 'specific', 'objective', 'assays', 's3_aln_path')
+        fields = ('pk', 'taxonrank', 'cluster',  'created', 'specific', 'objective', 'assays', 's3_aln_path', 's3_ann_path')
 
 
 

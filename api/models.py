@@ -154,6 +154,10 @@ class AssaySet(models.Model):
         default="",
         blank=True
     )
+    s3_ann_path = models.TextField(
+        default="",
+        blank=True
+    )
 
 class Assay(models.Model):
     '''Defines base model for an assay for a virus

@@ -606,7 +606,7 @@ class AssayViewSet(viewsets.ModelViewSet):
         return taxonrank
 
     @staticmethod
-    def update(s3_file_paths, obj, sp, start_time, taxid, tax_seg, alns=None):
+    def update(s3_file_paths, obj, sp, start_time, taxid, tax_seg, alns=None, anns=None):
         """
         Updates the database given a job ID from Cromwell
 
@@ -615,6 +615,12 @@ class AssayViewSet(viewsets.ModelViewSet):
             if len(alns) != len(s3_file_paths):
                 return Response({'Input Error': "If alignments are provided, "
                                  "there must be the same number of alignments "
+                                 "as output file paths."},
+                                status=httpstatus.HTTP_400_BAD_REQUEST)
+        if anns:
+            if len(anns) != len(s3_file_paths):
+                return Response({'Input Error': "If annotations are provided, "
+                                 "there must be the same number of annotations "
                                  "as output file paths."},
                                 status=httpstatus.HTTP_400_BAD_REQUEST)
         try:
@@ -658,6 +664,7 @@ class AssayViewSet(viewsets.ModelViewSet):
             if len(lines) < 2:
                 continue
             aln = alns[i] if alns else ''
+            ann = anns[i] if anns else ''
             headers = lines[0].split('\t')
             assay_set_data = {
                 'taxonrank': taxonrank_obj.pk,
@@ -666,6 +673,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                 'objective': obj,
                 'cluster': i,
                 's3_aln_path': aln,
+                's3_ann_path': ann,
             }
             assay_set = AssaySetSerializer(data=assay_set_data)
             assay_set.is_valid(raise_exception=True)
@@ -951,6 +959,8 @@ class AssayViewSet(viewsets.ModelViewSet):
         """
         alns = request.data["s3_aln_paths"] \
             if ("s3_aln_paths" in request.data) else None
+        anns = request.data["s3_ann_paths"] \
+            if ("s3_ann_paths" in request.data) else None
         AssayViewSet.update(
             request.data["s3_file_paths"],
             request.data["obj"],
@@ -958,7 +968,8 @@ class AssayViewSet(viewsets.ModelViewSet):
             request.data["start"][:10],
             request.data["taxid"],
             request.data["taxseg"],
-            alns=alns
+            alns=alns,
+            anns=anns
         )
 
         return Response({"id": request.data["taxid"]}, status=httpstatus.HTTP_201_CREATED)
