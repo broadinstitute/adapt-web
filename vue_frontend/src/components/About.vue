@@ -1,8 +1,8 @@
 <template>
   <transition appear name="fade">
     <div class="about">
-      <p><b>Activity-informed Design with All-inclusive Patrolling of Targets</b>
-      ADAPT efficiently designs nucleic acid diagnostic assays with maximal predicted detection activity over genomic variation given constraints on the assay’s complexity, with a focus on viruses. Its designs are...</p>
+      <p><b>Activity-informed Design with All-inclusive Patrolling of Targets</b></p>
+      <p>ADAPT efficiently designs nucleic acid diagnostic assays with maximal predicted detection activity over genomic variation given constraints on the assay’s complexity, with a focus on viruses. Its designs are...</p>
       <ul class="adapt-summary">
         <li><b>Comprehensive</b>: Designs are effective against variable targets because ADAPT considers the full spectrum of their known genomic diversity.</li>
         <li><b>Sensitive</b>: ADAPT leverages predictive models of detection activity. It includes a pre-trained model of CRISPR-Cas13a activity, trained from ~19,000 guide-target pairs.</li>

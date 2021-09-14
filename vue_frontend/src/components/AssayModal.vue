@@ -127,7 +127,15 @@ export default {
         })
         vm.$root.$emit('finish-assays');
       });
-    })
+    });
+    vm.$root.$on('tablelink', function(cluster_id, rank) {
+      vm.tabIndex = 1;
+      window.location.href = '#table-' + cluster_id + '-' + rank;
+    });
+    vm.$root.$on('vizlink', function(cluster_id, rank) {
+      vm.tabIndex = 0;
+      window.location.href = '#anchor-' + cluster_id + '-' + rank;
+    });
   },
   methods: {
     async download_file(endpoint) {
@@ -190,6 +198,11 @@ export default {
       link.href = url
       link.setAttribute('download', filename)
       link.click()
+    },
+    linkToTable(cluster_id, rank) {
+      this.tabIndex = 1;
+      console.log(this.tabIndex)
+      window.location.href = '#table-' + cluster_id + '-' + rank;
     },
   }
 }

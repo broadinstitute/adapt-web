@@ -123,6 +123,21 @@ export default {
       var darkInfo = d3.color(vm.info).darker(.6)
       var lightInfo = d3.color(vm.info).brighter(.25)
 
+      // Table Link
+      svg
+        .append("text")
+        .attr("text-anchor", "end")
+        .attr("class", "h6")
+        .style("fill", darkInfo)
+        .style("font-family", "Montserrat")
+        .style("font-size", "0.6rem")
+        .html("More Details")
+        .attr("x", vm.boundedWidth-50)
+        .attr("y", -15)
+        .on("click", function() {
+          vm.$root.$emit('tablelink', vm.cluster_id, vm.result.rank);
+        });
+
       // Rank Textbox
       svg
         .append("text")
