@@ -18,7 +18,6 @@ export default {
     aln_sum: Array,
     genomeHeight: Number,
     activityColorScale: Function,
-    fracBoundColorScale: Function,
     objectiveColorScale: Function,
     entropyColorScale: Function,
   },
@@ -87,8 +86,8 @@ export default {
         .getPropertyValue('--mint'),
       "navy": getComputedStyle(document.documentElement)
         .getPropertyValue('--navy'),
-      "violet": getComputedStyle(document.documentElement)
-        .getPropertyValue('--violet'),
+      "lilac": getComputedStyle(document.documentElement)
+        .getPropertyValue('--lilac'),
       "info": getComputedStyle(document.documentElement)
         .getPropertyValue('--info'),
     };
@@ -242,13 +241,12 @@ export default {
           [vm.target[1] - rightPrimer.target.length, bottomOligo+vm.oligoHeight],
           [vm.target[1], bottomOligo+vm.oligoHeight+vm.primerShift],
           [vm.target[1], bottomOligo-vm.primerShift/2],
+          [vm.target[1] - rightPrimer.target.length, bottomOligo],
         ]
         rightPrimerLines.push(rightPrimerLine)
         rightPrimerPaths.push(svg
           .append("path")
           .attr("d", vm.line(rightPrimerLine))
-          .attr("stroke", "#00000000")
-          .attr("stroke-width", 20)
           .style(
             "transform",
             `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
@@ -264,14 +262,13 @@ export default {
           [guide.start_pos[0], bottomOligo],
           [guide.start_pos[0], bottomOligo+vm.oligoHeight],
           [guide.start_pos[0] + guide.target.length, bottomOligo+vm.oligoHeight],
-          [guide.start_pos[0] + guide.target.length, bottomOligo]
+          [guide.start_pos[0] + guide.target.length, bottomOligo],
+          [guide.start_pos[0], bottomOligo],
         ]
         guideLines.push(guideLine)
         guidePaths.push(svg
           .append("path")
           .attr("d", vm.line(guideLine))
-          .attr("stroke", "#00000000")
-          .attr("stroke-width", 20)
           .style(
             "transform",
             `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
@@ -288,13 +285,12 @@ export default {
           [vm.target[0], bottomOligo+vm.oligoHeight+vm.primerShift],
           [vm.target[0] + leftPrimer.target.length, bottomOligo+vm.oligoHeight],
           [vm.target[0] + leftPrimer.target.length, bottomOligo],
+          [vm.target[0], bottomOligo-vm.primerShift/2],
         ]
         leftPrimerLines.push(leftPrimerLine)
         leftPrimerPaths.push(svg
           .append("path")
           .attr("d", vm.line(leftPrimerLine))
-          .attr("stroke", "#00000000")
-          .attr("stroke-width", 20)
           .style(
             "transform",
             `translate(${vm.xScale(0)-vm.xScale(.5)}px)`
@@ -335,12 +331,12 @@ export default {
       for (let i in leftPrimerPaths) {
         bases = vm.complement(vm.result.left_primers.primers[i].target, false)
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.left_primers.frac_bound), ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + Number.parseFloat(vm.result.left_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
+        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.lilac, ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + Number.parseFloat(vm.result.left_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
       }
 
       for (let i in rightPrimerPaths) {
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+vm.result.right_primers.primers[i].target+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.fracBoundColorScale(vm.result.right_primers.frac_bound), ["Fraction Bound: " + Number.parseFloat(vm.result.right_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
+        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.lilac, ["Fraction Bound: " + Number.parseFloat(vm.result.right_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
 
       tooltip
@@ -475,6 +471,8 @@ export default {
       let vm = this
       oligoPath
         .attr("fill", color)
+        .attr("stroke", vm.info)
+        .attr("stroke-width", 1)
         .on('mouseover', function () {
           tooltipbox.transition()
             .duration(200)

@@ -7,23 +7,24 @@
         </b-col>
         <b-col cols=10>
           <b-row style="margin-left: -45px; margin-right: 15px;">
-            <b-col class="text-center f-6">
-              <small><i>Score:</i></small>
+            <b-col class="text-center f-7">
+              <b-row align-v="center">
+                <b-col>Score <span aria-label="Info on Score" v-b-tooltip.top.html="{ customClass: 'f-7', variant: 'info'}" title="<small>Quality based on activity, number of primers, and amplicon length (high is better)</small>" tabindex="0"><b-icon-info-circle font-scale="0.9"/></span></b-col>
+              </b-row>
               <div class="score-legend" id="score-legend">
               </div>
             </b-col>
-            <b-col class="text-center f-6">
-              <small><i>Activity:</i></small>
+            <b-col class="text-center f-7">
+              <b-row align-v="center">
+                <b-col>Activity <span aria-label="Info on Activity" v-b-tooltip.top.html="{ customClass: 'f-7', variant: 'info'}" title="<small>Average crRNA activity across sequences; correlates with fluorescence (high is better)</small>" tabindex="0"><b-icon-info-circle font-scale="0.9"/></span></b-col>
+              </b-row>
               <div class="activity-legend" id="activity-legend">
               </div>
             </b-col>
-            <b-col class="text-center f-6">
-              <small><i>Fraction Bound:</i></small>
-              <div class="frac-bound-legend" id="frac-bound-legend">
-              </div>
-            </b-col>
-            <b-col v-show="genome" class="text-center f-6">
-              <small><i>Entropy:</i></small>
+            <b-col v-show="genome" class="text-center f-7">
+              <b-row align-v="center">
+                <b-col>Entropy <span aria-label="Info on Score" v-b-tooltip.top.html="{ customClass: 'f-7', variant: 'info'}" title="<small>How much variation there is at this base in the alignment (low is better)</small>" tabindex="0"><b-icon-info-circle font-scale="0.9"/></span></b-col>
+              </b-row>
               <div class="entropy-legend" id="entropy-legend">
               </div>
             </b-col>
@@ -42,14 +43,13 @@ export default {
   props: {
     genome: Boolean,
     activityColorScale: Function,
-    fracBoundColorScale: Function,
     objectiveColorScale: Function,
     entropyColorScale: Function,
   },
   data() {
     return {
       barHeight: 10,
-      width: 90,
+      width: 130,
       marginX: 5,
       tickHeight: 10,
     };
@@ -60,12 +60,9 @@ export default {
   methods: {
     init() {
       const vm = this
-
       vm.legend(vm.objectiveColorScale, '#score-legend', [0, 5], [0, 1, 2, 3, 4, 5], 0)
       vm.legend(vm.activityColorScale, '#activity-legend', [0, 4], [0, 1, 2, 3, 4], 0)
-      vm.legend(vm.fracBoundColorScale, '#frac-bound-legend', [0, 1], [0, .2, .4, .6, .8, 1], 1)
-      vm.legend(vm.entropyColorScale, '#entropy-legend', [2, 0], [2, 1.5, 1, .5, 0], 1)
-
+      vm.legend(vm.entropyColorScale, '#entropy-legend', [0, 2], [0, .5, 1, 1.5, 2], 1)
     },
     legend(colorScale, svgId, domain, tickValues, roundTicks) {
       const vm = this;
@@ -104,7 +101,7 @@ export default {
       const foreignObj = svg.append('foreignObject')
         .attr("x", x)
         .attr("y", y)
-        .attr("width", "80px")
+        .attr("width", (this.width-10) + "px")
         .attr("height", "10px");
       const canvasContainer = foreignObj.append('xhtml:canvas')
         .attr('xmlns', 'http://www.w3.org/1999/xhtml');
