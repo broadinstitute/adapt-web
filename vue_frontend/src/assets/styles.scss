@@ -109,8 +109,21 @@ text {
 
 // Header/Body/Footer Formatting
 .header, .footer {
-  font-size: min(0.95em, 4vw);
+  font-size: min(0.65em, 3vw);
   background-color: rgba(lighten($info, 10%), .95);
+}
+
+.navbar-collapse .nav-item {
+  height: 6vh;
+  line-height: 6vh;
+}
+
+.navbar-collapse .nav-item a
+{
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 2vh; /* <-- adjust this */
+  padding: 0 0;
 }
 
 .navbar-brand {
@@ -255,6 +268,10 @@ a.anchor {
 
 .f-6 {
   font-size: 0.8rem;
+}
+
+.f-7 {
+  font-size: 0.7rem;
 }
 
 .selected {

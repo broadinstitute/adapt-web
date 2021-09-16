@@ -10,8 +10,8 @@
           >
         </template>
         <template #cell(rank)="data">
-          {{ data.value + 1 }}
           <a class="anchor" :id="'table-' + cluster_id + '-' + data.value.toString()"></a>
+          {{ data.value + 1 }}
         </template>
         <template #cell(amplicon)="data">
           <h6>Start:</h6><p class="seq">{{ data.item.amplicon_start }}</p>
