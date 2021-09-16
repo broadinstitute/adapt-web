@@ -28,6 +28,7 @@ with open('/etc/secret_key.txt') as f:
 DEBUG = False
 
 ALLOWED_HOSTS = [
+    "23.21.232.223",
     "127.0.0.1",
     "localhost",
     "www.adapt.run",
