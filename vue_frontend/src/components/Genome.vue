@@ -19,19 +19,22 @@ export default {
     annotations: Array,
   },
   data() {
+    const axesHeight = 40
+    const yspace = 8
     return {
       width: 800,
-      height: 100 + 8*this.assays.length,
+      height: axesHeight + yspace*(this.assays.length+2.5),
       margin: {
         top: 0,
         right: 50,
         left: 50,
         bottom: 0,
       },
-      baseline: 20 + 2*this.assays.length,
-      yspace: 33,
+      "yspace": yspace,
       scrollY: 0,
       assayLinks: [],
+      "axesHeight": axesHeight,
+      annotationThickness: 5,
     };
   },
   mounted() {
@@ -40,6 +43,7 @@ export default {
   methods: {
     init() {
       const vm = this
+      const numAnnRows = vm.setAnnotationRows()
       const color = d3.scaleOrdinal([
         d3.interpolateCool(0.6),
         d3.interpolateCool(0.1),
@@ -48,15 +52,13 @@ export default {
         d3.interpolateCool(0),
         d3.interpolateCool(0.5),
         d3.interpolateCool(0.2),
-        d3.interpolateCool(1),
         d3.interpolateCool(0.3),
         d3.interpolateCool(0.7),
       ]);
-
       if (vm.annotations.length > 0) {
-        vm.height += 40
-        vm.baseline += 15
+        vm.height += vm.yspace * numAnnRows;
       }
+      vm.baseline = vm.height/2 - vm.axesHeight;
 
       const svg = d3
         .select('#genome-' + vm.cluster_id)
@@ -74,12 +76,12 @@ export default {
         .domain([0, vm.alignmentLength])
         .range([0, this.width-this.margin.right-this.margin.left])
 
-      var annotationPath = function (annotation, y, h) {
+      var annotationPath = function (annotation, h) {
         return [
-         [x(annotation.start), y],
-         [x(annotation.start), y+h],
-         [x(annotation.end), y+h],
-         [x(annotation.end), y]
+         [x(annotation.start), annotation.y],
+         [x(annotation.start), annotation.y+h],
+         [x(annotation.end), annotation.y+h],
+         [x(annotation.end), annotation.y]
         ]
       }
       let t = [0]
@@ -95,10 +97,7 @@ export default {
         .y((d) => d[1])
 
       var i = 1
-      var assayY = this.baseline - (this.yspace*2) - 20
-      if (this.annotations.length == 0) {
-        assayY = this.baseline - this.yspace*.75
-      }
+      var assayY = vm.baseline - vm.yspace * (numAnnRows+1)
 
       // From Assay.vue
       let baseline = 20
@@ -136,7 +135,7 @@ export default {
           .attr("x", ampliconCenter)
           .text(i));
         i++
-        assayY -= 8
+        assayY -= vm.yspace
       }
 
       var modalBody = document.getElementsByClassName('modal-body')[0]
@@ -177,66 +176,41 @@ export default {
       i = 0
       let annotationLines = []
       for (let annotation of vm.annotations) {
-        let ypos = this.baseline - this.yspace;
-        var textColor = "black";
-        if (annotation.type != "CDS") {
-            ypos = ypos - this.yspace;
-            // textColor = "white";
-        }
+        annotation.y = this.baseline - (annotation.row+1)*this.yspace;
         let annotationLine = svg
           .append("path")
           .style("fill", color(i))
-          .style("stroke", color(i))
-          .style("stroke-width", 1)
-          .style("opacity", .9)
-          .attr("d", line(annotationPath(annotation, ypos, 25)));
+          .style("opacity", .8)
+          .attr("d", line(annotationPath(annotation, vm.annotationThickness)));
         annotationLines.push(annotationLine)
-        // let annotationCenter = (parseInt(annotation.end)+parseInt(annotation.start))/2
         i++
       }
       i = 0
+      let xpos = vm.width/2 - vm.margin.left
       for (let annotationLine of annotationLines) {
         let annotation = vm.annotations[i]
-        let ypos = this.baseline - this.yspace;
-        // let xpos = x(annotation.start)
-        // let textanch = "left";
         let textanch = "middle"
-        let xpos = x((parseInt(annotation.end)+parseInt(annotation.start))/2)
-        if (annotation.type != "CDS") {
-            ypos = ypos - this.yspace - 25;
-        } else {
-            textanch = "middle"
-            xpos = x((parseInt(annotation.end)+parseInt(annotation.start))/2)
-            // textColor = "white";
-        }
         let annotationText = svg
           .append("text")
           .attr("text-anchor", textanch)
-          .style("fill", textColor)
+          .style("fill", d3.color(color(i)).darker(0.6))
           .style("font-size", "0.7rem")
-          .attr("y", ypos+17)
+          .attr("y", vm.height/2-10)
           .attr("x", xpos)
           .text(annotation.product)
           .attr("pointer-events", "none");
-        if (annotation.type != "CDS") {
-          annotationText.style("opacity", 0);
-          annotationLine
-          .on('mouseover', function () {
-            annotationText.transition()
-             .duration(200)
-             .style("opacity", 1);
-          })
-          .on('mouseout', function () {
-            annotationText.transition()
-              .duration(200)
-              .style("opacity", 0);
-          });
-        }
-        let bboxAnnotationText = annotationText.node().getBBox()
-        if (bboxAnnotationText.x < 5) {
-          xpos += 5-bboxAnnotationText.x
-          annotationText.attr("x", xpos)
-        }
+        annotationText.style("opacity", 0);
+        annotationLine
+        .on('mouseover', function () {
+          annotationText.transition()
+           .duration(200)
+           .style("opacity", 1);
+        })
+        .on('mouseout', function () {
+          annotationText.transition()
+            .duration(200)
+            .style("opacity", 0);
+        });
         i++
       }
 
@@ -268,6 +242,29 @@ export default {
       xAxis.select(".tick:first-of-type text")
         .attr("y","19")
         .style("font-size","0.6rem");
+    },
+    setAnnotationRows() {
+      var rowEnds = [];
+      for (let annotation of this.annotations) {
+        annotation.start = parseInt(annotation.start)
+        annotation.end = parseInt(annotation.end)
+        let row = null;
+        let i = 0;
+        for (let rowEnd of rowEnds) {
+          if (rowEnd <= annotation.start) {
+            row = parseInt(i);
+            rowEnds[i] = annotation.end;
+            break;
+          }
+          i++;
+        }
+        if (row == null) {
+          row = rowEnds.length;
+          rowEnds.push(annotation.end);
+        }
+        annotation.row = row
+      }
+      return rowEnds.length
     },
   },
 }
