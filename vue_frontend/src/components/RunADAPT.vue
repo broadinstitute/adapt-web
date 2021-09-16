@@ -61,7 +61,7 @@
                     v-for="input_var in get_sub(inputs[sec][subsec])"
                     :key="inputs[sec][subsec][input_var].order"
                     :sm="inputs[sec][subsec][input_var].cols ? inputs[sec][subsec][input_var].cols : 12"
-                    :align-self="inputs[sec][subsec][input_var].type == 'boolean'? 'center' : false"
+                    :align-self="inputs[sec][subsec][input_var].type == 'boolean'? 'center' : 'start'"
                   >
                     <b-form-group
                       class="field"
@@ -275,6 +275,7 @@
                 </b-form>
               </b-form-group>
             </b-collapse>
+            <hr v-if="inputs[sec].order != 3">
           </b-form-group>
           <!-- submit button -->
           <b-overlay
@@ -466,24 +467,8 @@ export default {
       // Fields have a label, a type, a value, rules to validate it, and options if it is
       // an options or radio type
       inputs: {
-        preopts: {
-          order: 0,
-          collapsible: false,
-          runopts: {
-            show: true,
-            nickname: {
-              order: 0,
-              label: 'Nickname',
-              type: 'text',
-              value: '',
-              description: 'An optional, short (<50 characters) description of the run',
-              rules: 'max_length:50'
-            }
-          }
-        },
         opts: {
-          order: 1,
-          label: 'Options',
+          order: 0,
           collapsible: false,
           inputchoices: {
             show: true,
@@ -508,7 +493,7 @@ export default {
               label: 'NCBI Taxonomic ID',
               type: 'number',
               value: '',
-              description: 'Sequences will be downloaded from NCBI and aligned.',
+              description: 'Sequences will be downloaded from NCBI and aligned. Taxonomic ID can be determined <a href=https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=10239&lvl=3&p=7&lin=f&keep=1&srchmode=1&unlock target="_blank" rel="noreferrer">here<a>.',
               rules: 'required_if:@inputchoice,auto-from-args|min_value:0',
               cols: 12,
             },
@@ -560,10 +545,10 @@ export default {
           },
         },
         sp: {
-          order: 2,
+          order: 1,
           label: 'Specificity',
           collapsible: false,
-          description: 'Sequences that should not be detected.',
+          description: 'Sequences that should not be detected (optional)',
           all: {
             order: 0,
             show: true,
@@ -635,7 +620,7 @@ export default {
           },
         },
         advopts: {
-          order: 3,
+          order: 2,
           label: 'Advanced',
           collapsible: true,
           all: {
@@ -905,6 +890,21 @@ export default {
               rules: 'between:1,200|integer',
             },
           },
+        },
+        postopts: {
+          order: 3,
+          collapsible: false,
+          runopts: {
+            show: true,
+            nickname: {
+              order: 0,
+              label: 'Job Nickname',
+              type: 'text',
+              value: '',
+              description: 'An optional, short (<50 characters) description of the run for your reference',
+              rules: 'max_length:50'
+            }
+          }
         },
       },
       loading: false,

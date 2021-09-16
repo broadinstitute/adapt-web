@@ -240,6 +240,11 @@ button:not(.list-group-item):not(.taxon) {
   transform: rotate(180deg);
 }
 
+hr {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 a.anchor {
     display: block;
     position: relative;
