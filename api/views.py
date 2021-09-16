@@ -259,7 +259,6 @@ def _add_base_to_counts(base, counts):
 def _alignment_to_summary(alignment_file):
     summary = []
     seq = []
-    i = 0
 
     # Code if you don't want entropy
     # first = True
@@ -274,7 +273,6 @@ def _alignment_to_summary(alignment_file):
             # else:
             #     break
             # Code if you want entropy
-            i = 0
             seq = "".join(seq)
             if len(summary) == 0:
                 summary = [{'A': 0, 'C': 0, 'G': 0, 'T': 0, '-': 0}
