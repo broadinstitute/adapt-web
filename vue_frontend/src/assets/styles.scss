@@ -108,9 +108,16 @@ text {
 }
 
 // Header/Body/Footer Formatting
-.header, .footer {
-  font-size: min(0.65em, 3vw);
+.header, .footer {;
   background-color: rgba(lighten($info, 10%), .95);
+}
+
+.header {
+  font-size: min(0.7em, 3vw);
+}
+
+.footer {
+  font-size: min(0.65em, 3vw);
 }
 
 .navbar-collapse .nav-item {
@@ -128,7 +135,7 @@ text {
 
 .navbar-brand {
   font-weight: 700;
-  font-size: min(3.5rem, 13vw);
+  font-size: min(2rem, 8vw);
 }
 
 .navbar-light .navbar-toggler {
@@ -148,6 +155,10 @@ text {
   bottom: 0px;
   width: 100%;
   height: $footer-height;
+}
+
+.footer .navbar-brand {
+  font-size: min(3.5rem, 13vw);
 }
 
 // Part Specific - Buttons
