@@ -86,8 +86,6 @@ export default {
         .getPropertyValue('--mint'),
       "navy": getComputedStyle(document.documentElement)
         .getPropertyValue('--navy'),
-      "lilac": getComputedStyle(document.documentElement)
-        .getPropertyValue('--lilac'),
       "info": getComputedStyle(document.documentElement)
         .getPropertyValue('--info'),
     };
@@ -331,12 +329,12 @@ export default {
       for (let i in leftPrimerPaths) {
         bases = vm.complement(vm.result.left_primers.primers[i].target, false)
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.lilac, ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + Number.parseFloat(vm.result.left_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
+        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.info, ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + Number.parseFloat(vm.result.left_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
       }
 
       for (let i in rightPrimerPaths) {
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+vm.result.right_primers.primers[i].target+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.lilac, ["Fraction Bound: " + Number.parseFloat(vm.result.right_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
+        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.info, ["Fraction Bound: " + Number.parseFloat(vm.result.right_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
 
       tooltip

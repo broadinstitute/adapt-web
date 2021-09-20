@@ -1,34 +1,27 @@
 <template>
   <transition appear name="fade">
     <div :style="{'background-color': 'white'}">
-      <b-row align-v="center">
-        <b-col cols=2 class="text-center f-5">
-          Legend
-        </b-col>
-        <b-col cols=10>
-          <b-row style="margin-left: -45px; margin-right: 15px;">
-            <b-col class="text-center f-7">
-              <b-row align-v="center">
-                <b-col>Score <span aria-label="Info on Score" v-b-tooltip.top.html="{ customClass: 'f-7', variant: 'info'}" title="<small>Quality based on activity, number of primers, and amplicon length (high is better)</small>" tabindex="0"><b-icon-info-circle font-scale="0.9"/></span></b-col>
-              </b-row>
-              <div class="score-legend" id="score-legend">
-              </div>
-            </b-col>
-            <b-col class="text-center f-7">
-              <b-row align-v="center">
-                <b-col>Activity <span aria-label="Info on Activity" v-b-tooltip.top.html="{ customClass: 'f-7', variant: 'info'}" title="<small>Average crRNA activity across sequences; correlates with fluorescence (high is better)</small>" tabindex="0"><b-icon-info-circle font-scale="0.9"/></span></b-col>
-              </b-row>
-              <div class="activity-legend" id="activity-legend">
-              </div>
-            </b-col>
-            <b-col v-show="genome" class="text-center f-7">
-              <b-row align-v="center">
-                <b-col>Entropy <span aria-label="Info on Score" v-b-tooltip.top.html="{ customClass: 'f-7', variant: 'info'}" title="<small>How much variation there is at this base in the alignment (low is better)</small>" tabindex="0"><b-icon-info-circle font-scale="0.9"/></span></b-col>
-              </b-row>
-              <div class="entropy-legend" id="entropy-legend">
-              </div>
-            </b-col>
+      <b-row align-v="center" style="margin-left: 15px; margin-right: 15px;">
+        <b-col class="text-center f-7">
+          <b-row align-v="center">
+            <b-col>Score <span aria-label="Info on Score" v-b-tooltip.top.html="{ customClass: 'f-7', variant: 'info'}" title="<small>Quality based on activity, number of primers, and amplicon length (high is better)</small>" tabindex="0"><b-icon-info-circle font-scale="0.9"/></span></b-col>
           </b-row>
+          <div class="score-legend" id="score-legend">
+          </div>
+        </b-col>
+        <b-col class="text-center f-7">
+          <b-row align-v="center">
+            <b-col>Activity <span aria-label="Info on Activity" v-b-tooltip.top.html="{ customClass: 'f-7', variant: 'info'}" title="<small>Average crRNA activity across sequences; correlates with fluorescence (high is better)</small>" tabindex="0"><b-icon-info-circle font-scale="0.9"/></span></b-col>
+          </b-row>
+          <div class="activity-legend" id="activity-legend">
+          </div>
+        </b-col>
+        <b-col v-show="genome" class="text-center f-7">
+          <b-row align-v="center">
+            <b-col>Entropy <span aria-label="Info on Score" v-b-tooltip.top.html="{ customClass: 'f-7', variant: 'info'}" title="<small>How much variation there is at this base in the alignment (low is better)</small>" tabindex="0"><b-icon-info-circle font-scale="0.9"/></span></b-col>
+          </b-row>
+          <div class="entropy-legend" id="entropy-legend">
+          </div>
         </b-col>
       </b-row>
     </div>
@@ -48,10 +41,11 @@ export default {
   },
   data() {
     return {
-      barHeight: 10,
+      barHeight: 7,
       width: 130,
       marginX: 5,
-      tickHeight: 10,
+      tickHeight: 7,
+      tickStrokeThickness: 0.5,
     };
   },
   mounted() {
@@ -74,6 +68,8 @@ export default {
         .style("font-family", "Overpass Mono")
         .style("letter-spacing", '0.04em');
 
+      vm.ramp(colorScale, svg, vm.marginX, 0, domain[0], domain[1]);
+
       let xAxisGenerator = d3
         .axisBottom()
         .scale(d3.scaleLinear()
@@ -84,25 +80,22 @@ export default {
 
       let xAxis = svg
         .append("g")
-        .attr("transform", "translate(3,10)")
+        .attr("transform", "translate("+vm.marginX+","+vm.tickHeight+")")
         .call(xAxisGenerator)
         .call(g => g.select(".domain")
           .remove());
       xAxis.selectAll(".tick text")
         .style("font-size","0.2rem")
-        .attr("y", "4");
+        .attr("y", vm.tickHeight/2);
       xAxis.selectAll(".tick line")
-        .attr("y2", "3")
-        .style("stroke-width", 0.3);
-
-      vm.ramp(colorScale, svg, 3, 0, domain[0], domain[1]);
+        .attr("y2", vm.tickHeight/2 - 1)
+        .style("stroke-width", vm.tickStrokeThickness+"px");
     },
     ramp(colorScale, svg, x, y, min, max, n = 512) {
       const foreignObj = svg.append('foreignObject')
-        .attr("x", x)
-        .attr("y", y)
-        .attr("width", (this.width-10) + "px")
-        .attr("height", "10px");
+        .attr("transform", "translate("+x+","+y+")")
+        .attr("width", (this.width-this.marginX*2+this.tickStrokeThickness) + "px")
+        .attr("height", this.barHeight + "px");
       const canvasContainer = foreignObj.append('xhtml:canvas')
         .attr('xmlns', 'http://www.w3.org/1999/xhtml');
       const canvas = canvasContainer;
@@ -110,11 +103,11 @@ export default {
       canvas
         .attr("width", n)
         .attr("height", 1)
-        .style("width", (this.width-2*this.marginX)+"px")
+        .style("width", "100%")
         .style("height", "10px")
         .style("imageRendering", "-moz-crisp-edges")
         .style("imageRendering", "pixelated");
-      for (let i = 0; i < n; ++i) {
+      for (let i = 0; i <= n; ++i) {
         context.fillStyle = colorScale(min+(i / (n - 1))*(max-min));
         context.fillRect(i, 0, 1, 1);
       }

@@ -245,6 +245,12 @@ export default {
     },
     setAnnotationRows() {
       var rowEnds = [];
+      this.annotations.sort(function (a, b){
+        if (a.start == b.start) {
+          return (b.end-b.start) - (a.end-a.start)
+        }
+        return a.start - b.start
+      })
       for (let annotation of this.annotations) {
         annotation.start = parseInt(annotation.start)
         annotation.end = parseInt(annotation.end)
