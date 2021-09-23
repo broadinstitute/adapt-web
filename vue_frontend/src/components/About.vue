@@ -9,7 +9,7 @@
           <b-row>
             <b-col md=10>
               <small><i>Preprint on bioRxiv:</i></small>
-              <a href="https://www.biorxiv.org/content/10.1101/2020.11.28.401877v3.full.pdf" rel="noreferrer" target="_blank"><h3>Designing viral diagnostics with model-based optimization</h3></a>
+              <a href="https://www.biorxiv.org/content/10.1101/2020.11.28.401877" rel="noreferrer" target="_blank"><h3>Designing viral diagnostics with model-based optimization</h3></a>
               <h6>Hayden C. Metsky, Nicole L. Welch, Nicholas J. Haradhvala, Laurie Rumker, Yibin B. Zhang, Priya P. Pillai, David K. Yang, Cheri M. Ackerman, Juliane Weller, Paul C. Blainey, Cameron Myhrvold, Michael Mitzenmacher, Pardis C. Sabeti</h6>
             </b-col>
             <b-col md=2>

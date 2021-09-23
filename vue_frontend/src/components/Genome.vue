@@ -19,8 +19,22 @@ export default {
     annotations: Array,
   },
   data() {
+    const color = d3.scaleOrdinal(
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [
+        d3.interpolateCool(0.6),
+        d3.interpolateCool(0.1),
+        d3.interpolateCool(0.9),
+        d3.interpolateCool(0.2),
+        d3.interpolateCool(0.5),
+        d3.interpolateCool(0.3),
+        d3.interpolateCool(0.7),
+        d3.interpolateCool(0.4),
+        d3.interpolateCool(0),
+      ]
+    );
     const axesHeight = 40
-    const yspace = 8
+    const yspace = 12
     return {
       width: 800,
       height: axesHeight + yspace*(this.assays.length+2.5),
@@ -34,7 +48,8 @@ export default {
       scrollY: 0,
       assayLinks: [],
       "axesHeight": axesHeight,
-      annotationThickness: 5,
+      annotationThickness: 10,
+      "color": color,
     };
   },
   mounted() {
@@ -44,21 +59,10 @@ export default {
     init() {
       const vm = this
       const numAnnRows = vm.setAnnotationRows()
-      const color = d3.scaleOrdinal([
-        d3.interpolateCool(0.6),
-        d3.interpolateCool(0.1),
-        d3.interpolateCool(0.4),
-        d3.interpolateCool(0.9),
-        d3.interpolateCool(0),
-        d3.interpolateCool(0.5),
-        d3.interpolateCool(0.2),
-        d3.interpolateCool(0.3),
-        d3.interpolateCool(0.7),
-      ]);
       if (vm.annotations.length > 0) {
-        vm.height += vm.yspace * numAnnRows;
+        vm.height += vm.yspace * numAnnRows + 10;
       }
-      vm.baseline = vm.height/2 - vm.axesHeight;
+      vm.baseline = vm.height/2 - vm.axesHeight - 10*(vm.annotations.length > 0);
 
       const svg = d3
         .select('#genome-' + vm.cluster_id)
@@ -114,7 +118,7 @@ export default {
           .style("stroke", "#000d5455")
           .style("stroke-width", .5)
           .attr("x1", ampliconCenter)
-          .attr("y1", assayY + 6)
+          .attr("y1", assayY + 4)
           .attr("x2", ampliconCenter)
           .attr("y2", vm.baseline);
 
@@ -129,7 +133,8 @@ export default {
           .attr("href", href)
           .append("text")
           .attr("text-anchor", "middle")
-          .style("fill", "#000d54AA")
+          .style("fill", "#3C67DD")
+          .style("opacity", "0.8")
           .style("font-size", "0.6rem")
           .attr("y", assayY)
           .attr("x", ampliconCenter)
@@ -151,6 +156,7 @@ export default {
               .transition()
               .duration(200)
               .style("font-size", "0.6rem")
+              .style("opacity", "0.8")
               .style("font-weight", "300");
           } else {
             let assayElement = document.getElementById('visualization-' + vm.cluster_id + '-' + assayIndex.toString())
@@ -160,13 +166,15 @@ export default {
               vm.assayLinks[assayIndex]
                 .transition()
                 .duration(200)
-                .style("font-size", "0.75rem")
+                .style("font-size", "1rem")
+                .style("opacity", "1")
                 .style("font-weight", "700");
             } else {
               vm.assayLinks[assayIndex]
                 .transition()
                 .duration(200)
                 .style("font-size", "0.6rem")
+                .style("opacity", "0.8")
                 .style("font-weight", "300");
             }
           }
@@ -175,11 +183,12 @@ export default {
 
       i = 0
       let annotationLines = []
+      let annotationYBaseline = this.baseline - (this.yspace-this.annotationThickness)/2 - this.yspace
       for (let annotation of vm.annotations) {
-        annotation.y = this.baseline - (annotation.row+1)*this.yspace;
+        annotation.y = annotationYBaseline - (annotation.row*this.yspace);
         let annotationLine = svg
           .append("path")
-          .style("fill", color(i))
+          .style("fill", annotation.color)
           .style("opacity", .8)
           .attr("d", line(annotationPath(annotation, vm.annotationThickness)));
         annotationLines.push(annotationLine)
@@ -193,11 +202,11 @@ export default {
         let annotationText = svg
           .append("text")
           .attr("text-anchor", textanch)
-          .style("fill", d3.color(color(i)).darker(0.6))
-          .style("font-size", "0.7rem")
-          .attr("y", vm.height/2-10)
+          .style("fill", d3.color(annotation.color).darker(0.6))
+          .style("font-size", "1.1rem")
+          .attr("y", vm.height/2-15)
           .attr("x", xpos)
-          .text(annotation.product)
+          .text(annotation.product || annotation.type)
           .attr("pointer-events", "none");
         annotationText.style("opacity", 0);
         annotationLine
@@ -245,6 +254,7 @@ export default {
     },
     setAnnotationRows() {
       var rowEnds = [];
+      var rowColors = [];
       this.annotations.sort(function (a, b){
         if (a.start == b.start) {
           return (b.end-b.start) - (a.end-a.start)
@@ -259,6 +269,7 @@ export default {
         for (let rowEnd of rowEnds) {
           if (rowEnd <= annotation.start) {
             row = parseInt(i);
+            rowColors[i]++
             rowEnds[i] = annotation.end;
             break;
           }
@@ -266,9 +277,11 @@ export default {
         }
         if (row == null) {
           row = rowEnds.length;
+          rowColors.push(rowEnds.length*4)
           rowEnds.push(annotation.end);
         }
         annotation.row = row
+        annotation.color = this.color(rowColors[row])
       }
       return rowEnds.length
     },
