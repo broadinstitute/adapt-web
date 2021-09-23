@@ -37,13 +37,13 @@
         </div>
       </b-tab>
        <template #tabs-end>
-        <b-nav-item role="presentation" @click.prevent="download_file('download')" href="#">Results <b-icon-download aria-label="Download"></b-icon-download></b-nav-item>
-        <b-nav-item v-if='Object.keys(aln_sum).length > 0' role="presentation" @click.prevent="download_file('alignment')" href="#">Alignment <b-icon-download aria-label="Download"></b-icon-download></b-nav-item>
+        <b-nav-item role="presentation" @click.prevent="download_file('download')" href="#">Results <b-icon-download aria-label="Download Results"></b-icon-download></b-nav-item>
+        <b-nav-item v-if='aln' role="presentation" @click.prevent="download_file('alignment')" href="#">Alignment <b-icon-download aria-label="Download Alignments"></b-icon-download></b-nav-item>
       </template>
     </b-tabs>
     <template #modal-footer>
       <div class="w-100">
-        <ColorLegend :genome="Object.keys(aln_sum).length > 0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+        <ColorLegend :genome="aln" :activityColorScale="activityColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
         </div>
     </template>
   </b-modal>
@@ -116,13 +116,15 @@ export default {
     var vm = this
     vm.$root.$data.resulttable = {}
     vm.$root.$data.aln_sum = {}
+    vm.$root.$data.aln = false;
     vm.$root.$data.ann = {}
     vm.$root.$data.labels = []
     vm.$root.$data.runid = ''
     vm.$root.$on('show-assays', async function() {
       vm.resulttable = vm.$root.$data.resulttable;
       vm.aln_sum = vm.$root.$data.aln_sum
-      vm.ann = vm.$root.$data.ann
+      vm.aln = vm.$root.$data.aln;
+      vm.ann = vm.$root.$data.ann;
       vm.labels = vm.$root.$data.labels;
       vm.updated += 1
       vm.$nextTick(async function () {

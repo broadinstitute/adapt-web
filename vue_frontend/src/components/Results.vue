@@ -190,8 +190,10 @@ export default {
                 }
               }
               this.$root.$data.runid = this.runid;
+              this.$root.$data.aln = false;
               if (detail_response_json.alignment) {
                 await this.summarize_alignment()
+                this.$root.$data.aln = true;
               }
               await this.get_annotation()
               this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname);
@@ -270,15 +272,17 @@ export default {
       }
     },
     async summarize_alignment() {
-      let response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/alignment_summary/', {
-        headers: {
-          "X-CSRFToken": csrfToken
+      if (!(this.runid in this.$root.$data.aln_sum)) {
+        let response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/alignment_summary/', {
+          headers: {
+            "X-CSRFToken": csrfToken
+          }
+        })
+        if (response.ok) {
+          this.$root.$data.aln_sum[this.runid] = await response.json()
+        } else {
+          this.errorMsg(response)
         }
-      })
-      if (response.ok) {
-        this.$root.$data.aln_sum[this.runid] = await response.json()
-      } else {
-        this.errorMsg(response)
       }
     },
     async get_annotation() {
