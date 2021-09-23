@@ -32,7 +32,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "www.adapt.run",
-    "adapt.run"
+    "adapt.run",
     "www.adapt.guide",
     "adapt.guide"
 ]
