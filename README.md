@@ -4,7 +4,8 @@ Web interface for using ADAPT
 ## Set up
 If you'd like to set up on Linux, run `setup_linux.sh` (you may need to run in sudo mode). 
 
-If you're on Mac, do the following:
+If you're on Mac, do all of the following steps:
+
 To install the necessary packages for Django, run the following:
 ```
 pip install -r requirements.txt
@@ -32,13 +33,13 @@ To install Vue's dependencies, run:
 yarn --cwd vue_frontend/ install
 ```
 
-To update the database  (only necessary if not using `start.sh`), run:
+To update the database, run:
 ```
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-To build Vue into a webpack bundle (only necessary if not using `start.sh`), run:
+To build Vue into a webpack bundle, run:
 ```
 yarn --cwd vue_frontend/ build
 ```
@@ -47,7 +48,7 @@ Finally, you'll need to create `api/aws_config.txt`. It should contain two lines
 
 ## Run server
 
-If you would like to run the server publically (such that other computers on your network can access the site), use `start.sh`. If you're running it locally, you'll need to open two terminals to run the Django and Vue servers simultaneously.
+If you're running it locally, you'll need to open two terminals to run the Django and Vue servers simultaneously.
 
 To run the Django server, run:
 ```
@@ -59,6 +60,8 @@ To run the Vue server, run:
 yarn --cwd vue_frontend/ serve
 ```
 Running the Vue server is only necessary if a webpack bundle hasn't been built or if you would like updates to Vue to be applied without rebuilding the bundle.
+
+To host it on the cloud, follow the instructions on [this Digital Ocean tutorial](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-18-04).
 
 ## Directory Structure
 Anything in italics is what you most likely want to edit.
@@ -76,7 +79,7 @@ All the parts specific to Vue.
 The site wide stylesheet (written in SCSS) and images are in this folder.
 
 ##### *components*
-Contains the actual HTML/CSS/JS/Vue code. There are 5 components currently; 4 that corresponds with a page, 1 that corresponds with the header. I'm in the process of adding a "Assay" component that will be usable for visualizing results on the Designs and Results pages.
+Contains the actual HTML/CSS/JS/Vue code. There are 12 components currently; 4 that corresponds with a page (About.vue, Design.vue, RunADAPT.vue, Results.vue), 2 for the header/footer (Header.vue, Footer.vue), 4 for visualizing assay results in a modal (AssayModal.vue, AssayTable.vue, Assay.vue, and Genome.vue), 1 message modal (Modal.vue), and 1 currently unused Home component (Home.vue).
 
 The first section (`<template> ... </template>`) is the HTML template that Vue will insert data into.
 
@@ -85,7 +88,7 @@ The second section (everything in `<script> ... export default {...} </script>`)
 The optional third section (`<style scoped> ... </style>`) is CSS that will only affect this component.
 
 ##### pages
-Contains code to set up components into actual pages. I'll likely change the components that are only one page to be made directly in that page, rather than importing them.
+Contains code to set up components into actual pages. The components that are only one page may be changed to be made directly in that page, rather than importing them.
 
 #### node_modules (only exists after installing Vue dependencies)
 Vue dependencies will be stored in this folder.
@@ -97,7 +100,7 @@ Contains the code that connects Vue to Django. It sets up URL routing for each p
 Contains the API code-the database schema (*`models.py`*), as well as functions to define the various types of requests to the API (*`views.py`*--note, a "viewset" in *`views.py`* is a class that automatically builds the basic GET/POST/PUT etc. functions). `serializers.py` defines the fields needed to put an object into the database; `urls.py` sets up URL routing to each model; `admin.py` allows access to the models via the Django admin interface (which we shouldn't need, but is set up just in case); `apps.py` sets up the API as a app to be run by the django_backend.
 
 ### templates
-These are HTML files that Vue inserts into. For the most part, it's just connection between Vue and Django, but the header is made in `base.html`.
+These are HTML files that Vue inserts into. For the most part, it's just connection between Vue and Django, but the head is made in `base.html`.
 
 ### static (only exists after building Vue)
 Contains a minified version of the static assets for Vue. Django accesses Vue's `public` folder via this.

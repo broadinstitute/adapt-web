@@ -18,6 +18,7 @@ from django.http import HttpResponse, JsonResponse, FileResponse, Http404
 from django.core.files import File
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
+from django.db.models import Case, When
 
 from rest_framework import viewsets, generics, mixins, permissions
 from rest_framework import status as httpstatus
@@ -43,13 +44,29 @@ CROMWELL_BUCKET = "adapt-cromwell-54"
 with open('./api/aws_config.txt') as f:
     AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY = f.read().splitlines()
 
-CONTACT = "ppillai@broadinstitute.org"
+CONTACT = "adapt@broadinstitute.org"
 SUCCESSFUL_STATES = ["Succeeded"]
 FAILED_STATES = ["Failed", "Aborted"]
 OBJECTIVES = ["maximize-activity", "minimize-guides"]
 MAX_ALGS = ["random-greedy", "greedy"]
 FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
-VALID_BASES = {'G', 'A', 'T', 'C', 'R', 'Y', 'M', 'K', 'S', 'W', 'H', 'B', 'V', 'D', 'N'}
+# Store the unambiguous bases that make up each
+# ambiguous base in the IUPAC notation
+FASTA_CODES = {'A': set(('A')),
+               'T': set(('T')),
+               'C': set(('C')),
+               'G': set(('G')),
+               'K': set(('G', 'T')),
+               'M': set(('A', 'C')),
+               'R': set(('A', 'G')),
+               'Y': set(('C', 'T')),
+               'S': set(('C', 'G')),
+               'W': set(('A', 'T')),
+               'B': set(('C', 'G', 'T')),
+               'V': set(('A', 'C', 'G')),
+               'H': set(('A', 'C', 'T')),
+               'D': set(('A', 'G', 'T')),
+               'N': set(('A', 'T', 'C', 'G'))}
 
 
 BOOL_OPT_INPUT_VARS = [
@@ -107,7 +124,7 @@ LINEAGE_RANKS = ['family', 'genus', 'species', 'subspecies', 'segment']
 
 def _valid_genome(genome):
     for char in genome:
-        if char not in VALID_BASES:
+        if char not in FASTA_CODES:
             return False
     return True
 
@@ -121,7 +138,9 @@ def _format(val):
 
 def _metadata(cromwell_id):
     if cromwell_id.startswith('example'):
-        return {'outputs': {"adapt_web.guides": ['s3://adaptwebstorage/example_files/example_results.tsv']}}
+        return {'outputs': {"adapt_web.guides": ['s3://adaptwebstorage/example_files/example_results.tsv'],
+                            "adapt_web.alns": ['s3://adaptwebstorage/example_files/example_alignment.fasta'],
+                            "adapt_web.anns": ['s3://adaptwebstorage/example_files/example_annotation.tsv']}}
     try:
         cromwell_response = requests.get("%s/%s/metadata" %(SERVER_URL, cromwell_id), verify=False)
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
@@ -166,7 +185,7 @@ def _files(s3_file_paths):
     return output_files
 
 
-def _file_to_dict(output_file):
+def _result_file_to_dict(output_file):
     content = {}
     lines = output_file.splitlines()
     headers = lines[0].split('\t')
@@ -220,6 +239,64 @@ def _file_to_dict(output_file):
     return content
 
 
+def _tsv_to_dicts(tsv_file):
+    content = []
+    lines = tsv_file.splitlines()
+    headers = lines[0].split('\t')
+    for line in lines[1:]:
+        content.append({headers[k]: val for k,val in enumerate(line.split('\t'))})
+    return content
+
+
+def _add_base_to_counts(base, counts):
+    if base in counts:
+        counts[base] += 1
+    elif base in FASTA_CODES:
+        for base_option in FASTA_CODES[base]:
+            counts[base_option] += 1.0 / len(FASTA_CODES[base])
+
+
+def _alignment_to_summary(alignment_file):
+    summary = []
+    seq = []
+
+    # Code if you don't want entropy
+    # first = True
+
+    for line in alignment_file.splitlines():
+        line = line.rstrip()
+        if line.startswith('>'):
+            # Code if you don't want entropy
+            # if first:
+            #     first = False
+            #     continue
+            # else:
+            #     break
+            # Code if you want entropy
+            seq = "".join(seq)
+            if len(summary) == 0:
+                summary = [{'A': 0, 'C': 0, 'G': 0, 'T': 0, '-': 0}
+                           for _ in seq]
+            assert(len(seq) == len(summary))
+            for i, base in enumerate(seq):
+                _add_base_to_counts(base, summary[i])
+            seq = []
+        else:
+            # Append the sequence
+            seq.append(line)
+
+    seq = "".join(seq)
+    if len(summary) == 0:
+        summary = [{'A': 0, 'C': 0, 'G': 0, 'T': 0, '-': 0}
+                   for _ in seq]
+
+    assert(len(seq) == len(summary))
+    for i, base in enumerate(seq):
+        _add_base_to_counts(base, summary[i])
+
+    return summary
+
+
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Produces the various API views for the User Model
@@ -245,7 +322,7 @@ class TaxonViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
     serializer_class = TaxonSerializer
 
-    @action(detail=False)
+    @action(detail=False, methods=['post'])
     def delete_all(self, request, *args, **kwargs):
         Assay.objects.all().delete()
         AssaySet.objects.all().delete()
@@ -284,28 +361,38 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
     serializer_class = TaxonRankSerializer
 
     def get_queryset(self):
+        designed = self.request.query_params.get('designed')
+        if designed:
+            qs = TaxonRank.objects.filter(assay_sets__isnull=False).distinct().annotate(
+                name=Case(
+                    When(rank="segment", then="parent__latin_name"),
+                    default="latin_name",
+                )).order_by("name", "latin_name")
+
+            return qs
+
         parents = self.request.query_params.get('parent')
         rank = self.request.query_params.get('rank')
         assays = self.request.query_params.get('assays')
         qs = TaxonRank.objects.all()
-        if assays == 'true':
-            qs = qs.filter(assay_sets__isnull=False)
-        elif assays == 'false':
-            qs = qs.filter(assay_sets__isnull=True)
-        if rank:
-            qs = qs.filter(rank=rank)
         if parents:
             parents = parents.split(',')
             if parents[0] == 'null':
-                qs = qs.filter(parent__isnull=True)
+                qs = qs.filter(parent__isnull=True).distinct()
             else:
                 qs = qs.filter(parent=parents[0])
             if len(parents) > 1:
                 for parent in parents[1:]:
                     if parent == 'null':
-                        qs = qs.union(TaxonRank.objects.filter(parent__taxid__isnull=True))
+                        qs = qs | TaxonRank.objects.filter(parent__isnull=True).distinct()
                     else:
-                        qs = qs.union(TaxonRank.objects.filter(parent__taxid=parent))
+                        qs = qs | TaxonRank.objects.filter(parent=parent).distinct()
+        if assays == 'true':
+            qs = qs.filter(assay_sets__isnull=False).distinct()
+        elif assays == 'false':
+            qs = qs.filter(assay_sets__isnull=True).distinct()
+        if rank:
+            qs = qs.filter(rank=rank)
         return qs
 
 
@@ -396,6 +483,7 @@ class AssaySetViewSet(viewsets.ModelViewSet):
         taxonrank = self.request.query_params.get('taxonrank')
         cluster = self.request.query_params.get('cluster')
         created = self.request.query_params.get('created')
+        assays = self.request.query_params.get('assays')
         qs = AssaySet.objects.all()
         if taxonrank:
             qs = qs.filter(taxonrank=taxonrank)
@@ -403,7 +491,107 @@ class AssaySetViewSet(viewsets.ModelViewSet):
             qs = qs.filter(cluster=cluster)
         if created:
             qs = qs.filter(created=created)
+        if assays == 'true':
+            qs = qs.filter(assays__isnull=False).distinct()
+        elif assays == 'false':
+            qs = qs.filter(assays__isnull=True).distinct()
         return qs.order_by('-created')
+
+    @action(detail=False, methods=['post'])
+    def clean_up(self, request, *args, **kwargs):
+        AssaySet.objects.filter(assays__isnull=True).distinct().delete()
+
+        for _ in range(4):
+            taxonrank_pks = [taxrank.pk for taxrank in TaxonRank.objects.all() if (taxrank.num_children == 0 and taxrank.any_assays == False)]
+            TaxonRank.objects.filter(pk__in=taxonrank_pks).delete()
+        return Response()
+
+    @action(detail=False, methods=['post'], url_path=r'delete_date/(?P<date>[0-9\-]+)')
+    def delete_date(self, request, *args, **kwargs):
+        AssaySet.objects.filter(created=kwargs["date"]).delete()
+        for _ in range(4):
+            taxonrank_pks = [taxrank.pk for taxrank in TaxonRank.objects.all() if (taxrank.num_children == 0 and taxrank.any_assays == False)]
+            TaxonRank.objects.filter(pk__in=taxonrank_pks).delete()
+        return Response()
+
+    @action(detail=True)
+    def annotation(self, request, *args, **kwargs):
+        """
+        Produces a summary of the alignments to display on the site
+
+        Makes a fasta if there is only one file and a ZIP otherwise.
+        Function called at the "alignment_summary" API endpoint.
+        """
+        assay_set = self.get_object()
+        content = {}
+        if assay_set.s3_ann_path:
+            output_file = _files([assay_set.s3_ann_path])[0].read().decode("utf-8")
+            content[0] = _tsv_to_dicts(output_file)
+            response = Response(content)
+            return response
+        content = {'Input Error': "There are no annotations for this assay set. "
+        "This virus design has likely not been updated recently; you may "
+        "want to run this virus again on the 'Run' page of this site."}
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True)
+    def alignment_summary(self, request, *args, **kwargs):
+        """
+        Produces a summary of the alignments to display on the site
+
+        Makes a fasta if there is only one file and a ZIP otherwise.
+        Function called at the "alignment_summary" API endpoint.
+        """
+        assay_set = self.get_object()
+        content = {}
+        if assay_set.s3_aln_path:
+            output_file = _files([assay_set.s3_aln_path])[0].read().decode("utf-8")
+            content[0] = _alignment_to_summary(output_file)
+            response = Response(content)
+            return response
+        content = {'Input Error': "There is no alignment for this assay set. "
+        "This virus design has likely not been updated recently; you may "
+        "want to run this virus again on the 'Run' page of this site."}
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False)
+    def alignment(self, request, *args, **kwargs):
+        """
+        Produces a file of the alignments to download
+
+        Makes a fasta if there is only one taxon and a ZIP otherwise.
+        Function called at the "alignment" API endpoint.
+        """
+        try:
+            pks = [int(i) for i in request.query_params.get('pk').split(',')]
+        except ValueError:
+            content = {'Input Error': "Primary keys must be a comma separated list of integers"}
+            return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                assay_sets = [AssaySet.objects.get(pk=pk) for pk in pks]
+            except AssaySet.DoesNotExist:
+                content = {'Input Error': "At least one of these keys does not point to an assay set."}
+            else:
+                assay_sets_with_alns = [assay_set for assay_set in assay_sets if assay_set.s3_aln_path]
+                if len(assay_sets_with_alns) > 0:
+                    files = _files([assay_set.s3_aln_path for assay_set in assay_sets_with_alns])
+                    output_files = [file.read().decode("utf-8") for file in files]
+                    output_type = "application/zip"
+                    # Create the zip file in memory only
+                    zipped_output = BytesIO()
+                    with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
+                        for i, output_file in enumerate(output_files):
+                            zipped_output_a.writestr("%s.fasta" %(assay_sets_with_alns[i].taxonrank.latin_name), output_file)
+                    zipped_output.seek(0)
+                    filename = "alignments" + "_".join([str(pk) for pk in pks]) + ".zip"
+                    response = FileResponse(zipped_output, content_type=output_type)
+                    response['Content-Disposition'] = 'attachment; filename=%s' % filename
+                    return response
+                content = {'Input Error': "There are no alignments for these assay sets. "
+                    "This virus design has likely not been updated recently; you may "
+                    "want to run this virus again on the 'Run' page of this site."}
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
 
 
 class AssayViewSet(viewsets.ModelViewSet):
@@ -418,6 +606,170 @@ class AssayViewSet(viewsets.ModelViewSet):
     permission_classes = [AdminPermissionOrReadOnly]
     serializer_class = AssaySerializer
     queryset = Assay.objects.all()
+
+    @staticmethod
+    def save_by_rank(name, taxrank, taxid=None, parent=None):
+        if taxrank not in LINEAGE_RANKS:
+            if taxrank == 'no rank' and parent.rank == 'species':
+                rank = 'subspecies'
+            else:
+                return parent
+        else:
+            rank = taxrank
+        taxonrank_data = {'latin_name': name, 'rank': rank}
+        if parent:
+            taxonrank_data['parent'] = parent.pk
+        try:
+            taxonrank = get_object_or_404(TaxonRank, **taxonrank_data)
+            return taxonrank
+        except Http404:
+            pass
+        serializer = TaxonRankSerializer(data=taxonrank_data)
+        serializer.is_valid(raise_exception=True)
+        taxonrank = serializer.save()
+        if taxid:
+            data = {'taxid': taxid, 'taxonrank': taxonrank.pk}
+            serializer = TaxonSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return taxonrank
+
+    @staticmethod
+    def update(s3_file_paths, obj, sp, start_time, taxid, tax_seg, alns=None, anns=None):
+        """
+        Updates the database given a job ID from Cromwell
+
+        """
+        if alns:
+            if len(alns) != len(s3_file_paths):
+                return Response({'Input Error': "If alignments are provided, "
+                                 "there must be the same number of alignments "
+                                 "as output file paths."},
+                                status=httpstatus.HTTP_400_BAD_REQUEST)
+        if anns:
+            if len(anns) != len(s3_file_paths):
+                return Response({'Input Error': "If annotations are provided, "
+                                 "there must be the same number of annotations "
+                                 "as output file paths."},
+                                status=httpstatus.HTTP_400_BAD_REQUEST)
+        try:
+            taxon_obj = get_object_or_404(Taxon, pk=int(taxid))
+            taxonrank_obj = taxon_obj.taxonrank
+        except Http404:
+            params = {'db': 'taxonomy', 'id': int(taxid)}
+            tax_xml = requests.get(NCBI_URL, params=params).text
+            tax_ET = ET.fromstring(tax_xml)[0]
+            tax_name = tax_ET.find('ScientificName').text
+            tax_rank = tax_ET.find('Rank').text
+            lineage = tax_ET.find('LineageEx')
+            parent = None
+            for ancestor in lineage.findall('Taxon'):
+                ancestor_id = ancestor.find('TaxId').text
+                ancestor_name = ancestor.find('ScientificName').text
+                ancestor_rank = ancestor.find('Rank').text
+                if ancestor_rank in LINEAGE_RANKS:
+                    parent = AssayViewSet.save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
+            taxonrank_obj = AssayViewSet.save_by_rank(tax_name, tax_rank, taxid=taxid, parent=parent)
+        if tax_seg != 'None':
+            taxonrank_obj = AssayViewSet.save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
+
+        output_files_encoded = _files(s3_file_paths)
+        if isinstance(output_files_encoded, Response):
+            return output_files_encoded
+        output_files = [output_file.read().decode("utf-8") for output_file in output_files_encoded]
+
+        for i, output_file in enumerate(output_files):
+            try:
+                get_list_or_404(AssaySet,
+                    taxonrank=taxonrank_obj.pk,
+                    created=start_time,
+                    specific=sp,
+                    objective=obj,
+                    cluster=i)
+                continue
+            except Http404:
+                pass
+            lines = output_file.splitlines()
+            if len(lines) < 2:
+                continue
+            aln = alns[i] if alns else ''
+            ann = anns[i] if anns else ''
+            headers = lines[0].split('\t')
+            assay_set_data = {
+                'taxonrank': taxonrank_obj.pk,
+                'created': start_time,
+                'specific': sp,
+                'objective': obj,
+                'cluster': i,
+                's3_aln_path': aln,
+                's3_ann_path': ann,
+            }
+            assay_set = AssaySetSerializer(data=assay_set_data)
+            assay_set.is_valid(raise_exception=True)
+            assay_set_obj = assay_set.save()
+            for j, line in enumerate(lines[1:]):
+                raw_content = {headers[k]: val for k,val in enumerate(line.split('\t'))}
+
+                assay_data = {
+                    "assay_set": assay_set_obj.pk,
+                    "left_primers": {
+                        "frac_bound": round(float(raw_content["left-primer-frac-bound"]),16),
+                        "start_pos": int(raw_content["left-primer-start"])
+                    },
+                    "right_primers": {
+                        "frac_bound": round(float(raw_content["right-primer-frac-bound"]),16),
+                        "start_pos": int(raw_content["right-primer-start"])
+                    },
+                    "guide_set": {
+                        "frac_bound": round(float(raw_content["total-frac-bound-by-guides"]),16),
+                        "expected_activity": round(float(raw_content["guide-set-expected-activity"]),16),
+                        "median_activity": round(float(raw_content["guide-set-median-activity"]),16),
+                        "fifth_pctile_activity": round(float(raw_content["guide-set-5th-pctile-activity"]),16)
+                    },
+                    'rank': j,
+                    'objective_value': round(float(raw_content["objective-value"]),16),
+                    'amplicon_start': int(raw_content["target-start"]),
+                    'amplicon_end': int(raw_content["target-end"]),
+                }
+                assay = AssaySerializer(data=assay_data)
+                assay.is_valid(raise_exception=True)
+                assay_obj = assay.save()
+
+                for target in raw_content["left-primer-target-sequences"].split(" "):
+                    primer_data = {
+                        "target": target,
+                        "left_primer_set": assay_obj.left_primers.pk
+                    }
+                    primer = PrimerSerializer(data=primer_data)
+                    primer.is_valid(raise_exception=True)
+                    primer.save()
+
+                for target in raw_content["right-primer-target-sequences"].split(" "):
+                    primer_data = {
+                        "target": target,
+                        "right_primer_set": assay_obj.right_primers.pk
+                    }
+                    primer = PrimerSerializer(data=primer_data)
+                    primer.is_valid(raise_exception=True)
+                    primer.save()
+
+                start_poses = [
+                    [int(start_pos_i) for start_pos_i in start_pos[1:-1].split(", ")] \
+                for start_pos in raw_content["guide-target-sequence-positions"].split(" ")]
+                expected_activities = [
+                    float(expected_activity) \
+                for expected_activity in raw_content["guide-expected-activities"].split(" ")]
+
+                for k, target in enumerate(raw_content["guide-target-sequences"].split(" ")):
+                    guide_data = {
+                        "start_pos": start_poses[k],
+                        "expected_activity": expected_activities[k],
+                        "target": target,
+                        "guide_set": assay_obj.guide_set.pk
+                    }
+                    guide = GuideSerializer(data=guide_data)
+                    guide.is_valid(raise_exception=True)
+                    guide.save()
 
     @action(detail=False, methods=['post'])
     def database_update(self, request, *args, **kwargs):
@@ -451,7 +803,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                     list_objs_args['ContinuationToken'] = continuation_token
                 file_response = S3.list_objects_v2(**list_objs_args)
                 for file in file_response["Contents"]:
-                    if file["Key"].endswith("guides.tsv.0"):
+                    if file["Key"].endswith("guides.tsv.0") or file["Key"].endswith("guides.0.tsv"):
                         shards_str = re.findall(r"shard-\d+", file["Key"])
                         shards_int = [int(shard_str[6:]) for shard_str in shards_str]
                         if len(shards_int) != 3:
@@ -549,6 +901,8 @@ class AssayViewSet(viewsets.ModelViewSet):
                         except Http404:
                             pass
                         lines = output_file.splitlines()
+                        if len(lines) < 2:
+                            continue
                         headers = lines[0].split('\t')
                         assay_set_data = {
                             'taxonrank': taxonrank_obj.pk,
@@ -625,6 +979,30 @@ class AssayViewSet(viewsets.ModelViewSet):
                                 guide.save()
         return Response({"id": request.data["id"]}, status=httpstatus.HTTP_201_CREATED)
 
+    @action(detail=False, methods=['post'])
+    def single_update(self, request, *args, **kwargs):
+        """
+        Updates the database given s3 file paths, the objective, the specificity,
+        the start, and the tax ID
+
+        """
+        alns = request.data["s3_aln_paths"] \
+            if ("s3_aln_paths" in request.data) else None
+        anns = request.data["s3_ann_paths"] \
+            if ("s3_ann_paths" in request.data) else None
+        AssayViewSet.update(
+            request.data["s3_file_paths"],
+            request.data["obj"],
+            request.data["sp"],
+            request.data["start"][:10],
+            request.data["taxid"],
+            request.data["taxseg"],
+            alns=alns,
+            anns=anns
+        )
+
+        return Response({"id": request.data["taxid"]}, status=httpstatus.HTTP_201_CREATED)
+
     def get_queryset(self):
         assay_set_str = self.request.query_params.get('assay_set')
         if not assay_set_str:
@@ -635,6 +1013,7 @@ class AssayViewSet(viewsets.ModelViewSet):
             for assay_set in assay_sets[1:]:
                 assay_qs = assay_qs.union(Assay.objects.filter(assay_set=assay_set))
         return assay_qs
+
 
 class ADAPTRunViewSet(viewsets.ModelViewSet):
     """
@@ -655,7 +1034,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _check_fasta(file):
-        filetypes = [".fasta", ".fa", ".fna", ".ffn", ".faa", ".frn", ".aln"]
+        filetypes = [".fasta", ".fa", ".fna", ".ffn", ".faa", ".frn", ".aln", ".txt"]
         for filetype in filetypes:
             if file.name.endswith(filetype):
                 return True
@@ -683,7 +1062,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 elif input_var.startswith('require_flanking'):
                     if not _valid_genome(value):
                         content = "'%s' is an invalid flanking sequence; each character must be one of " \
-                            "<ul><li>%s</li></ul>" %(value, '</li><li>'.join(VALID_BASES))
+                            "<ul><li>%s</li></ul>" %(value, '</li><li>'.join(FASTA_CODES.keys()))
                         break
                 elif input_var == 'nickname':
                     if len(value) > 50:
@@ -778,19 +1157,38 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 if isinstance(metadata_response, Response):
                     return metadata_response
                 # Download files from S3
-                if data_format == 'aln':
+                if data_format in ['aln', 'aln_sum']:
                     files = _files(metadata_response["outputs"]["adapt_web.alns"])
+                elif data_format == 'ann':
+                    if "adapt_web.anns" in metadata_response["outputs"]:
+                        files = _files(metadata_response["outputs"]["adapt_web.anns"])
+                    else:
+                        content = {'Input Error': "There are no annotations for this run. "
+                        "This is likely an older run made with a former version; please try rerunning."}
+                        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
                 else:
                     files = _files(metadata_response["outputs"]["adapt_web.guides"])
                 if isinstance(files, Response):
                     return files
 
-                if data_format == 'json':
+                if data_format in ['json', 'aln_sum', 'ann']:
+                    # try:
                     output_files = [output_file.read().decode("utf-8") for output_file in files]
                     content = {}
+                    if data_format == 'json':
+                        conversion_function = _result_file_to_dict
+                    elif data_format == 'ann':
+                        conversion_function = _tsv_to_dicts
+                    else:
+                        conversion_function = _alignment_to_summary
                     for i, output_file in enumerate(output_files):
-                        content[i] = _file_to_dict(output_file)
+                        content[i] = conversion_function(output_file)
                     response = Response(content)
+                    # except Exception:
+                    #     content = {'Incorrect output formatting': "Job output is incorrectly "
+                    #         "formatted, possibly indicating file corruption. Please "
+                    #         "contact %s with your run ID to resolve the issue." %CONTACT}
+                    #     response = Response(content, status=httpstatus.HTTP_500_INTERNAL_SERVER_ERROR)
                 else:
                     if len(files) == 0:
                         content = {'No output': "Job output does not exist. "
@@ -812,11 +1210,11 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         zipped_output = BytesIO()
                         with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
                             if data_format == 'aln':
-                                for i, output_file in enumerate(output):
-                                    zipped_output_a.writestr("%s.%i.fasta" %(self.kwargs['pk'], i), output_file)
+                                for i, output_file in enumerate(output_files):
+                                    zipped_output_a.writestr("%s.%i.fasta" %(adaptrun.cromwell_id, i), output_file)
                             else:
-                                for i, output_file in enumerate(output):
-                                    zipped_output_a.writestr("%s.%i.tsv" %(self.kwargs['pk'], i), output_file)
+                                for i, output_file in enumerate(output_files):
+                                    zipped_output_a.writestr("%s.%i.tsv" %(adaptrun.cromwell_id, i), output_file)
                         zipped_output.seek(0)
                         output = zipped_output
                         output_ext = ".zip"
@@ -1006,7 +1404,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         rsp = Response(serializer.data, status=httpstatus.HTTP_201_CREATED)
         return rsp
 
-    @action(detail=False, url_path=r'id_prefix/(?P<idprefix>[a-z0-9\-]+)/(?P<action>[a-z]+)')
+    @action(detail=False, url_path=r'id_prefix/(?P<idprefix>[a-z0-9\-]+)/(?P<action>[a-z\_]+)')
     def id_prefix(self, request, *args, **kwargs):
         """
         Performs one of the actions below based on a run ID prefix specified in request
@@ -1029,9 +1427,13 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 return self._get_results(adaptrun, 'json')
             elif kwargs["action"] == 'download':
                 return self._get_results(adaptrun, 'file')
-            elif kwargs["action"] == 'alignment':
+            elif kwargs["action"] == 'annotation':
+                return self._get_results(adaptrun, 'ann')
+            elif kwargs["action"] in ['alignment', 'alignment_summary']:
                 if adaptrun.alignment:
-                    return self._get_results(adaptrun, 'aln')
+                    if kwargs["action"] == 'alignment':
+                        return self._get_results(adaptrun, 'aln')
+                    return self._get_results(adaptrun, 'aln_sum')
                 else:
                     content = {'Input Error': "There is no alignment for this run. "
                     "To generate an alignment, use the 'Output Alignment' setting in "
@@ -1042,7 +1444,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 return Response(ADAPTRunSerializer(adaptrun).data)
             else:
                 content = {'Input Error': "Action '%s' is not a valid action. "
-                "Action must be 'status', 'results', or 'download'." %kwargs["action"]}
+                "Action must be 'status', 'results', 'download', 'alignment', 'alignment_summary' or 'annotation'." %kwargs["action"]}
 
         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
 
@@ -1080,6 +1482,18 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         return response
 
     @action(detail=True)
+    def annotation(self, request, *args, **kwargs):
+        """
+        Produces a file of the results to download
+
+        Makes a TSV if there is only one file and a ZIP otherwise.
+        Function called at the "download" API endpoint.
+        """
+        adaptrun = self.get_object()
+        response = self._get_results(adaptrun, 'ann')
+        return response
+
+    @action(detail=True)
     def alignment(self, request, *args, **kwargs):
         """
         Produces a file of the alignments to download
@@ -1090,6 +1504,24 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         adaptrun = self.get_object()
         if adaptrun.alignment:
             response = self._get_results(adaptrun, 'aln')
+            return response
+        content = {'Input Error': "There is no alignment for this run. "
+        "To generate an alignment, use the 'Output Alignment' setting in "
+        "the Advanced options section (Alignments can only outputted for "
+        "taxonomic ID input)."}
+        return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True)
+    def alignment_summary(self, request, *args, **kwargs):
+        """
+        Produces a file of the alignments to download
+
+        Makes a fasta if there is only one file and a ZIP otherwise.
+        Function called at the "alignment" API endpoint.
+        """
+        adaptrun = self.get_object()
+        if adaptrun.alignment:
+            response = self._get_results(adaptrun, 'aln_sum')
             return response
         content = {'Input Error': "There is no alignment for this run. "
         "To generate an alignment, use the 'Output Alignment' setting in "

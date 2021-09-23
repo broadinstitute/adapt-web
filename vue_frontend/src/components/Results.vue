@@ -15,6 +15,13 @@
                 </b-list-group-item>
               </b-list-group>
               <b-button pill block v-on:click.prevent="clearRunID" v-show="runids.length" size="lg" type="button" variant="outline-secondary" class="mt-3" name="clear-ids">Clear Run IDs</b-button>
+              <div class="text-center" v-show="runids.length == 0">
+                <br>
+                <h5>No previous runs</h5>
+                <br>
+                <p>Check out the <a href="/">Run page</a> to try running ADAPT yourself.</p>
+                <p>Type "<a href="" v-on:click.prevent.stop.self="setRunID('example-success')">example-success</a>" as a Run ID to see an example of what ADAPT's output looks like.</p>
+              </div>
               <br>
             </b-col>
             <b-col cols=0 md=1>
@@ -55,7 +62,7 @@
                 blur="5px"
                 spinner-variant="secondary"
               >
-                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {call_server('results')}})" :disabled="loading" size="lg" type="submit" variant="outline-secondary" class="mt-2" name="show_submit">Show Results</b-button>
+                <b-button pill block v-on:click.prevent="validate().then(valid => {if (valid) {callServerWrap()}})" :disabled="loading" size="lg" type="submit" variant="outline-secondary" class="mt-2" name="show_submit">Show Results</b-button>
               </b-overlay>
             </b-col>
           </b-row>
@@ -89,6 +96,7 @@ export default {
     return {
       runids: [],
       runid: '',
+      nickname: '',
       loading: false,
     }
   },
@@ -110,6 +118,7 @@ export default {
       }
       this.runids.sort((a,b) => b.time-a.time)
       this.runid = this.runids[0].id
+      this.nickname = this.runids[0].nickname
       if (Cookies.get('submitted') == 'true') {
         Cookies.remove('submitted')
         this.$root.$data.modaltitle = 'Job submitted!'
@@ -122,7 +131,18 @@ export default {
     }
   },
   methods: {
-    async call_server() {
+    async callServerWrap() {
+      var vm = this
+      vm.callServer().then(success => {
+        if (success) {
+          vm.$root.$emit('show-assays');
+          vm.$root.$on('finish-assays', () => {vm.loading=false});
+        } else {
+          vm.loading=false
+        }
+      })
+    },
+    async callServer() {
       this.loading = true
 
       let detail_response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/detail/', {
@@ -133,6 +153,11 @@ export default {
       let response
       if (detail_response.ok) {
         let detail_response_json = await detail_response.json();
+        if (detail_response_json.nickname != '') {
+          this.nickname = detail_response_json.nickname
+        } else {
+          this.nickname = this.runid
+        }
         switch(detail_response_json.status) {
           case 'Submitted':
             this.$root.$data.modaltitle = 'Job Submitted';
@@ -155,7 +180,7 @@ export default {
               }
             })
             if (response.ok) {
-              this.$root.$data.labels = [[this.runid, this.runid]]
+              this.$root.$data.labels = [[this.runid, this.nickname]]
               let resultjson = await response.json();
               Vue.set(this.$root.$data.resulttable, this.runid, {})
               for (var cluster in resultjson) {
@@ -165,15 +190,19 @@ export default {
                 }
               }
               this.$root.$data.runid = this.runid;
-              this.$root.$data.alignment = detail_response_json.alignment
-              this.$root.$emit('show-assays');
-              this.loading = false;
+              this.$root.$data.aln = false;
+              if (detail_response_json.alignment) {
+                await this.summarize_alignment()
+                this.$root.$data.aln = true;
+              }
+              await this.get_annotation()
+              this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname);
+              return true;
             } else {
               this.errorMsg(response);
-              this.loading = false;
             }
             this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname);
-            return response;
+            break;
           case 'Failed':
           case 'Aborted':
           case 'Aborting':
@@ -187,8 +216,6 @@ export default {
       } else {
         this.errorMsg(detail_response);
       }
-      this.loading = false;
-      return detail_response;
     },
     async errorMsg(response) {
       let contentType = response.headers.get("content-type");
@@ -242,6 +269,34 @@ export default {
         Cookies.set('runid', runid_strs.join())
       } else {
         Cookies.remove('runid')
+      }
+    },
+    async summarize_alignment() {
+      if (!(this.runid in this.$root.$data.aln_sum)) {
+        let response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/alignment_summary/', {
+          headers: {
+            "X-CSRFToken": csrfToken
+          }
+        })
+        if (response.ok) {
+          this.$root.$data.aln_sum[this.runid] = await response.json()
+        } else {
+          this.errorMsg(response)
+        }
+      }
+    },
+    async get_annotation() {
+      let response = await fetch('/api/adaptrun/id_prefix/' + this.runid + '/annotation/', {
+        headers: {
+          "X-CSRFToken": csrfToken
+        }
+      })
+      if (response.ok) {
+        this.$root.$data.ann[this.runid] = await response.json()
+      } else if (response.status != 400) {
+        this.errorMsg(response)
+      } else {
+        this.$root.$data.ann[this.runid] = {0: []}
       }
     },
   }

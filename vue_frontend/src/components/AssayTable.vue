@@ -10,6 +10,7 @@
           >
         </template>
         <template #cell(rank)="data">
+          <a class="anchor" :id="'table-' + cluster_id + '-' + data.value.toString()"></a>
           {{ data.value + 1 }}
         </template>
         <template #cell(amplicon)="data">
@@ -26,8 +27,11 @@
           <p v-for="guide in data.value" :key="guide.target"  class="seq">{{ guide.target }}</p>
         </template>
         <template #cell(show_details)="row">
-          <b-button block size="sm" @click="row.toggleDetails" class="mr-2" pill variant="outline-secondary">
+          <b-button block size="sm" @click="row.toggleDetails" class="mr-2" pill variant="secondary">
             {{ row.detailsShowing ? 'Hide' : 'Details'}}
+          </b-button>
+          <b-button block size="sm" @click="vizlink(cluster_id, row.item.rank)" class="mr-2" pill variant="outline-secondary">
+            Visualization
           </b-button>
         </template>
         <template #row-details="row">
@@ -99,6 +103,11 @@ export default {
       ],
     }
   },
+  methods: {
+    vizlink(cluster_id, rank) {
+      this.$root.$emit('vizlink', cluster_id, rank)
+    }
+  }
 }
 </script>
 

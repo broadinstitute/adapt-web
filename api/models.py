@@ -29,29 +29,28 @@ class TaxonRank(models.Model):
     )
 
     @property
-    def lineage(self):
-        node = self
-        line = []
-        line.append(node)
-        while node.parent:
-            node = node.parent
-            line.append(node)
-        return line
+    def num_segments(self):
+        return len(self.children.filter(rank="segment"))
+
+    @property
+    def parent_info(self):
+        if self.parent:
+            taxids = [taxon.taxid for taxon in self.parent.taxons.all()]
+            return [self.parent.rank, self.parent.latin_name, taxids]
+        else:
+            return None
 
     @property
     def num_children(self):
         return len(self.children.all())
 
     @property
-    def num_segments(self):
-        return len(self.children.filter(rank="segment"))
-
-    @property
     def any_assays(self):
         return self.assay_sets.all().exists()
 
     class Meta:
-        ordering = ['rank', 'latin_name']
+        ordering = ['latin_name']
+
 
 class Taxon(models.Model):
     '''Defines base model for all viral taxonomies with premade designs
@@ -155,6 +154,14 @@ class AssaySet(models.Model):
         choices=OBJ_CHOICES,
     )
     cluster = models.PositiveSmallIntegerField(default=0)
+    s3_aln_path = models.TextField(
+        default="",
+        blank=True
+    )
+    s3_ann_path = models.TextField(
+        default="",
+        blank=True
+    )
 
 class Assay(models.Model):
     '''Defines base model for an assay for a virus

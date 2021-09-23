@@ -2,7 +2,7 @@
   <div id="app" class="mb-5">
   <Header page='About'/>
   <b-container fluid id="body">
-    <b-row class="mt-5">
+    <b-row class="mt-4">
       <b-col cols=0 md=2></b-col>
       <b-col cols=12 md=8>
         <About class="px-4"/>

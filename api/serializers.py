@@ -48,7 +48,7 @@ class TaxonRankSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = TaxonRank
-        fields = ('pk', 'latin_name', 'rank', 'parent', 'num_children', 'num_segments', 'description', 'any_assays', 'taxons')
+        fields = ('pk', 'latin_name', 'rank', 'parent', 'description', 'taxons', 'parent_info', 'any_assays', 'num_children', 'num_segments')
 
 
 class PrimerSerializer(serializers.ModelSerializer):
@@ -146,7 +146,7 @@ class AssaySetSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = AssaySet
-        fields = ('pk', 'taxonrank', 'cluster',  'created', 'specific', 'objective', 'assays')
+        fields = ('pk', 'taxonrank', 'cluster',  'created', 'specific', 'objective', 'assays', 's3_aln_path', 's3_ann_path')
 
 
 

@@ -52,8 +52,8 @@ $footer-height:                     6rem;
 // General Page Formatting
 * {
   letter-spacing: 0.04em;
-  transition: opacity 0.1s;
   font-family: $font-family-sans-serif;
+  scroll-behavior: smooth;
 }
 
 :focus {
@@ -106,31 +106,36 @@ text {
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
 }
-.hide {
-  opacity: 0 !important;
-}
-
-// Positioning
-.float {
-  position: fixed;
-  z-index: 100;
-}
-.bottom {
-  bottom: 12.5%;
-}
-.right {
-  right: 12.5%;
-}
 
 // Header/Body/Footer Formatting
-.header, .footer {
-  font-size: min(0.95em, 4vw);
+.header, .footer {;
   background-color: rgba(lighten($info, 10%), .95);
+}
+
+.header {
+  font-size: min(0.7em, 3vw);
+}
+
+.footer {
+  font-size: min(0.65em, 3vw);
+}
+
+.navbar-collapse .nav-item {
+  height: 6vh;
+  line-height: 6vh;
+}
+
+.navbar-collapse .nav-item a
+{
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 2vh; /* <-- adjust this */
+  padding: 0 0;
 }
 
 .navbar-brand {
   font-weight: 700;
-  font-size: min(3.5rem, 13vw);
+  font-size: min(1.6rem, 6vw);
 }
 
 .navbar-light .navbar-toggler {
@@ -138,7 +143,7 @@ text {
 }
 
 .scroll-shade {
-  box-shadow: 0 1px 20px -1px rgba(0,0,0,.1);
+  box-shadow: 0 6px 10px -10px rgba(0,0,0,0.2);
 }
 
 #body {
@@ -150,6 +155,10 @@ text {
   bottom: 0px;
   width: 100%;
   height: $footer-height;
+}
+
+.footer .navbar-brand {
+  font-size: min(3.5rem, 13vw);
 }
 
 // Part Specific - Buttons
@@ -180,13 +189,6 @@ button:not(.list-group-item):not(.taxon) {
   min-width: 12rem;
 }
 
-.btn-xl {
-  padding: 1rem 2.5rem;
-  font-size: 2rem;
-  line-height: 1.75;
-  border-radius: 0.3rem;
-}
-
 .btn-link {
   text-align: left;
 }
@@ -194,6 +196,31 @@ button:not(.list-group-item):not(.taxon) {
 .btn-link:disabled, .btn-link.disabled {
   color: $body-color;
   opacity: 80%;
+}
+
+.svg-btn {
+  fill: transparent;
+  transition: 0.15s ease-in-out;
+  cursor: pointer;
+  stroke: $secondary;
+  stroke-width: 0.8px;
+}
+
+.svg-btn:hover {
+  fill: $secondary;
+}
+
+.svg-btn + text {
+  fill: $secondary;
+  transition: 0.15s ease-in-out;
+  pointer-events: none;
+  font-family: Montserrat;
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+.svg-btn:hover + text {
+  fill: white;
 }
 
 .add, .delete {
@@ -258,8 +285,19 @@ button:not(.list-group-item):not(.taxon) {
   transform: rotate(180deg);
 }
 
-.f-1, {
-  font-size: 1.6rem;
+hr {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+a.anchor {
+    display: block;
+    position: relative;
+    visibility: hidden;
+}
+
+.f-1, .family {
+  font-size: 2rem;
 }
 
 .f-2, .family {
@@ -287,6 +325,10 @@ button:not(.list-group-item):not(.taxon) {
   font-size: 0.8rem;
 }
 
+.f-7 {
+  font-size: 0.7rem;
+}
+
 .selected {
   background-color: rgba(lighten($success, 60%), 0.5);
 }
@@ -312,11 +354,58 @@ button:not(.list-group-item):not(.taxon) {
   text-decoration: none;
 }
 
-// .taxon {
-//   color: $body-color;
-// }
+.scrolling-sticky {
+  position: sticky;
+  z-index: 100;
+}
 
-// .taxon:hover, .taxon:focus {
-//   color: $body-color;
-//   text-decoration: none;
-// }
+.taxon {
+  color: $body-color;
+}
+
+.taxon:hover, .taxon:focus {
+  color: $body-color;
+  text-decoration: none;
+}
+
+.disclaimer {
+  font-size: 0.75em;
+  font-style: italic;
+}
+
+.multiselect__option--selected.multiselect__option--highlight {
+  background: #f3f3f3;
+  color: #35495e;
+}
+
+.multiselect__option--selected.multiselect__option--highlight:after {
+  background: #f3f3f3;
+  content: attr(data-deselect);
+  color: #35495e;
+}
+
+// GitHub Corner (https://tholman.com/github-corners/)
+.github-corner:hover .octo-arm {
+  animation:octocat-wave 560ms ease-in-out
+}
+
+@keyframes octocat-wave {
+  0%,100% {
+    transform:rotate(0)
+  }
+  20%,60% {
+    transform:rotate(-25deg)
+  }
+  40%,80% {
+    transform:rotate(10deg)
+  }
+}
+
+@media (max-width:500px) {
+  .github-corner:hover .octo-arm{
+    animation:none
+  }
+  .github-corner .octo-arm{
+    animation:octocat-wave 560ms ease-in-out
+  }
+}
