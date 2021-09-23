@@ -583,8 +583,8 @@ class AssaySetViewSet(viewsets.ModelViewSet):
                     with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
                         for i, output_file in enumerate(output_files):
                             zipped_output_a.writestr("%s.fasta" %(assay_sets_with_alns[i].taxonrank.latin_name), output_file)
-                        zipped_output.seek(0)
-                    filename = "alignments" + ".zip"
+                    zipped_output.seek(0)
+                    filename = "alignments" + "_".join([str(pk) for pk in pks]) + ".zip"
                     response = FileResponse(zipped_output, content_type=output_type)
                     response['Content-Disposition'] = 'attachment; filename=%s' % filename
                     return response
@@ -1210,11 +1210,11 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         zipped_output = BytesIO()
                         with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
                             if data_format == 'aln':
-                                for i, output_file in enumerate(output):
-                                    zipped_output_a.writestr("%s.%i.fasta" %(self.kwargs['pk'], i), output_file)
+                                for i, output_file in enumerate(output_files):
+                                    zipped_output_a.writestr("%s.%i.fasta" %(adaptrun.cromwell_id, i), output_file)
                             else:
-                                for i, output_file in enumerate(output):
-                                    zipped_output_a.writestr("%s.%i.tsv" %(self.kwargs['pk'], i), output_file)
+                                for i, output_file in enumerate(output_files):
+                                    zipped_output_a.writestr("%s.%i.tsv" %(adaptrun.cromwell_id, i), output_file)
                         zipped_output.seek(0)
                         output = zipped_output
                         output_ext = ".zip"

@@ -13,10 +13,10 @@
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <template v-if='aln_sum[label[0]]'>
                 <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="ann[label[0]][index]"/>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(100 + 8*cluster.length + (ann[label[0]][index].length>0)*40)*(width/800)" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(100 + 8*cluster.length + (ann[label[0]][index].length>0)*40)*(width/800)" :activityColorScale="activityColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
               <template v-else>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :fracBoundColorScale="fracBoundColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
             </div>
           </div>
@@ -47,9 +47,9 @@
 </template>
 
 <script>
-const Cookies = require('js-cookie')
+// const Cookies = require('js-cookie')
 // Needs CSRF for the server to accept the request
-const csrfToken = Cookies.get('csrftoken')
+// const csrfToken = Cookies.get('csrftoken')
 import Assay from '@/components/Assay.vue'
 import ColorLegend from '@/components/ColorLegend.vue'
 import Genome from '@/components/Genome.vue'
@@ -145,68 +145,33 @@ export default {
   methods: {
     async download_file(endpoint) {
       const vm = this
-      let url
-      let filename
       if (vm.$root.$data.runid=='' && endpoint=='download'){
         let obj = {}
         for (let label of vm.labels) {
           obj[label[1]] = vm.$root.$data.resulttable[label[0]]
         }
         let json = JSON.stringify(obj);
-        url = "data:text/plain;charset=utf-8," + encodeURIComponent(json);
-        filename = 'designs.json'
+        let url = "data:text/plain;charset=utf-8," + encodeURIComponent(json);
+        let filename = 'designs.json'
+        let link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', filename)
+        link.click()
       } else {
-        let response
         if (vm.$root.$data.runid=='') {
           let pks = vm.labels.filter(function (label) {
             return label[0] in vm.aln_sum
           }).map(function (label) {
             return vm.aln_sum[label[0]].pk
           }).join()
-          response = await fetch('/api/assayset/' + endpoint + '/?pk=' + pks, {
-            headers: {
-              "X-CSRFToken": csrfToken
-            }
-          })
+          window.open('/api/assayset/' + endpoint + '/?pk=' + pks, '_blank').focus();
         } else {
-          response = await fetch('/api/adaptrun/id_prefix/' + vm.$root.$data.runid + '/' + endpoint + '/', {
-            headers: {
-              "X-CSRFToken": csrfToken
-            }
-          })
-        }
-        if (response.ok) {
-          let blob = await response.blob()
-          url = window.URL.createObjectURL(new Blob([blob]))
-          filename = response.headers.get('content-disposition')
-            .split(';')
-            .find(n => n.includes('filename='))
-            .replace('filename=', '')
-            .trim()
-        } else {
-          let contentType = response.headers.get("content-type");
-          if (contentType && contentType.indexOf("application/json") !== -1) {
-            let response_json = await response.json()
-            vm.$root.$data.modaltitle = Object.keys(response_json)[0]
-            vm.$root.$data.modalmsg = response_json[this.$root.$data.modaltitle]
-          }
-          else {
-            vm.$root.$data.modaltitle = 'Error'
-            vm.$root.$data.modalmsg = await response.text()
-          }
-          vm.$root.$data.modalvariant = 'danger'
-          vm.$bvModal.show("msg-modal")
-          return
+          window.open('/api/adaptrun/id_prefix/' + vm.$root.$data.runid + '/' + endpoint + '/', '_blank').focus();
         }
       }
-      let link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', filename)
-      link.click()
     },
     linkToTable(cluster_id, rank) {
       this.tabIndex = 1;
-      console.log(this.tabIndex)
       window.location.href = '#table-' + cluster_id + '-' + rank;
     },
   }
