@@ -135,7 +135,7 @@ text {
 
 .navbar-brand {
   font-weight: 700;
-  font-size: min(2rem, 8vw);
+  font-size: min(1.6rem, 6vw);
 }
 
 .navbar-light .navbar-toggler {
@@ -187,6 +187,31 @@ button:not(.list-group-item):not(.taxon) {
 
 .btn-link {
   text-align: left;
+}
+
+.svg-btn {
+  fill: transparent;
+  transition: 0.15s ease-in-out;
+  cursor: pointer;
+  stroke: $secondary;
+  stroke-width: 0.8px;
+}
+
+.svg-btn:hover {
+  fill: $secondary;
+}
+
+.svg-btn + text {
+  fill: $secondary;
+  transition: 0.15s ease-in-out;
+  pointer-events: none;
+  font-family: Montserrat;
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+.svg-btn:hover + text {
+  fill: white;
 }
 
 .add, .delete {
@@ -322,7 +347,7 @@ a.anchor {
 }
 
 .disclaimer {
-  font-size: 0.85em;
+  font-size: 0.75em;
   font-style: italic;
 }
 

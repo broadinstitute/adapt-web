@@ -122,18 +122,23 @@ export default {
 
       // Table Link
       svg
-        .append("text")
-        .attr("text-anchor", "end")
-        .attr("class", "h6")
-        .style("fill", darkInfo)
-        .style("font-family", "Montserrat")
-        .style("font-size", "0.6rem")
-        .html("More Details")
-        .attr("x", vm.boundedWidth-50)
-        .attr("y", -15)
+        .append("rect")
+        .attr("class", "svg-btn")
+        .attr("x", vm.boundedWidth-162)
+        .attr("y", -30)
+        .attr("rx", 12)
+        .attr("height", 24)
+        .attr("width", 125)
         .on("click", function() {
           vm.$root.$emit('tablelink', vm.cluster_id, vm.result.rank);
         });
+      svg
+        .append("text")
+        .attr("text-anchor", "end")
+        .attr("class", "h6")
+        .html("More Details")
+        .attr("x", vm.boundedWidth-50)
+        .attr("y", -15);
 
       // Rank Textbox
       svg

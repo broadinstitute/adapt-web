@@ -2,7 +2,10 @@
    <b-modal id="assay-modal" size="xl" class="" scrollable :hide-footer="tabIndex > 0">
     <template #modal-header>
       <div class="w-100">
-        <b-row><b-col cols=12 lg=4><h5 class="modal-title">Assay Options</h5></b-col><b-col class="text-right pr-3" cols=12 lg=8><span class="disclaimer">Assays made for RPA primers and LwaCas13a crRNAs</span></b-col></b-row>
+        <b-row><b-col cols=12 lg=4><h5 class="modal-title">Assay Options</h5></b-col><b-col class="text-right pr-3 disclaimer" cols=12 lg=8 style="line-height: 1.1;">
+          Assays made for RPA primers and LwaCas13a crRNAs<br>
+          Positions based on a multiple sequence alignment of available genomes
+        </b-col></b-row>
       </div>
     </template>
     <b-tabs content-class="mt-4" justified pills v-model="tabIndex">
