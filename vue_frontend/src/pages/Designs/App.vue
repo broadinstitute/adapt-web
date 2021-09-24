@@ -20,7 +20,7 @@
               blur="5px"
               spinner-variant="secondary"
             >
-              <b-button pill block v-on:click.prevent="display()" type="submit" variant="secondary" name="display_submit" :class="[{'hide': selectedDesigns.length==0}, 'fade-enter-active', 'btn-xl']" :disabled="selectedDesigns.length==0 || loading">Show Assays</b-button>
+              <b-button pill block v-on:click.prevent="displayWrap()" type="submit" variant="secondary" name="display_submit" :class="[{'hide': selectedDesigns.length==0}, 'fade-enter-active', 'btn-xl']" :disabled="selectedDesigns.length==0 || loading">Show Assays</b-button>
             </b-overlay>
           </div>
         </transition>
