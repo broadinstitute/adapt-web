@@ -335,7 +335,7 @@ a.anchor {
   font-size: 2rem;
 }
 
-.f-2, .family {
+.f-2, {
   font-size: 1.4rem;
 }
 
@@ -344,15 +344,15 @@ a.anchor {
   text-transform: uppercase;
 }
 
-.f-3, .genus {
+.f-3, .family {
   font-size: 1.2rem;
 }
 
-.f-4, .species  {
+.f-4, .genus  {
   font-size: 1rem;
 }
 
-.f-5 {
+.f-5, .species{
   font-size: 0.9rem;
 }
 
