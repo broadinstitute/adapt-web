@@ -3,7 +3,7 @@
     <b-col cols=12>
       <b-button
         @click.prevent="select()"
-        :class="[{'selected': family.selected, 'selectable': family.selectable}, 'p-1', 'taxon', 'family']"
+        :class="[{'selected': family.selected, 'selectable': family.selectable}, 'px-0 py-1', 'taxon', 'family']"
         variant="link"
         :disabled="!family.selectable"
       >
@@ -11,7 +11,7 @@
       </b-button>
       <b-button
         :id="pk+'-arrow'"
-        :class="[{'collapsed': family.collapsed, 'not-collapsed': !family.collapsed }, 'px-1']"
+        :class="[{'collapsed': family.collapsed, 'not-collapsed': !family.collapsed }, 'p-0']"
         v-if="family.num_children-family.num_segments>0"
         v-on:click.prevent="toggle()"
         variant="link"

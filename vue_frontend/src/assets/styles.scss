@@ -175,6 +175,11 @@ button:not(.list-group-item):not(.taxon) {
   font-size: inherit;
 }
 
+.btn .b-icon.bi {
+  font-size: 100%;
+  vertical-align: -10%;
+}
+
 .btn-group {
   text-align: center;
   display: block;
@@ -296,7 +301,7 @@ a.anchor {
     visibility: hidden;
 }
 
-.f-1, .family {
+.f-1 {
   font-size: 2rem;
 }
 
@@ -333,38 +338,20 @@ a.anchor {
   background-color: rgba(lighten($success, 60%), 0.5);
 }
 
-.selectable {
-  color: $secondary;
-}
 
 .selectable, .arrow {
   transition: 0.15s;
-  line-height: 1.55;
+  line-height: 1.3;
 }
 
-.selectable:hover, .selectable:focus {
-  color: $secondary;
-  background-color: rgba(lighten($success, 60%), 0.25);
-  text-decoration: none;
-}
-
-.selected:hover, .selected:focus {
-  color: $secondary;
-  background-color: rgba(lighten($success, 60%), 0.75);
-  text-decoration: none;
-}
 
 .scrolling-sticky {
   position: sticky;
   z-index: 100;
 }
 
-.taxon {
-  color: $body-color;
-}
-
 .taxon:hover, .taxon:focus {
-  color: $body-color;
+  // color: $body-color;
   text-decoration: none;
 }
 

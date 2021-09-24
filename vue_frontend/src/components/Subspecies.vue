@@ -2,13 +2,14 @@
   <div class="subspecies">
     <b-button
       @click.prevent="select()"
-      :class="[{'selected': subspecies.selected, 'selectable': subspecies.selectable}, 'p-1', 'taxon', subspecies.rank]"
+      :class="[{'selected': subspecies.selected, 'selectable': subspecies.selectable}, 'p-0', 'taxon', subspecies.rank]"
       variant="link"
       :disabled="!subspecies.selectable"
     >
       {{ subspecies.name }}
     </b-button>
     <span v-if="subspecies.num_segments>0">
+      -
       <span
         v-for="(segment, i) in segmentsOrdered"
         :key="segment"

@@ -1,24 +1,29 @@
 <template>
   <div class="design">
-      <multiselect
-        v-model="selectedDesigns"
-        :options="Object.values(taxons)"
-        :custom-label="formatTaxa"
-        :multiple="true"
-        :close-on-select="false"
-        :clear-on-select="false"
-        :loading="loading"
-        @select="select"
-        @remove="remove"
-        track-by="pk"
-      ></multiselect>
-    <b-row
-      v-for="taxon in taxonsExpandOrdered"
-      :key="taxon[0]"
-    >
-      <Family v-if="taxon[1]=='family'" :pk="taxon[0]"></Family>
-      <Genus v-if="taxon[1]=='genus'" :pk="taxon[0]"></Genus>
-      <Species v-if="taxon[1]=='species'" :pk="taxon[0]"></Species>
+    <multiselect
+      v-model="selectedDesigns"
+      :options="Object.values(taxons)"
+      :custom-label="formatTaxa"
+      :multiple="true"
+      :close-on-select="false"
+      :clear-on-select="false"
+      :loading="loading"
+      @select="select"
+      @remove="remove"
+      track-by="pk"
+    ></multiselect>
+    <b-row>
+      <b-col
+        v-for="taxon in taxonsExpandOrdered"
+        :key="taxon[0]"
+        cols=12
+        lg=6
+        xl=4
+      >
+        <Family v-if="taxon[1]=='family'" :pk="taxon[0]"></Family>
+        <Genus v-if="taxon[1]=='genus'" :pk="taxon[0]"></Genus>
+        <Species v-if="taxon[1]=='species'" :pk="taxon[0]"></Species>
+      </b-col>
     </b-row>
   </div>
 </template>

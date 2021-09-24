@@ -4,8 +4,8 @@
       <b-col
         v-for="taxon in taxonsExpandOrdered"
         :key="taxon[0]"
-        md=4
-        sm=6
+        md=6
+        lg=12
         cols=12>
         <Genus v-if="taxon[1]=='genus'" :pk="taxon[0]"></Genus>
         <Species v-if="taxon[1]=='species'" :pk="taxon[0]"></Species>

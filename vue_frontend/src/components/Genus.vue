@@ -2,7 +2,7 @@
   <div class="genus">
     <b-button
       @click.prevent="select()"
-      :class="[{'selected': genus.selected, 'selectable': genus.selectable}, 'p-1', 'taxon', genus.rank]"
+      :class="[{'selected': genus.selected, 'selectable': genus.selectable}, 'pl-0 pr-1 py-1', 'taxon', genus.rank]"
       variant="link"
       :disabled="!genus.selectable"
     >
@@ -10,7 +10,7 @@
     </b-button>
     <b-button
       :id="pk+'-arrow'"
-      :class="[{ collapsed: genus.collapsed, 'not-collapsed': !genus.collapsed }, 'px-1']"
+      :class="[{ collapsed: genus.collapsed, 'not-collapsed': !genus.collapsed }, 'p-0']"
       v-if="genus.num_children-genus.num_segments>0"
       v-on:click.prevent="toggle()"
       variant="link"
