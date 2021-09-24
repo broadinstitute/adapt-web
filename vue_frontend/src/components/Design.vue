@@ -1,17 +1,24 @@
 <template>
   <div class="design">
-    <multiselect
-      v-model="selectedDesigns"
-      :options="Object.values(taxons)"
-      :custom-label="formatTaxa"
-      :multiple="true"
-      :close-on-select="false"
-      :clear-on-select="false"
-      :loading="loading"
-      @select="select"
-      @remove="remove"
-      track-by="pk"
-    ></multiselect>
+    <b-col cols=12 align="center" class="f-2 pb-3">Type taxa to view diagnostic assay designs for Cas13-based detection:</b-col>
+    <b-row class="scrolling-sticky top pb-3">
+      <b-col>
+        <multiselect
+          v-model="selectedDesigns"
+          :options="Object.values(taxons)"
+          :custom-label="formatTaxa"
+          :multiple="true"
+          :close-on-select="false"
+          :clear-on-select="false"
+          :loading="loading"
+          @select="select"
+          @remove="remove"
+          track-by="pk"
+          class="top"
+        ></multiselect>
+      </b-col>
+    </b-row>
+    <div align="center" class="f-3 py-3">Or, browse through our viral assay designs below:</div>
     <b-row>
       <b-col
         v-for="taxon in taxonsExpandOrdered"
@@ -19,6 +26,7 @@
         cols=12
         lg=6
         xl=4
+        class="text-center text-lg-left"
       >
         <Family v-if="taxon[1]=='family'" :pk="taxon[0]"></Family>
         <Genus v-if="taxon[1]=='genus'" :pk="taxon[0]"></Genus>
@@ -155,7 +163,9 @@ export default {
       if (index > -1) {
         this.$root.$data.selectedDesigns.splice(index, 1);
       }
-      this.$root.$data.all_taxons[removedTaxon.pk].selected = false
+      if (removedTaxon.pk in this.$root.$data.all_taxons) {
+        this.$root.$data.all_taxons[removedTaxon.pk].selected = false
+      }
     },
     formatTaxa({name, rank, taxids}) {
       return '[' + rank[0].toUpperCase() + rank.slice(1) + '] ' + name + " (taxid: " + taxids + ")"

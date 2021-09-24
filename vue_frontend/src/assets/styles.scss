@@ -99,12 +99,35 @@ text {
   font-family: $font-family-monospace;
 }
 
+// Positioning
+.float {
+  position: fixed;
+  z-index: 100;
+}
+
+.top {
+  top: 12.5%;
+}
+
+.bottom {
+  bottom: 12.5%;
+}
+
+.right {
+  right: 12.5%;
+}
+
 // Fade Transitions
 .fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s;
+  transition: opacity 0.3s;
 }
+
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
+}
+
+.hide {
+  opacity: 0 !important;
 }
 
 // Header/Body/Footer Formatting
@@ -183,6 +206,13 @@ button:not(.list-group-item):not(.taxon) {
 .btn-group {
   text-align: center;
   display: block;
+}
+
+.btn-xl {
+  padding: 1rem 2.5rem;
+  font-size: 1.75rem;
+  line-height: 1.75;
+  border-radius: 0.3rem;
 }
 
 .btn-group > .btn:not(:last-child):not(.dropdown-toggle),
