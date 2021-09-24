@@ -11,6 +11,19 @@
             <b-col cols=12><Design class="px-3"></Design></b-col>
           </b-row>
         </transition>
+        <transition appear name="fade">
+          <div class="pb-2 float bottom right">
+            <b-overlay
+              :show="loading"
+              rounded="pill"
+              opacity="0.7"
+              blur="5px"
+              spinner-variant="secondary"
+            >
+              <b-button pill block v-on:click.prevent="display()" type="submit" variant="secondary" name="display_submit" :class="[{'hide': selectedDesigns.length==0}, 'fade-enter-active', 'btn-xl']" :disabled="selectedDesigns.length==0 || loading">Show Assays</b-button>
+            </b-overlay>
+          </div>
+        </transition>
         <AssayModal/>
         <Modal/>
       </b-col>

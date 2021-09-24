@@ -29,7 +29,7 @@ export default {
     }
   },
   async created () {
-    let response = await fetch('/api/taxonrank?rank=subspecies&parent=' + this.species.slice(2), {
+    let response = await fetch('/api/taxonrank?rank=subspecies&parent=' + this.species, {
       headers: {
         "X-CSRFToken": csrfToken
       }
@@ -39,7 +39,7 @@ export default {
       let vm = this
       for (var child in response_json) {
         this.$set(vm.$root.$data.all_taxons,
-          "pk" + response_json[child].pk.toString(),
+          response_json[child].pk.toString(),
           {
             name: response_json[child].latin_name,
             rank: response_json[child].rank,
@@ -53,7 +53,7 @@ export default {
           }
         )
         this.$set(this.taxons,
-          "pk" + response_json[child].pk.toString(),
+          response_json[child].pk.toString(),
           {
             name: response_json[child].latin_name,
             rank: response_json[child].rank,
