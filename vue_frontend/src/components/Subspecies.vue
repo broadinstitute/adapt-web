@@ -10,7 +10,7 @@
     </b-button>
     <span v-if="subspecies.num_segments>0">
       <span
-        v-for="segment in Object.keys(segments)"
+        v-for="(segment, i) in Object.keys(segments)"
         :key="segment"
       >
         <b-button
@@ -21,6 +21,7 @@
       >
         {{ segments[segment].name }}
       </b-button>
+      <span v-if="i<subspecies.num_segments-1">;</span>
       </span>
     </span>
   </div>
@@ -45,7 +46,7 @@ export default {
   async mounted () {
     this.subspecies = this.$root.$data.all_taxons[this.pk]
     if (this.subspecies.num_segments > 0) {
-      let response = await fetch('/api/taxonrank?rank=segment&parent=' + this.pk.slice(2), {
+      let response = await fetch('/api/taxonrank?rank=segment&parent=' + this.pk, {
         headers: {
           "X-CSRFToken": csrfToken
         }
@@ -54,26 +55,31 @@ export default {
         let response_json = await response.json()
         let vm = this
         for (var child in response_json) {
+          let pk = response_json[child].pk.toString()
           this.$set(vm.$root.$data.all_taxons,
-            "pk" + response_json[child].pk.toString(),
+            pk,
             {
-              name: response_json[child].latin_name,
-              rank: response_json[child].rank,
+              "pk": pk,
+              name: vm.subspecies.name + " — Segment " + response_json[child].latin_name,
+              rank: vm.subspecies.rank,
               num_children: response_json[child].num_children,
               num_segments: response_json[child].num_segments,
               description: response_json[child].description,
               selectable: response_json[child].any_assays,
+              taxids: vm.subspecies.taxids,
               shown: false,
               selected: false,
               collapsed: true,
             }
           )
-          this.$set(this.segments,
-            "pk" + response_json[child].pk.toString(),
+          this.$set(vm.segments,
+            pk,
             {
+              "pk": pk,
               name: response_json[child].latin_name,
               description: response_json[child].description,
               selectable: response_json[child].any_assays,
+              taxids: vm.subspecies.taxids,
               shown: false,
               selected: false,
               collapsed: true,
@@ -96,22 +102,10 @@ export default {
         /* Flip selected variable */
         this.subspecies.selected = !this.subspecies.selected;
         if (this.subspecies.selected) {
-          /* Add to selectedDesigns */
-          this.$root.$data.selectedDesigns.push([this.pk, this.subspecies.name])
+          this.$root.$emit('select-design', this.subspecies);
         } else {
-          /* Remove from selectedDesigns */
-          let index = -1;
-          for (let i in this.$root.$data.selectedDesigns) {
-            if (this.$root.$data.selectedDesigns[i][0] == this.pk) {
-              index = i;
-            }
-          }
-          if (index > -1) {
-            this.$root.$data.selectedDesigns.splice(index, 1);
-          }
+          this.$root.$emit('remove-design', this.pk, this.subspecies.name);
         }
-        /* Resort selectedDesigns by primary key order */
-        this.$root.$data.selectedDesigns.sort();
       }
     },
     select_seg(segment) {
@@ -119,22 +113,10 @@ export default {
         /* Flip selected variable */
         this.segments[segment].selected = !this.segments[segment].selected;
         if (this.segments[segment].selected) {
-          /* Add to selectedDesigns */
-          this.$root.$data.selectedDesigns.push([segment, this.segments[segment].name])
+          this.$root.$emit('select-design', this.$root.$data.all_taxons[segment]);
         } else {
-          /* Remove from selectedDesigns */
-          let index = -1;
-          for (let i in this.$root.$data.selectedDesigns) {
-            if (this.$root.$data.selectedDesigns[i][0] == segment) {
-              index = i;
-            }
-          }
-          if (index > -1) {
-            this.$root.$data.selectedDesigns.splice(index, 1);
-          }
+          this.$root.$emit('remove-design', segment);
         }
-        /* Resort selectedDesigns by primary key order */
-        this.$root.$data.selectedDesigns.sort();
       }
     }
   }

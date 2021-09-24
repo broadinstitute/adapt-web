@@ -38,29 +38,34 @@ export default {
       let response_json = await response.json()
       let vm = this
       for (var child in response_json) {
+        let pk = response_json[child].pk.toString()
         this.$set(vm.$root.$data.all_taxons,
-          response_json[child].pk.toString(),
+          pk,
           {
+            "pk": pk,
             name: response_json[child].latin_name,
             rank: response_json[child].rank,
             num_children: response_json[child].num_children,
             num_segments: response_json[child].num_segments,
             description: response_json[child].description,
             selectable: response_json[child].any_assays,
+            taxids: response_json[child].taxons,
             shown: false,
             selected: false,
             collapsed: true,
           }
         )
         this.$set(this.taxons,
-          response_json[child].pk.toString(),
+          pk,
           {
+            "pk": pk,
             name: response_json[child].latin_name,
             rank: response_json[child].rank,
             num_children: response_json[child].num_children,
             num_segments: response_json[child].num_segments,
             description: response_json[child].description,
             selectable: response_json[child].any_assays,
+            taxids: response_json[child].taxons,
             shown: false,
             selected: false,
             collapsed: true,

@@ -2,7 +2,7 @@
   <div class="design">
       <multiselect
         v-model="selectedDesigns"
-        :options="taxons"
+        :options="Object.values(taxons)"
         :custom-label="formatTaxa"
         :multiple="true"
         :close-on-select="false"
@@ -43,7 +43,7 @@ export default {
   data() {
     return {
       selectedDesigns: [],
-      taxons: [],
+      taxons: {},
       taxonsExpand: {},
       loading: true,
     }
@@ -54,34 +54,39 @@ export default {
         "X-CSRFToken": csrfToken
       }
     })
+    let vm = this
     if (response.ok) {
       let response_json = await response.json()
-      let vm = this
       for (let child in response_json) {
         // <<<<<<< HEAD
+        let pk = response_json[child].pk.toString()
         this.$set(vm.$root.$data.all_taxons,
-          response_json[child].pk.toString(),
+          pk,
           {
+            "pk": pk,
             name: response_json[child].latin_name,
             rank: response_json[child].rank,
             num_children: response_json[child].num_children,
             num_segments: response_json[child].num_segments,
             description: response_json[child].description,
             selectable: response_json[child].any_assays,
+            taxids: response_json[child].taxons,
             shown: false,
             selected: false,
             collapsed: true,
           }
         )
         this.$set(vm.taxonsExpand,
-          response_json[child].pk.toString(),
+          pk,
           {
+            "pk": pk,
             name: response_json[child].latin_name,
             rank: response_json[child].rank,
             num_children: response_json[child].num_children,
             num_segments: response_json[child].num_segments,
             description: response_json[child].description,
             selectable: response_json[child].any_assays,
+            taxids: response_json[child].taxons,
             shown: false,
             selected: false,
             collapsed: true,
@@ -98,6 +103,7 @@ export default {
     if (response.ok) {
       let response_json = await response.json()
       for (let child in response_json) {
+        let pk = response_json[child].pk.toString()
         let name = response_json[child].latin_name
         let rank = response_json[child].rank
         let taxids = response_json[child].taxons
@@ -106,9 +112,9 @@ export default {
           name = response_json[child].parent_info[1] + " — Segment " + name
           taxids = response_json[child].parent_info[2]
         }
-        this.taxons.push(
+        this.$set(vm.taxons, pk,
           {
-            "pk": response_json[child].pk.toString(),
+            "pk": pk,
             "name": name,
             "rank": rank,
             "description": response_json[child].description,
@@ -125,6 +131,25 @@ export default {
       this.$root.$emit('show-msg');
     }
     this.loading = false
+  },
+  mounted() {
+    let vm = this
+    vm.$root.$on('select-design', function(selectedTaxon) {
+      vm.selectedDesigns.push(selectedTaxon)
+      vm.select({"pk": selectedTaxon.pk, "name": selectedTaxon.name})
+    });
+    vm.$root.$on('remove-design', function(pk) {
+      let index = -1;
+      for (let i in vm.selectedDesigns) {
+        if (vm.selectedDesigns[i].pk == pk) {
+          index = i;
+        }
+      }
+      if (index > -1) {
+        vm.selectedDesigns.splice(index, 1);
+      }
+      vm.remove({"pk": pk})
+    });
   },
   methods : {
     select(selectedTaxon) {

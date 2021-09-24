@@ -55,22 +55,9 @@ export default {
         /* Flip selected variable */
         this.genus.selected = !this.genus.selected;
         if (this.genus.selected) {
-          /* Add to selectedDesigns */
-          this.$root.$data.selectedDesigns.push([this.pk, this.genus.name])
+          this.$root.$emit('select-design', this.genus);
         } else {
-          /* Remove from selectedDesigns */
-          let index = -1;
-          for (let i in this.$root.$data.selectedDesigns) {
-            if (this.$root.$data.selectedDesigns[i][0] == this.pk) {
-              index = i;
-            }
-          }
-          if (index > -1) {
-            this.$root.$data.selectedDesigns.splice(index, 1);
-          }
-        }
-        /* Resort selectedDesigns by primary key order */
-        this.$root.$data.selectedDesigns.sort();
+          this.$root.$emit('remove-design', this.pk, this.genus.name);
       }
     }
   }
