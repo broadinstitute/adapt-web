@@ -1,7 +1,7 @@
 <template>
   <div class="expandgenus">
     <span
-      v-for="taxon in Object.keys(taxons)"
+      v-for="taxon in taxonsExpandOrdered"
       :key="taxon"
     >
       <Species v-if="taxons[taxon].rank=='species'" :pk="taxon"></Species>
@@ -26,6 +26,7 @@ export default {
   data() {
     return {
       taxons: {},
+      taxonsExpandOrdered: [],
     }
   },
   async created () {
@@ -71,6 +72,7 @@ export default {
             collapsed: true,
           }
         )
+        this.taxonsExpandOrdered.push(pk)
       }
     }
     else {

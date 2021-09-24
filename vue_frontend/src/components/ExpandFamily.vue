@@ -2,7 +2,7 @@
   <div class="expandfamily">
     <b-row>
       <b-col
-        v-for="taxon in Object.keys(taxons)"
+        v-for="taxon in taxonsExpandOrdered"
         :key="taxon"
         md=4
         sm=6
@@ -33,6 +33,7 @@ export default {
   data() {
     return {
       taxons: {},
+      taxonsExpandOrdered: [],
     }
   },
   async created () {
@@ -78,6 +79,7 @@ export default {
             collapsed: true,
           }
         )
+        this.taxonsExpandOrdered.push(pk)
       }
     }
     else {

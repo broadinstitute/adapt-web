@@ -49,7 +49,7 @@ class TaxonRank(models.Model):
         return self.assay_sets.all().exists()
 
     class Meta:
-        ordering = ['latin_name']
+        ordering = ['rank', 'latin_name']
 
 
 class Taxon(models.Model):

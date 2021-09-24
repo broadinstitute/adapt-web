@@ -10,7 +10,7 @@
     </b-button>
     <span v-if="subspecies.num_segments>0">
       <span
-        v-for="(segment, i) in Object.keys(segments)"
+        v-for="(segment, i) in segmentsOrdered"
         :key="segment"
       >
         <b-button
@@ -40,7 +40,8 @@ export default {
   data() {
     return {
       subspecies: {},
-      segments: {}
+      segments: {},
+      segmentsOrdered: [],
     }
   },
   async mounted () {
@@ -85,6 +86,7 @@ export default {
               collapsed: true,
             }
           )
+        this.segmentsOrdered.push(pk)
         }
       }
     }

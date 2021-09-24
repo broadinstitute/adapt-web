@@ -13,7 +13,7 @@
         track-by="pk"
       ></multiselect>
     <b-row
-      v-for="taxon in Object.keys(taxonsExpand)"
+      v-for="taxon in taxonsExpandOrdered"
       :key="taxon"
     >
       <Family v-if="taxonsExpand[taxon].rank=='family'" :pk="taxon"></Family>
@@ -45,6 +45,7 @@ export default {
       selectedDesigns: [],
       taxons: {},
       taxonsExpand: {},
+      taxonsExpandOrdered: [],
       loading: true,
     }
   },
@@ -92,6 +93,7 @@ export default {
             collapsed: true,
           }
         )
+        this.taxonsExpandOrdered.push(pk)
       }
     }
       // =======
