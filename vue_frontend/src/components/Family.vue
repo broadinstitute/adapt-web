@@ -62,6 +62,7 @@ export default {
           this.$root.$emit('select-design', this.family);
         } else {
           this.$root.$emit('remove-design', this.pk, this.family.name);
+        }
       }
     }
   }

@@ -58,6 +58,7 @@ export default {
           this.$root.$emit('select-design', this.genus);
         } else {
           this.$root.$emit('remove-design', this.pk, this.genus.name);
+        }
       }
     }
   }
