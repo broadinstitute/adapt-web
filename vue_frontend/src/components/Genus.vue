@@ -52,9 +52,7 @@ export default {
     },
     select() {
       if (this.genus.selectable) {
-        /* Flip selected variable */
-        this.genus.selected = !this.genus.selected;
-        if (this.genus.selected) {
+        if (!this.genus.selected) {
           this.$root.$emit('select-design', this.genus);
         } else {
           this.$root.$emit('remove-design', this.pk, this.genus.name);

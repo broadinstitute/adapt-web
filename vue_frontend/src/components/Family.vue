@@ -56,9 +56,7 @@ export default {
     },
     select() {
       if (this.family.selectable) {
-        /* Flip selected variable */
-        this.family.selected = !this.family.selected;
-        if (this.family.selected) {
+        if (!this.family.selected) {
           this.$root.$emit('select-design', this.family);
         } else {
           this.$root.$emit('remove-design', this.pk, this.family.name);

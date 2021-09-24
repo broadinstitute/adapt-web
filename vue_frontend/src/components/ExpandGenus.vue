@@ -2,9 +2,9 @@
   <div class="expandgenus">
     <span
       v-for="taxon in taxonsExpandOrdered"
-      :key="taxon"
+      :key="taxon[0]"
     >
-      <Species v-if="taxons[taxon].rank=='species'" :pk="taxon"></Species>
+      <Species v-if="taxon[1]=='species'" :pk="taxon[0]"></Species>
     </span>
   </div>
 </template>
@@ -25,7 +25,6 @@ export default {
   },
   data() {
     return {
-      taxons: {},
       taxonsExpandOrdered: [],
     }
   },
@@ -40,6 +39,13 @@ export default {
       let vm = this
       for (var child in response_json) {
         let pk = response_json[child].pk.toString()
+        let selected = false
+        for (let selectedDesign of vm.$root.$data.selectedDesigns) {
+          if (selectedDesign[0] == pk) {
+            selected = true;
+            break;
+          }
+        }
         this.$set(vm.$root.$data.all_taxons,
           pk,
           {
@@ -52,27 +58,11 @@ export default {
             selectable: response_json[child].any_assays,
             taxids: response_json[child].taxons,
             shown: false,
-            selected: false,
+            "selected": selected,
             collapsed: true,
           }
         )
-        this.$set(vm.taxons,
-          pk,
-          {
-            "pk": pk,
-            name: response_json[child].latin_name,
-            rank: response_json[child].rank,
-            num_children: response_json[child].num_children,
-            num_segments: response_json[child].num_segments,
-            description: response_json[child].description,
-            selectable: response_json[child].any_assays,
-            taxids: response_json[child].taxons,
-            shown: false,
-            selected: false,
-            collapsed: true,
-          }
-        )
-        this.taxonsExpandOrdered.push(pk)
+        this.taxonsExpandOrdered.push([pk, vm.$root.$data.all_taxons[pk].rank])
       }
     }
     else {

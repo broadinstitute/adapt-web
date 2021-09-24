@@ -16,11 +16,11 @@
       >
         <b-button
         @click.prevent="select_seg(segment)"
-        :class="[{'selected': segments[segment].selected, 'selectable': segments[segment].selectable}, 'p-1', 'taxon', segments[segment].rank]"
+        :class="[{'selected': root.$data.all_taxons[segment].selected, 'selectable': root.$data.all_taxons[segment].selectable}, 'p-1', 'taxon', root.$data.all_taxons[segment].rank]"
         variant="link"
-        :disabled="!segments[segment].selectable"
+        :disabled="!root.$data.all_taxons[segment].selectable"
         >
-          {{ segments[segment].name }}
+          {{ root.$data.all_taxons[segment].shortname }}
         </b-button>
       <span v-if="i<species.num_segments-1">;</span>
       </span>
@@ -57,8 +57,8 @@ export default {
   data() {
     return {
       species: {},
-      segments: {},
       segmentsOrdered: [],
+      root: this.$root
     }
   },
   async mounted () {
@@ -74,11 +74,19 @@ export default {
         let vm = this
         for (var child in response_json) {
           let pk = response_json[child].pk.toString()
+          let selected = false
+          for (let selectedDesign of vm.$root.$data.selectedDesigns) {
+            if (selectedDesign[0] == pk) {
+              selected = true;
+              break;
+            }
+          }
           this.$set(vm.$root.$data.all_taxons,
             pk,
             {
               "pk": pk,
               name: vm.species.name + " — Segment " + response_json[child].latin_name,
+              shortname: response_json[child].latin_name,
               rank: vm.species.rank,
               num_children: response_json[child].num_children,
               num_segments: response_json[child].num_segments,
@@ -86,20 +94,7 @@ export default {
               selectable: response_json[child].any_assays,
               taxids: vm.species.taxids,
               shown: false,
-              selected: false,
-              collapsed: true,
-            }
-          )
-          this.$set(vm.segments,
-            pk,
-            {
-              "pk": pk,
-              name: response_json[child].latin_name,
-              description: response_json[child].description,
-              selectable: response_json[child].any_assays,
-              taxids: vm.species.taxids,
-              shown: false,
-              selected: false,
+              "selected": selected,
               collapsed: true,
             }
           )
@@ -118,9 +113,7 @@ export default {
     },
     select() {
       if (this.species.selectable) {
-        /* Flip selected variable */
-        this.species.selected = !this.species.selected;
-        if (this.species.selected) {
+        if (!this.species.selected) {
           this.$root.$emit('select-design', this.species);
         } else {
           this.$root.$emit('remove-design', this.pk, this.species.name);
@@ -128,10 +121,8 @@ export default {
       }
     },
     select_seg(segment) {
-      if (this.segments[segment].selectable) {
-        /* Flip selected variable */
-        this.segments[segment].selected = !this.segments[segment].selected;
-        if (this.segments[segment].selected) {
+      if (this.$root.$data.all_taxons[segment].selectable) {
+        if (!this.$root.$data.all_taxons[segment].selected) {
           this.$root.$emit('select-design', this.$root.$data.all_taxons[segment]);
         } else {
           this.$root.$emit('remove-design', segment);

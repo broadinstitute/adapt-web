@@ -14,11 +14,11 @@
       ></multiselect>
     <b-row
       v-for="taxon in taxonsExpandOrdered"
-      :key="taxon"
+      :key="taxon[0]"
     >
-      <Family v-if="taxonsExpand[taxon].rank=='family'" :pk="taxon"></Family>
-      <Genus v-if="taxonsExpand[taxon].rank=='genus'" :pk="taxon"></Genus>
-      <Species v-if="taxonsExpand[taxon].rank=='species'" :pk="taxon"></Species>
+      <Family v-if="taxon[1]=='family'" :pk="taxon[0]"></Family>
+      <Genus v-if="taxon[1]=='genus'" :pk="taxon[0]"></Genus>
+      <Species v-if="taxon[1]=='species'" :pk="taxon[0]"></Species>
     </b-row>
   </div>
 </template>
@@ -44,7 +44,6 @@ export default {
     return {
       selectedDesigns: [],
       taxons: {},
-      taxonsExpand: {},
       taxonsExpandOrdered: [],
       loading: true,
     }
@@ -59,7 +58,6 @@ export default {
     if (response.ok) {
       let response_json = await response.json()
       for (let child in response_json) {
-        // <<<<<<< HEAD
         let pk = response_json[child].pk.toString()
         this.$set(vm.$root.$data.all_taxons,
           pk,
@@ -77,26 +75,9 @@ export default {
             collapsed: true,
           }
         )
-        this.$set(vm.taxonsExpand,
-          pk,
-          {
-            "pk": pk,
-            name: response_json[child].latin_name,
-            rank: response_json[child].rank,
-            num_children: response_json[child].num_children,
-            num_segments: response_json[child].num_segments,
-            description: response_json[child].description,
-            selectable: response_json[child].any_assays,
-            taxids: response_json[child].taxons,
-            shown: false,
-            selected: false,
-            collapsed: true,
-          }
-        )
-        this.taxonsExpandOrdered.push(pk)
+        this.taxonsExpandOrdered.push([pk, vm.$root.$data.all_taxons[pk].rank])
       }
     }
-      // =======
     response = await fetch('/api/taxonrank?designed=true', {
       headers: {
         "X-CSRFToken": csrfToken
@@ -121,7 +102,6 @@ export default {
             "rank": rank,
             "description": response_json[child].description,
             "taxids": taxids,
-// >>>>>>> main
           }
         )
       }
@@ -156,6 +136,9 @@ export default {
   methods : {
     select(selectedTaxon) {
       this.$root.$data.selectedDesigns.push([selectedTaxon.pk, selectedTaxon.name])
+      if (selectedTaxon.pk in this.$root.$data.all_taxons) {
+        this.$root.$data.all_taxons[selectedTaxon.pk].selected = true
+      }
     },
     remove(removedTaxon){
       let index = -1;
@@ -167,6 +150,7 @@ export default {
       if (index > -1) {
         this.$root.$data.selectedDesigns.splice(index, 1);
       }
+      this.$root.$data.all_taxons[removedTaxon.pk].selected = false
     },
     formatTaxa({name, rank, taxids}) {
       return '[' + rank[0].toUpperCase() + rank.slice(1) + '] ' + name + " (taxid: " + taxids + ")"
