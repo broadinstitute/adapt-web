@@ -1,6 +1,6 @@
 <template>
   <div class="design">
-    <b-col cols=12 align="center" class="f-2 pb-3">Type taxa to view diagnostic assay designs for Cas13-based detection:</b-col>
+    <b-col cols=12 align="center" class="f-2 pb-3">Type taxa to view diagnostic assay designs for Cas13-based detection</b-col>
     <b-row class="scrolling-sticky top pb-3">
       <b-col>
         <multiselect
@@ -18,7 +18,7 @@
         ></multiselect>
       </b-col>
     </b-row>
-    <div align="center" class="f-3 py-3">Or, browse through our viral assay designs below:</div>
+    <div align="center" class="f-3 py-3">Or, browse through our viral assay designs below</div>
     <b-row>
       <b-col
         v-for="taxon in taxonsExpandOrdered"
