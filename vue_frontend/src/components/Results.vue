@@ -19,7 +19,7 @@
                 <br>
                 <h5>No previous runs</h5>
                 <br>
-                <p>Check out the <a href="/">Run page</a> to try running ADAPT yourself.</p>
+                <p>Check out the <a href="/run">Run page</a> to try running ADAPT yourself.</p>
                 <p>Type "<a href="" v-on:click.prevent.stop.self="setRunID('example-success')">example-success</a>" as a Run ID to see an example of what ADAPT's output looks like.</p>
               </div>
               <br>
