@@ -1,8 +1,14 @@
 <template>
   <transition appear name="fade">
     <div class="about text-center">
-      <div style="font-weight: 700; font-size: max(min(15vw, 12em),4em); line-height: 1.2;">AD<img v-if="prod" class="logo" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" src="@/assets/img/logo.png" alt="A">PT</div>
-      <div style="font-size: max(min(2.5vw, 1.5em),0.75em)" class="pb-4">Activity-informed Design with All-inclusive Patrolling of Targets</div>
+      <b-row align-v="center" class="pb-2">
+        <b-col md=7>
+          <div style="font-weight: 700; font-size: max(min(8.4vw, 7em),4em); line-height: 1.2;">AD<img v-if="prod" class="logo" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" src="@/assets/img/logo.png" alt="A">PT</div>
+        </b-col>
+        <b-col md=5>
+          <i style="font-size: max(min(1.6vw, 1.2em),0.8em)">Activity-informed Design with All-inclusive Patrolling of Targets</i>
+        </b-col>
+      </b-row>
       <p class="pb-4 text-muted f-4">ADAPT efficiently designs nucleic acid diagnostic assays with maximal predicted detection activity over genomic variation given constraints on complexity, with a focus on viruses.</p>
       <b-card class="mt-3 mb-5">
         <b-card-text>
@@ -54,7 +60,7 @@
           </b-card>
         </b-col>
       </b-row>
-      <p class="f-3 pt-2 pb-5">ADAPT also provides an <b>end-to-end</b> solution, automatically downloading, curating, and aligning sequences from NCBI to provide designs rapidly at scale.</p>
+      <p class="f-3 pt-2 pb-5">ADAPT provides an <b>end-to-end</b> solution, automatically downloading, curating, and aligning sequences from NCBI to provide designs rapidly at scale.</p>
 
       <b-row class="pt-5 pb-4">
         <b-col lg=4 class="h3 text-center my-auto pb-3">
@@ -76,7 +82,7 @@
         </b-col>
       </b-row>
       <p class="pt-5 f-5">Currently, ADAPT is directly suited to Cas13a-based diagnostics, e.g., with the SHERLOCK, SHINE, or CARMEN platforms. Future versions will extend ADAPT's predictive models to work with other nucleic acid detection technologies.</p>
-      <p class="f-5">ADAPT was created in the Sabeti Lab at the Broad Institute of MIT and Harvard by Hayden Metsky, a computational scientist, and is currently being developed by Hayden and Priya Pillai, a software engineer.</p>
+      <p class="f-5">ADAPT was created in the Sabeti Lab at the Broad Institute of MIT and Harvard by Hayden Metsky and is currently being developed by Hayden and Priya Pillai.</p>
       <br>
       <p><span class="disclaimer">Note: ADAPT’s pre-designed assays were generated fully automatically and we have not yet experimentally validated most of them; they are intended for research use only. They have gone through in silico checks of comprehensiveness and sensitivity to their species.</span></p>
     </div>
