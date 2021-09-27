@@ -401,6 +401,36 @@ a.anchor {
   color: #35495e;
 }
 
+.shepherd-footer {
+  justify-content: space-around;
+}
+
+.shepherd-element:focus {
+  outline: none;
+}
+
+.shepherd-arrow {
+  display: none;
+}
+
+.shepherd-button.shepherd-button-secondary {
+    background: lighten($info, 6%);
+    color: darken($danger, 5%);
+}
+
+.shepherd-button {
+    background: $secondary;
+    color: white;
+}
+
+// .v-tour__target--highlighted {
+//   box-shadow: 0 0 0 99999px rgba(0,0,0,.5) !important;
+// }
+
+// .v-step[data-v-54f9a632] {
+//   background: $dark;
+// }
+
 // GitHub Corner (https://tholman.com/github-corners/)
 .github-corner:hover .octo-arm {
   animation:octocat-wave 560ms ease-in-out

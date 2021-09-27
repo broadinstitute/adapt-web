@@ -17,6 +17,7 @@
     "vee-validate": "^3.4.5",
     "vue": "^2.6.12",
     "vue-multiselect": "^2.1.6",
+    "vue-shepherd": "^0.2.1",
     "webpack": "^5.0.0"
   },
   "devDependencies": {

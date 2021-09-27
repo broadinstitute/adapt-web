@@ -285,10 +285,11 @@
             blur="5px"
             spinner-variant="secondary"
           >
-            <b-button pill block v-on:click.prevent="validateMultiParts().then(valid => {if (valid) {handleSubmit(adapt_run)} else {validate()}})" size="lg" type="submit" variant="outline-secondary" :disabled="loading">Submit a Run</b-button>
+            <b-button pill block v-on:click.prevent="validateMultiParts().then(valid => {if (valid) {handleSubmit(adapt_run)} else {validate()}})" size="lg" type="submit" variant="outline-secondary" id="submit-button" :disabled="loading">Submit a Run</b-button>
           </b-overlay>
         </b-form>
       </ValidationObserver>
+      <!-- <v-tour name="explainForm" :steps="steps" :options="tourOptions"></v-tour> -->
     </div>
   </transition>
 </template>
@@ -457,8 +458,80 @@ export default {
       },
       message: "The {_field_} must be greater than the primer length and the guide length",
     });
+
+    let tourDone = Cookies.get('tourDone')
+    if (tourDone == null) {
+      // this.$tours['explainForm'].start()
+      // this.$root.$data.modaltitle = 'Error'
+      // this.$root.$data.modalmsg = error.message
+      // this.$root.$data.modalvariant = 'danger'
+      // this.$root.$emit('show-msg');
+      vm.$nextTick(() => {
+        vm.tour.start();
+      });
+      // TODO BEFORE COMMIT: UNCOMMENT THIS LINE
+      // Cookies.set('tourDone', 'true')
+    }
+    vm.tour.addStep({
+      attachTo: { element: '#opts-inputchoices-inputchoice', on: 'auto'},
+      text: `First, you need to select what you're designing for.`,
+    });
+    vm.tour.addStep({
+      attachTo: { element: vm.$el.querySelector('#inputchoices-inputchoice_BV_option_0').parentElement , on: 'auto'},
+      text: `If you're designing for a taxonomy (a species, subspecies, genus...) as defined by NCBI's database, ADAPT can automatically download and align viral genomes for you.<br>Find the taxonomy identifier of the virus in the <a href=https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=10239&lvl=3&p=7&lin=f&keep=1&srchmode=1&unlock target="_blank" rel="noreferrer">NCBI Taxonomy Database</a>.`,
+    });
+    vm.tour.addStep({
+      attachTo: { element: vm.$el.querySelector('#inputchoices-inputchoice_BV_option_1').parentElement , on: 'auto'},
+      text: `If you're designing for a set of genomes which you have a FASTA file for, you'll need to first align it using <a href="https://mafft.cbrc.jp/alignment/server/" rel="noreferrer" target="_blank">MAFFT</a> or your preferred genome alignment tool, then upload that FASTA file here.`,
+    });
   },
   data () {
+    // let vm = this;
+    const tour = this.$shepherd({
+      useModalOverlay: true,
+      defaultStepOptions: {
+        cancelIcon: {
+          enabled: true,
+        },
+        modalOverlayOpeningRadius: 5,
+        modalOverlayOpeningPadding: 5,
+        buttons: [
+          {
+            action: function () {
+              return this.back();
+            },
+            text: 'Back',
+            classes: 'mt-4',
+          },
+          {
+            action: function () {
+              return this.next();
+            },
+            text: 'Next',
+            classes: 'mt-4',
+          }
+        ],
+      }
+    });
+
+    tour.addStep({
+      text: `Welcome to ADAPT!
+             If you'd like an explanation of how to use ADAPT, click "Begin Tour".
+             If you know how to use ADAPT already, click "Skip Tour".`,
+      buttons: [
+      {
+          action: tour.cancel,
+          secondary: true,
+          text: 'Skip Tour',
+          classes: 'mt-4',
+        },
+        {
+          action: tour.next,
+          text: 'Begin Tour',
+          classes: 'mt-4',
+        }
+      ],
+    });
     return {
       // Fields of the form. Divided into sections, subsections, and fields,
       // Sections have a label and a true/false 'collapsible' value
@@ -478,8 +551,8 @@ export default {
               type: 'radio',
               value: '',
               options: [
+                { value: 'auto-from-args', text: 'NCBI Taxonomy Identifier' },
                 { value: 'fasta', text: 'Prealigned FASTA' },
-                { value: 'auto-from-args', text: 'NCBI Taxonomic ID' },
               ],
               rules: 'required',
               exclude: true,
@@ -490,10 +563,10 @@ export default {
             show: false,
             taxid: {
               order: 0,
-              label: 'NCBI Taxonomic ID',
+              label: 'NCBI Taxonomy Identifier',
               type: 'number',
               value: '',
-              description: 'Sequences will be downloaded from NCBI and aligned. Taxonomic ID can be determined <a href=https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=10239&lvl=3&p=7&lin=f&keep=1&srchmode=1&unlock target="_blank" rel="noreferrer">here<a>.',
+              description: 'Sequences will be downloaded from NCBI and aligned. Taxonomy Identifier can be determined <a href=https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=10239&lvl=3&p=7&lin=f&keep=1&srchmode=1&unlock target="_blank" rel="noreferrer">here</a>.',
               rules: 'required_if:@inputchoice,auto-from-args|min_value:0',
               cols: 12,
             },
@@ -908,6 +981,39 @@ export default {
         },
       },
       loading: false,
+      "tour": tour,
+      // steps: [
+      //   {
+      //     target: '#advopts',  // We're using document.querySelector() under the hood
+      //     header: {
+      //       title: 'Get Started',
+      //     },
+      //     content: `Discover <strong>Vue Tour</strong>!`,
+      //     params: {
+      //       highlight: false
+      //     },
+      //   },
+      //   {
+      //     target: '#submit-button',
+      //     content: 'An awesome plugin made with Vue.js!'
+      //   },
+      //   {
+      //     target: '#full-form',
+      //     content: 'Try it, you\'ll love it!<br>You can put HTML in the steps and completely customize the DOM to suit your needs.',
+      //     params: {
+      //       placement: 'bottom' // Any valid Popper.js placement. See https://popper.js.org/popper-documentation.html#Popper.placements
+      //     }
+      //   }
+      // ],
+      // tourOptions: {
+      //   labels: {
+      //     buttonSkip: 'Skip',
+      //     buttonPrevious: 'Back',
+      //     buttonNext: 'Next',
+      //     buttonStop: 'Done'
+      //   },
+      //   highlight: true,
+      // },
     }
   },
   // computed and watch are used to show certain sections of the form dependent on input choices
