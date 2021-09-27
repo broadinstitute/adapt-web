@@ -230,7 +230,7 @@ button:not(.list-group-item):not(.taxon) {
 
 .btn-link:disabled, .btn-link.disabled {
   color: $body-color;
-  opacity: 85%;
+  opacity: 0.85;
 }
 
 .svg-btn {
