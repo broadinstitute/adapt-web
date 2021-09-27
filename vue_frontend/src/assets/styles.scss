@@ -121,15 +121,15 @@ text {
 }
 
 .navbar-collapse .nav-item {
-  height: 6vh;
-  line-height: 6vh;
+  height: 4em;
+  line-height: 4em;
 }
 
 .navbar-collapse .nav-item a
 {
   display: inline-block;
   vertical-align: middle;
-  line-height: 2vh; /* <-- adjust this */
+  line-height: 1.5em; /* <-- adjust this */
   padding: 0 0;
 }
 
@@ -157,8 +157,8 @@ text {
   height: $footer-height;
 }
 
-.footer .navbar-brand {
-  font-size: min(3.5rem, 13vw);
+.footer .logo {
+  font-size: 7em;
 }
 
 // Part Specific - Buttons
@@ -268,6 +268,7 @@ button:not(.list-group-item):not(.taxon) {
 // Part Specific - Misc
 .logo {
   height: 0.85em;
+  line-height: 1;
   padding-bottom: 0.15em;
   margin-left: -0.05em
 }
