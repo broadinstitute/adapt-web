@@ -29,6 +29,10 @@ class TaxonRank(models.Model):
     )
 
     @property
+    def num_segments(self):
+        return len(self.children.filter(rank="segment"))
+
+    @property
     def parent_info(self):
         if self.parent:
             taxids = [taxon.taxid for taxon in self.parent.taxons.all()]
@@ -45,7 +49,7 @@ class TaxonRank(models.Model):
         return self.assay_sets.all().exists()
 
     class Meta:
-        ordering = ['latin_name']
+        ordering = ['rank', 'latin_name']
 
 
 class Taxon(models.Model):

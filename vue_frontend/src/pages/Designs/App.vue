@@ -7,13 +7,11 @@
       <b-col cols=12 md=10>
         <transition appear name="fade">
           <b-row class="mb-2 px-3 pt-4 mt-2">
-            <b-col cols=12 align="center" class="f-1 pb-5">Type taxa to view diagnostic assay designs for Cas13-based detection.</b-col>
             <b-col cols=12><Design class="px-3"></Design></b-col>
           </b-row>
         </transition>
         <transition appear name="fade">
-        <b-row class="mb-2 px-3 pt-4 mt-2">
-          <b-col cols=12 sm=6 offset-sm=3>
+          <div class="pb-2 float bottom right">
             <b-overlay
               :show="loading"
               rounded="pill"
@@ -21,13 +19,12 @@
               blur="5px"
               spinner-variant="secondary"
             >
-              <b-button pill block v-on:click.prevent="displayWrap()" size="lg" type="submit" variant="outline-secondary" name="display_submit" :disabled="selectedDesigns.length==0">Show Assays</b-button>
+              <b-button pill block v-on:click.prevent="displayWrap()" type="submit" variant="secondary" name="display_submit" :class="[{'hide': selectedDesigns.length==0}, 'fade-enter-active', 'btn-xl']" :disabled="selectedDesigns.length==0 || loading">Show Assays</b-button>
             </b-overlay>
-          </b-col>
-        </b-row>
+          </div>
         </transition>
-       <AssayModal/>
-       <Modal/>
+        <AssayModal/>
+        <Modal/>
       </b-col>
       <b-col cols=0 md=1></b-col>
     </b-row>
@@ -58,8 +55,10 @@ export default {
   },
   data() {
     this.$root.$data.selectedDesigns = []
+    this.$root.$data.all_taxons = {}
     return {
       selectedDesigns: this.$root.$data.selectedDesigns,
+      all_taxons: this.$root.$data.all_taxons,
       loading: false
     }
   },
