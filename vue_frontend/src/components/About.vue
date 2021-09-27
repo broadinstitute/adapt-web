@@ -2,26 +2,24 @@
   <transition appear name="fade">
     <div class="about text-center">
       <b-row align-v="center" class="pb-2">
-        <b-col md=7>
-          <div style="font-weight: 700; font-size: max(min(8.4vw, 7em),4em); line-height: 1.2;">AD<img v-if="prod" class="logo" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" src="@/assets/img/logo.png" alt="A">PT</div>
-        </b-col>
         <b-col md=5>
-          <i style="font-size: max(min(1.6vw, 1.2em),0.8em)">Activity-informed Design with All-inclusive Patrolling of Targets</i>
+          <div style="font-weight: 700; font-size: max(min(5vw, 5.5em),2.7em); line-height: 1.2;">AD<img v-if="prod" class="logo" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" src="@/assets/img/logo.png" alt="A">PT</div>
+        </b-col>
+        <b-col md=7>
+          <i style="font-size: max(min(1.7vw, 1.4em),0.8em)">Activity-informed Design with All-inclusive Patrolling of Targets</i>
         </b-col>
       </b-row>
-      <p class="pb-4 text-muted f-4">ADAPT efficiently designs nucleic acid diagnostic assays with maximal predicted detection activity over genomic variation given constraints on complexity, with a focus on viruses.</p>
-      <b-card class="mt-3 mb-5">
+      <p class="pb-3 text-muted f-4">ADAPT efficiently designs nucleic acid diagnostic assays with maximal predicted detection activity over genomic variation given constraints on complexity, with a focus on viruses.</p>
+      <b-card class="mt-5 mb-5">
         <b-card-text>
-          <b-row>
-            <b-col md=10>
+          <b-row align-v="center">
+            <b-col md=9>
               <small><i>Preprint on bioRxiv:</i></small>
-              <a href="https://www.biorxiv.org/content/10.1101/2020.11.28.401877" rel="noreferrer" target="_blank"><h3>Designing viral diagnostics with model-based optimization</h3></a>
-              <h6>Hayden C. Metsky, Nicole L. Welch, Nicholas J. Haradhvala, Laurie Rumker, Yibin B. Zhang, Priya P. Pillai, David K. Yang, Cheri M. Ackerman, Juliane Weller, Paul C. Blainey, Cameron Myhrvold, Michael Mitzenmacher, Pardis C. Sabeti</h6>
+              <a href="https://doi.org/10.1101/2020.11.28.401877" rel="noreferrer" target="_blank"><h3>Designing viral diagnostics with model-based optimization</h3></a>
+              <h6>Hayden C. Metsky, Nicole L. Welch, Priya P. Pillai, Nicholas J. Haradhvala, Laurie Rumker, Sreekar Mantena, Yibin B. Zhang, David K. Yang, Cheri M. Ackerman, Juliane Weller, Paul C. Blainey, Cameron Myhrvold, Michael Mitzenmacher, Pardis C. Sabeti</h6>
             </b-col>
-            <b-col md=2>
-              <small><i>Code on GitHub:</i></small>
-              <br>
-              <br>
+            <b-col md=3>
+              <div class="pb-2"><small><i>Code on GitHub:</i></small></div>
               <a href="https://github.com/broadinstitute/adapt" rel="noreferrer" target="_blank"><img width="70" alt="Octicons-mark-github" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/512px-Octicons-mark-github.svg.png"></a>
             </b-col>
           </b-row>
