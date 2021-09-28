@@ -2,6 +2,9 @@
   <transition appear name="fade">
     <div class="assaytable">
       <b-table small :fields="fields" :items="cluster" responsive>
+        <template #head()="data">
+          <span class="h6 f-6">{{ data.label }}</span>
+        </template>
         <template #table-colgroup="scope">
           <col
             v-for="field in scope.fields"
@@ -14,17 +17,17 @@
           {{ data.value + 1 }}
         </template>
         <template #cell(amplicon)="data">
-          <h6>Start:</h6><p class="seq">{{ data.item.amplicon_start }}</p>
-          <h6>End:</h6><p class="seq">{{ data.item.amplicon_end }}</p>
+          <h6 class="f-5">Start:</h6><p class="seq">{{ data.item.amplicon_start }}</p>
+          <h6 class="f-5">End:</h6><p class="seq">{{ data.item.amplicon_end }}</p>
         </template>
         <template #cell(primers)="data">
-          <h6>Forward:</h6>
-          <p v-for="primer in data.item.left_primers.primers" :key="primer.target" class="seq">{{ primer.target }}</p>
-          <h6>Reverse:</h6>
-          <p v-for="primer in data.item.right_primers.primers" :key="primer.target" class="seq">{{ primer.target }}</p>
+          <h6 class="f-5">Forward:</h6>
+          <p v-for="primer in data.item.left_primers.primers" :key="primer.target" class="seq">5'-{{ primer.target }}-3'</p>
+          <h6 class="f-5">Reverse:</h6>
+          <p v-for="primer in data.item.right_primers.primers" :key="primer.target" class="seq">5'-{{ complement(primer.target, false, true) }}-3'</p>
         </template>
         <template #cell(guide_set.guides)="data">
-          <p v-for="guide in data.value" :key="guide.target"  class="seq">{{ guide.target }}</p>
+          <p v-for="guide in data.value" :key="guide.target" class="seq">5'-{{ complement(guide.target, true, true) }}-3'</p>
         </template>
         <template #cell(show_details)="row">
           <b-button block size="sm" @click="row.toggleDetails" class="mr-2" pill variant="secondary">
@@ -38,22 +41,31 @@
           <div class="p-3 table-info">
             <b-row class="mb-2">
               <b-col>
-                <label :for="'fwd-primer-' + cluster_id + row.item.rank.toString()" class='h6'>Forward Primer Statistics:</label>
+                <label :for="'fwd-primer-' + cluster_id + row.item.rank.toString()" class='h6 f-6'>Forward Primer Statistics:</label>
                 <b-table :id="'fwd-primer-' + cluster_id + row.item.rank.toString()" small :fields="fields_primer" :items="[row.item.left_primers]" responsive="sm">
+                  <template #head()="data">
+                    <span class="f-5" style="font-weight: 500">{{ data.label }}</span>
+                  </template>
                 </b-table>
               </b-col>
               <b-col>
-                <label :for="'rev-primer-' + cluster_id + row.item.rank.toString()" class='h6'>Reverse Primer Statistics:</label>
+                <label :for="'rev-primer-' + cluster_id + row.item.rank.toString()" class='h6 f-6'>Reverse Primer Statistics:</label>
                 <b-table :id="'fwd-primer-' + cluster_id + row.item.rank.toString()" small :fields="fields_primer" :items="[row.item.right_primers]" responsive="sm">
+                  <template #head()="data">
+                    <span class="f-5" style="font-weight: 500">{{ data.label }}</span>
+                  </template>
                 </b-table>
               </b-col>
             </b-row>
             <b-row class="mb-2">
               <b-col>
-                <label :for="'spacer-' + cluster_id + row.item.rank.toString()" class='h6'>Spacer Statistics:</label>
+                <label :for="'spacer-' + cluster_id + row.item.rank.toString()" class='h6 f-6'>Spacer Statistics:</label>
                 <b-table :id="'spacer-' + cluster_id + row.item.rank.toString()" small :fields="fields_guide" :items="[row.item.guide_set]" responsive="sm">
                   <template #head(fifth_pctile_activity)="data">
-                    <span v-html="data.label" class='h6'></span>
+                    <span v-html="data.label" class="f-5" style="font-weight: 500"></span>
+                  </template>
+                  <template #head()="data">
+                    <span class="f-5" style="font-weight: 500">{{ data.label }}</span>
                   </template>
                   <template #table-colgroup="scope">
                     <col
@@ -77,7 +89,8 @@ export default {
   name: 'AssayTable',
   props: {
     cluster: Array,
-    cluster_id: String
+    cluster_id: String,
+    complement: Function,
   },
   data() {
     return {

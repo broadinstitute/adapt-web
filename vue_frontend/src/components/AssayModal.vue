@@ -16,10 +16,10 @@
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
               <template v-if='aln_sum[label[0]]'>
                 <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="ann[label[0]][index]"/>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(100 + 8*cluster.length + (ann[label[0]][index].length>0)*40)*(width/800)" :activityColorScale="activityColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(100 + 8*cluster.length + (ann[label[0]][index].length>0)*40)*(width/800)" :complement="complement" :activityColorScale="activityColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
               <template v-else>
-                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :activityColorScale="activityColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
+                <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="[]" :genomeHeight="0" :complement="complement" :activityColorScale="activityColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>
             </div>
           </div>
@@ -31,7 +31,7 @@
             <h2 v-if="label[1]!=''" style="text-align: center;">{{ label[1] }}</h2>
             <br/>
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
-              <AssayTable :cluster="cluster" :cluster_id="label[0] + index"/>
+              <AssayTable :cluster="cluster" :cluster_id="label[0] + index" :complement="complement"/>
             </div>
           </div>
         </div>
@@ -98,6 +98,28 @@ export default {
       return d3.interpolatePlasma(entropyScale(t));
     }
 
+    var complement = function (bases, rna=false, reverse=false) {
+      let complementBasesArr = Array.prototype.map.call(bases, x => {
+        if (x == 'G') {
+          return 'C'
+        } else if (x == 'C') {
+          return 'G'
+        } else if (x == 'A') {
+          if (rna) {
+            return 'U'
+          } else {
+            return 'T'
+          }
+        } else {
+          return 'A'
+        }
+      });
+      if (reverse) {
+        return complementBasesArr.reverse().join('')
+      }
+      return complementBasesArr.join('')
+    }
+
     return {
       tabIndex: 0,
       resulttable: {},
@@ -110,6 +132,7 @@ export default {
       "fracBoundColorScale": fracBoundColorScale,
       "objectiveColorScale": objectiveColorScale,
       "entropyColorScale": entropyColorScale,
+      "complement": complement,
     }
   },
   mounted() {

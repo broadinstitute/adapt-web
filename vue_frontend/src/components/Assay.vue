@@ -17,6 +17,7 @@ export default {
     cluster_id: String,
     aln_sum: Array,
     genomeHeight: Number,
+    complement: Function,
     activityColorScale: Function,
     objectiveColorScale: Function,
     entropyColorScale: Function,
@@ -321,7 +322,7 @@ export default {
         .style("font-size", ".5rem");
 
       for (let i in guidePaths) {
-        var bases = vm.complement(vm.guides[i].target, true)
+        let bases = vm.complement(vm.guides[i].target, true, true)
         var blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
 
         if (vm.guides[i].start_pos.length > 1) {
@@ -332,14 +333,15 @@ export default {
       }
 
       for (let i in leftPrimerPaths) {
-        bases = vm.complement(vm.result.left_primers.primers[i].target, false)
+        let bases = vm.result.left_primers.primers[i].target
         blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(leftPrimerPaths[i], "With T7 Promoter:", tooltip, tooltipbox, vm.info, ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + Number.parseFloat(vm.result.left_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
+        vm.oligo_tooltip(leftPrimerPaths[i], "Forward Primer With T7 Promoter:", tooltip, tooltipbox, vm.info, ['<a style="font-family: Overpass Mono">5\'-gaaatTAATACGACTCACTATAggg'+bases+'-3\'</a>', "Fraction Bound: " + Number.parseFloat(vm.result.left_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, '', endLine, endTextBox, leftPrimerLines[i][2][0]-1)
       }
 
       for (let i in rightPrimerPaths) {
-        blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+vm.result.right_primers.primers[i].target+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
-        vm.oligo_tooltip(rightPrimerPaths[i], '<a style="font-family: Overpass Mono">5\'-'+vm.result.right_primers.primers[i].target+'-3\'</a>', tooltip, tooltipbox, vm.info, ["Fraction Bound: " + Number.parseFloat(vm.result.right_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
+        let bases = vm.complement(vm.result.right_primers.primers[i].target, false, true)
+        blast_link = '<a class=\'light\' href=\'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&DATABASE=nt&WORD_SIZE=7&QUERY='+bases+'&CMD=Put\' target=\'_blank\'>BLAST</a>'
+        vm.oligo_tooltip(rightPrimerPaths[i], 'Reverse Primer:', tooltip, tooltipbox, vm.info, ['<a style="font-family: Overpass Mono">5\'-'+bases+'-3\'</a>', "Fraction Bound: " + Number.parseFloat(vm.result.right_primers.frac_bound).toFixed(4), blast_link], startLine, startTextBox, rightPrimerLines[i][0][0], endLine, endTextBox, '')
       }
 
       tooltip
@@ -435,23 +437,6 @@ export default {
         bases += this.max_base(this.aln_sum[i])
       }
       return bases
-    },
-    complement(bases, rna=false) {
-      return Array.prototype.map.call(bases, x => {
-        if (x == 'G') {
-          return 'C'
-        } else if (x == 'C') {
-          return 'G'
-        } else if (x == 'A') {
-          if (rna) {
-            return 'U'
-          } else {
-            return 'T'
-          }
-        } else {
-          return 'A'
-        }
-      }).join('');
     },
     oligo_bases(seq, x, y, svg) {
       let vm = this

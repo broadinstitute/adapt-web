@@ -60,7 +60,7 @@ $footer-height:                     6rem;
   outline: color.scale($primary, $alpha: -40%) auto 1px;
 }
 
-legend, .nav-link, button:not(.list-group-item, .btn-link), th > div, .h1, .h2, .h3, .h4, .h5, .h6, .modal-title {
+legend, .nav-link, button:not(.list-group-item, .btn-link), .h1, .h2, .h3, .h4, .h5, .h6, .modal-title {
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
@@ -75,6 +75,10 @@ p {
 
 th > div {
   font-weight: 500;
+}
+
+.table td {
+  vertical-align: middle;
 }
 
 .current-page {
@@ -97,6 +101,7 @@ text {
 
 .seq {
   font-family: $font-family-monospace;
+  font-size: 0.9rem;
 }
 
 // Positioning
@@ -213,6 +218,13 @@ button:not(.list-group-item):not(.taxon) {
   font-size: 1.75rem;
   line-height: 1.75;
   border-radius: 0.3rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
 }
 
 .btn-group > .btn:not(:last-child):not(.dropdown-toggle),
