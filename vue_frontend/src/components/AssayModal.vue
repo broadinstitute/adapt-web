@@ -14,7 +14,7 @@
           <div v-for="label in labels" :key="label[0]">
             <h2 v-if="label[1]!=''" style="text-align: center;">{{ label[1] }}</h2>
             <div v-for="(cluster, index) in resulttable[label[0]]" :key="index">
-              <template v-if='aln_sum[label[0]]'>
+              <template v-if='aln_sum[label[0]] && aln_sum[label[0]][index]'>
                 <Genome :cluster_id="label[0] + index" :alignmentLength="aln_sum[label[0]][index].length" :assays="cluster" :annotations="ann[label[0]][index]"/>
                 <Assay v-for="result in cluster" :key="result.rank" :result="result" :cluster_id="label[0] + index" :aln_sum="aln_sum[label[0]][index]" :genomeHeight="(100 + 8*cluster.length + (ann[label[0]][index].length>0)*40)*(width/800)" :complement="complement" :activityColorScale="activityColorScale" :objectiveColorScale="objectiveColorScale" :entropyColorScale="entropyColorScale"/>
               </template>

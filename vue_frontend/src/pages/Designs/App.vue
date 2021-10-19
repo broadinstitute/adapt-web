@@ -153,7 +153,9 @@ export default {
           this.$root.$data.aln_sum[taxon] = await response.json()
           this.$root.$data.aln_sum[taxon].pk = pk
         } else {
-          this.errorMsg(response)
+          this.$root.$data.aln_sum[taxon] = {}
+          this.$root.$data.aln_sum[taxon].pk = pk
+          // this.errorMsg(response)
         }
       }
     },
