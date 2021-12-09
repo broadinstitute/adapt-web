@@ -87,7 +87,7 @@
                           :file-name-formatter="formatNames"
                           :placeholder="inputs[sec][subsec][input_var].multiple? 'Choose files or drop them here...' : 'Choose file or drop one here...'"
                           :drop-placeholder="inputs[sec][subsec][input_var].multiple? 'Drop files here...' : 'Drop file here...'"
-                          accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln, .txt"
+                          accept=".fasta, .fa, .fna, .ffn, .faa, .frn, .aln, .txt .gz"
                           :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           :state="getValidationState(validationContext)"
                           @change="validationContext.validate"
@@ -526,7 +526,7 @@ export default {
               type: 'file',
               multiple: false,
               value: [],
-              description: 'Sequence <i>must</i> be aligned. You can use <a href="https://mafft.cbrc.jp/alignment/server/" rel="noreferrer" target="_blank">MAFFT</a> to align FASTAs.',
+              description: 'Sequence <i>must</i> be aligned. You can use <a href="https://mafft.cbrc.jp/alignment/server/" rel="noreferrer" target="_blank">MAFFT</a> to align FASTAs. If file size is larger than 100MB, compress it with gzip.',
               rules: 'required_if:@inputchoice,fasta',
             },
           },
