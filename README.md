@@ -104,7 +104,7 @@ These are HTML files that Vue inserts into. For the most part, it's just connect
 Contains a minified version of the static assets for Vue. Django accesses Vue's `public` folder via this.
 
 ## Production Server Structure
-The production server is currently hosted on an EC2 instance on AWS. It was set up based on the instructions [this Digital Ocean tutorial](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-18-04). This repository is located at `/home/ubuntu/adapt-web`.
+The production server is currently hosted on an EC2 instance on AWS. It was set up based on the instructions in [this Digital Ocean tutorial](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-18-04). This repository is located at `/home/ubuntu/adapt-web`.
 
 Anything in italics is what you most likely want to edit.
 
@@ -132,9 +132,9 @@ sudo less /var/log/nginx/access.log
 ```
 
 ### Gunicorn Configuration
-Gunicorn is the WSGI HTTP web server. It interfaces with Django to serve dynamic content. You most likely don't need to edit this.
+Gunicorn is the WSGI HTTP web server. It interfaces with Django to serve dynamic content to NGINX. You most likely don't need to edit this.
 
-It runs as systemd daemons.The socket file listens for connections to the server and is located at `/etc/systemd/system/gunicorn.socket`. The service file defines what to connect to and is located at `/etc/systemd/system/gunicorn.service`. If you do need to modify Gunicorn's settings, you'll need to edit the service file.
+It runs as systemd daemons. The socket file listens for connections to the server and is located at `/etc/systemd/system/gunicorn.socket`. The service file defines what to connect to and is located at `/etc/systemd/system/gunicorn.service`. If you do need to modify Gunicorn's settings, you'll need to edit the service file.
 
 If you edit either file, you'll need to restart Gunicorn. Run:
 ```
