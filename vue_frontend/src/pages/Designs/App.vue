@@ -69,7 +69,7 @@ export default {
         vm.$root.$emit('show-assays');
         vm.loading = false;
         for (var taxon_and_name of vm.$root.$data.selectedDesigns) {
-          this.$plausible.trackEvent('Display', {props: {pk: taxon_and_name[0], name: taxon_and_name[1]}});
+          this.$plausible.trackEvent('display', {props: {pk: taxon_and_name[0], name: taxon_and_name[1]}});
         }
       });
     },
