@@ -6,6 +6,7 @@ import '../../assets/styles.scss'
 
 Vue.use(VuePlausible, {
   domain: "adapt.guide",
+  enableAutoPageviews: true,
 })
 
 // Make BootstrapVue Components available throughout page

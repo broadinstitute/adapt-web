@@ -194,7 +194,7 @@ export default {
           }).join()
           window.open('/api/assayset/' + endpoint + '/?pk=' + pks, '_blank').focus();
           for (var taxon_and_name of vm.$root.$data.selectedDesigns) {
-            this.$plausible.trackEvent('Download', {props: {"taxon": taxon_and_name[0], "name": taxon_and_name[1]}, "endpoint": endpoint});
+            this.$plausible.trackEvent('Download', {props: {"pk": taxon_and_name[0], "name": taxon_and_name[1]}, "endpoint": endpoint});
           }
         } else {
           window.open('/api/adaptrun/id_prefix/' + vm.$root.$data.runid + '/' + endpoint + '/', '_blank').focus();
