@@ -43,7 +43,6 @@ import Footer from '@/components/Footer.vue'
 const Cookies = require('js-cookie')
 // Needs CSRF for the server to accept the request
 const csrfToken = Cookies.get('csrftoken')
-var plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }
 
 export default {
   name: 'App',
@@ -60,7 +59,7 @@ export default {
     return {
       selectedDesigns: this.$root.$data.selectedDesigns,
       all_taxons: this.$root.$data.all_taxons,
-      loading: false
+      loading: false,
     }
   },
   methods : {
@@ -70,7 +69,7 @@ export default {
         vm.$root.$emit('show-assays');
         vm.loading = false;
         for (var taxon_and_name of vm.$root.$data.selectedDesigns) {
-          plausible('Display', {props: {taxon: taxon_and_name[0], name: taxon_and_name[1]}});
+          this.$plausible.trackEvent('Display', {props: {taxon: taxon_and_name[0], name: taxon_and_name[1]}});
         }
       });
     },

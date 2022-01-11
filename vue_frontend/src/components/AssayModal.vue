@@ -58,7 +58,6 @@ import ColorLegend from '@/components/ColorLegend.vue'
 import Genome from '@/components/Genome.vue'
 import AssayTable from '@/components/AssayTable.vue'
 import * as d3 from "d3";
-var plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }
 
 export default {
   name: 'AssayModal',
@@ -195,7 +194,7 @@ export default {
           }).join()
           window.open('/api/assayset/' + endpoint + '/?pk=' + pks, '_blank').focus();
           for (var taxon_and_name of vm.$root.$data.selectedDesigns) {
-            plausible('Download', {props: {"taxon": taxon_and_name[0], "name": taxon_and_name[1]}, "endpoint": endpoint});
+            this.$plausible.trackEvent('Download', {props: {"taxon": taxon_and_name[0], "name": taxon_and_name[1]}, "endpoint": endpoint});
           }
         } else {
           window.open('/api/adaptrun/id_prefix/' + vm.$root.$data.runid + '/' + endpoint + '/', '_blank').focus();

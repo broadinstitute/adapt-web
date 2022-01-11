@@ -1,7 +1,13 @@
 import Vue from 'vue'
 import App from './App.vue'
 import { LayoutPlugin, NavbarPlugin, ButtonGroupPlugin } from 'bootstrap-vue'
+import { VuePlausible } from 'vue-plausible'
 import '../../assets/styles.scss'
+
+Vue.use(VuePlausible, {
+  domain: "adapt.guide",
+})
+
 
 // Make BootstrapVue Components available throughout page
 Vue.use(LayoutPlugin)
