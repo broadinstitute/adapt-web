@@ -173,32 +173,32 @@ export default {
   methods: {
     async download_file(endpoint) {
       const vm = this
-      if (vm.$root.$data.runid=='' && endpoint=='download'){
-        let obj = {}
-        for (let label of vm.labels) {
-          obj[label[1]] = vm.$root.$data.resulttable[label[0]]
-        }
-        let json = JSON.stringify(obj);
-        let url = "data:text/plain;charset=utf-8," + encodeURIComponent(json);
-        let filename = 'designs.json'
-        let link = document.createElement('a')
-        link.href = url
-        link.setAttribute('download', filename)
-        link.click()
-      } else {
-        if (vm.$root.$data.runid=='') {
+      if (vm.$root.$data.runid==''){
+        for (var taxon_and_name of vm.$root.$data.selectedDesigns) {
+            this.$plausible.trackEvent('download', {props: {"pk": taxon_and_name[0], "name": taxon_and_name[1], "endpoint": endpoint}});
+          }
+        if (endpoint=='download') {
+          let obj = {}
+          for (let label of vm.labels) {
+            obj[label[1]] = vm.$root.$data.resulttable[label[0]]
+          }
+          let json = JSON.stringify(obj);
+          let url = "data:text/plain;charset=utf-8," + encodeURIComponent(json);
+          let filename = 'designs.json'
+          let link = document.createElement('a')
+          link.href = url
+          link.setAttribute('download', filename)
+          link.click()
+        } else {
           let pks = vm.labels.filter(function (label) {
             return label[0] in vm.aln_sum
           }).map(function (label) {
             return vm.aln_sum[label[0]].pk
           }).join()
           window.open('/api/assayset/' + endpoint + '/?pk=' + pks, '_blank').focus();
-          for (var taxon_and_name of vm.$root.$data.selectedDesigns) {
-            this.$plausible.trackEvent('download', {props: {"pk": taxon_and_name[0], "name": taxon_and_name[1]}, "endpoint": endpoint});
-          }
-        } else {
-          window.open('/api/adaptrun/id_prefix/' + vm.$root.$data.runid + '/' + endpoint + '/', '_blank').focus();
         }
+      } else {
+        window.open('/api/adaptrun/id_prefix/' + vm.$root.$data.runid + '/' + endpoint + '/', '_blank').focus();
       }
     },
     linkToTable(cluster_id, rank) {
