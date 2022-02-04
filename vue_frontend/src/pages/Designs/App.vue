@@ -59,7 +59,7 @@ export default {
     return {
       selectedDesigns: this.$root.$data.selectedDesigns,
       all_taxons: this.$root.$data.all_taxons,
-      loading: false
+      loading: false,
     }
   },
   methods : {
@@ -68,6 +68,9 @@ export default {
       vm.display().then(() => {
         vm.$root.$emit('show-assays');
         vm.loading = false;
+        for (var taxon_and_name of vm.$root.$data.selectedDesigns) {
+          this.$plausible.trackEvent('display', {props: {pk: taxon_and_name[0], name: taxon_and_name[1]}});
+        }
       });
     },
     async display() {

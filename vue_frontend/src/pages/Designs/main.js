@@ -1,7 +1,14 @@
 import Vue from 'vue'
 import App from './App.vue'
 import { LayoutPlugin, NavbarPlugin, ModalPlugin, TabsPlugin, TablePlugin, ButtonPlugin, OverlayPlugin, BFormCheckbox, BIconChevronDown, BIconPlus, BIconInfoCircle, BIconDash, BIconDownload, VBTooltip } from 'bootstrap-vue'
+import { VuePlausible } from 'vue-plausible'
 import '../../assets/styles.scss'
+
+Vue.use(VuePlausible, {
+  domain: "adapt.guide",
+  enableAutoPageviews: true,
+})
+
 
 // Make BootstrapVue Components available throughout page
 Vue.use(LayoutPlugin)
