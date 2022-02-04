@@ -175,7 +175,7 @@ export default {
       const vm = this
       if (vm.$root.$data.runid==''){
         for (var taxon_and_name of vm.$root.$data.selectedDesigns) {
-            this.$plausible.trackEvent('download', {props: {"pk": taxon_and_name[0], "name": taxon_and_name[1], "endpoint": endpoint}});
+            this.$plausible.trackEvent(endpoint, {props: {"pk": taxon_and_name[0], "name": taxon_and_name[1]}});
           }
         if (endpoint=='download') {
           let obj = {}
