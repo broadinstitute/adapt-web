@@ -395,6 +395,19 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
             qs = qs.filter(rank=rank)
         return qs
 
+    @action(detail=True)
+    def segment_names(self, request, *args, **kwargs):
+        taxonrank = self.get_object()
+        children = list(taxonrank.children.all())
+        segment_names = set()
+        while len(children) > 0:
+            child = children.pop(0)
+            if child.rank == "segment":
+                segment_names.add(child.latin_name)
+            else:
+                children.extend(list(child.children.all()))
+        return Response(sorted(segment_names))
+
 
 class LeftPrimersViewSet(viewsets.ModelViewSet):
     """

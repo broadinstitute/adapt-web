@@ -2,7 +2,7 @@
   <transition appear name="fade">
     <div class="runadapt">
       <!-- Form created dynamically with 3 loops - one for sections, one for subsections, one for the fields -->
-      <ValidationObserver ref="full-form" v-slot="{ handleSubmit, validate }" slim>
+      <ValidationObserver ref="fullform" v-slot="{ validate }" slim>
         <b-form id="full-form" :disabled="loading">
           <!-- Section loop -->
           <b-form-group
@@ -113,6 +113,18 @@
                           switch
                           class="text-center"
                         >{{ inputs[sec][subsec][input_var].fields }}</b-form-checkbox>
+                        <multiselect
+                          v-if="inputs[sec][subsec][input_var].type == 'multiselect'"
+                          v-model="inputs[sec][subsec][input_var].value"
+                          :options="inputs[sec][subsec][input_var].options"
+                          :multiple="inputs[sec][subsec][input_var].multiple"
+                          :close-on-select="true"
+                          :clear-on-select="false"
+                          :loading="loading_taxa"
+                          :track-by="inputs[sec][subsec][input_var].trackby"
+                          :label="inputs[sec][subsec][input_var].optlabel"
+                          :state="getValidationState(validationContext)"
+                        ></multiselect>
                         <b-form-input
                           v-if="inputs[sec][subsec][input_var].type == 'number'"
                           v-model="inputs[sec][subsec][input_var].value"
@@ -188,6 +200,18 @@
                             v-show="inputs[sec][subsec][input_var].show == false? false : true"
                             label-align=left
                           >
+                            <multiselect
+                              v-if="inputs[sec][subsec][input_var].type == 'multiselect'"
+                              v-model="inputs[sec][subsec][input_var].value"
+                              :options="inputs[sec][subsec][input_var].options"
+                              :multiple="inputs[sec][subsec][input_var].multiple"
+                              :close-on-select="true"
+                              :clear-on-select="false"
+                              :loading="loading_taxa"
+                              :track-by="inputs[sec][subsec][input_var].trackby"
+                              :label="inputs[sec][subsec][input_var].optlabel"
+                              :state="inputs[sec][subsec][input_var].valid"
+                            ></multiselect>
                             <b-form-input
                               v-if="inputs[sec][subsec][input_var].type == 'number'"
                               v-model="inputs[sec][subsec][input_var].value"
@@ -285,7 +309,7 @@
             blur="5px"
             spinner-variant="secondary"
           >
-            <b-button pill block v-on:click.prevent="validateMultiParts().then(valid => {if (valid) {handleSubmit(adapt_run)} else {validate()}})" size="lg" type="submit" variant="outline-secondary" :disabled="loading">Submit a Run</b-button>
+            <b-button pill block v-on:click.prevent="validateMultiParts().then(valid => {if (valid) { adapt_run() } else { validate(); warnInvalidForm()}})" size="lg" type="submit" variant="outline-secondary" :disabled="loading" :class="{ shake: invalid_form }">Submit a Run</b-button>
           </b-overlay>
         </b-form>
       </ValidationObserver>
@@ -304,6 +328,7 @@ import {
   required,
   integer,
 } from 'vee-validate/dist/rules';
+import Multiselect from 'vue-multiselect'
 const Cookies = require('js-cookie');
 // Needs CSRF for the server to accept the request
 const csrfToken = Cookies.get('csrftoken');
@@ -313,6 +338,37 @@ export default {
   components: {
     ValidationProvider,
     ValidationObserver,
+    Multiselect
+  },
+  async created() {
+    let vm = this
+    let response = await fetch('/api/taxon/', {
+      headers: {
+        "X-CSRFToken": csrfToken
+      }
+    })
+    if (response.ok) {
+      let response_json = await response.json()
+      for (let child in response_json) {
+        let name = response_json[child].taxonrank.latin_name
+        let taxid = response_json[child].taxid
+        let rank = response_json[child].taxonrank.rank
+        let pk = response_json[child].taxonrank.pk
+        vm.inputs.opts.autoinput.taxid.options.push({
+            "taxid": taxid,
+            "label": "[" + rank[0].toUpperCase() + rank.slice(1) + "] " + name + " (taxid: " + taxid + ")",
+            "pk": pk
+          }
+        )
+      }
+    } else {
+      this.$root.$data.modaltitle = 'Error'
+      this.$root.$data.modalmsg = await response.text()
+      this.$root.$data.modalvariant = 'danger'
+      this.$root.$emit('show-msg');
+    }
+    vm.inputs.sp.specificity_taxa.sp_taxid.options = vm.inputs.opts.autoinput.taxid.options
+    vm.loading_taxa = false
   },
   mounted () {
     // Makes VeeValidate check only on change events if the field is untouched or valid,
@@ -478,7 +534,7 @@ export default {
               type: 'radio',
               value: '',
               options: [
-                { value: 'auto-from-args', text: 'NCBI Taxonomy Identifier' },
+                { value: 'auto-from-args', text: 'Taxon' },
                 { value: 'fasta', text: 'Prealigned FASTA' },
               ],
               rules: 'required',
@@ -490,31 +546,27 @@ export default {
             show: false,
             taxid: {
               order: 0,
-              label: 'NCBI Taxonomy Identifier',
-              type: 'number',
+              label: 'Viral Taxon',
+              type: 'multiselect',
+              optlabel: 'label',
               value: '',
-              description: 'Sequences will be downloaded from NCBI and aligned. Taxonomy Identifier can be determined <a href=https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=10239&lvl=3&p=7&lin=f&keep=1&srchmode=1&unlock target="_blank" rel="noreferrer">here</a>.',
-              rules: 'required_if:@inputchoice,auto-from-args|min_value:0',
+              options: [],
+              description: 'Sequences will be downloaded from NCBI and aligned. Only viral taxons are supported at this time.',
+              rules: 'required_if:@inputchoice,auto-from-args',
+              trackby: 'taxid',
               cols: 12,
             },
             segment: {
               order: 1,
               show: false,
               label: 'Segment',
-              type: 'text',
+              type: 'multiselect',
+              optlabel: '',
               value: '',
+              options: [],
               description: 'Segment required for segmented genomes.',
-              rules: 'required_if:@segmented,true',
-              cols: 0,
-            },
-            segmented: {
-              order: 2,
-              type: 'boolean',
-              value: false,
-              fields: 'Segmented Genome',
               rules: '',
-              cols: 12,
-              exclude: true,
+              cols: 0,
             },
           },
           fileinput: {
@@ -578,11 +630,14 @@ export default {
             valid: null,
             sp_taxid: {
               order: 0,
-              label: 'NCBI Taxonomy Identifier',
-              type: 'number',
+              label: 'Viral Taxon',
+              type: 'multiselect',
+              optlabel: 'label',
               value: '',
-              description: 'Sequences will be downloaded from NCBI. Taxonomy Identifier can be determined <a href=https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=10239&lvl=3&p=7&lin=f&keep=1&srchmode=1&unlock target="_blank" rel="noreferrer">here</a>.',
+              options: [],
+              description: 'Sequences will be downloaded from NCBI and aligned. Only viral taxons are supported at this time.',
               rules: 'required',
+              trackby: 'taxid',
               valid: null,
               cols: 12,
             },
@@ -590,21 +645,14 @@ export default {
               order: 1,
               show: false,
               label: 'Segment',
-              type: 'text',
-              value: '',
+              type: 'multiselect',
+              optlabel: '',
+              value: 'None',
+              options: [],
               description: 'Segment required for segmented genomes.',
               valid: null,
               rules: '',
               cols: 0,
-            },
-            sp_segmented: {
-              order: 2,
-              type: 'boolean',
-              value: false,
-              fields: 'Segmented Genome',
-              rules: '',
-              cols: 12,
-              exclude: true,
             },
           },
           specificity_fasta: {
@@ -910,6 +958,8 @@ export default {
         },
       },
       loading: false,
+      loading_taxa: true,
+      invalid_form: false
     }
   },
   // computed and watch are used to show certain sections of the form dependent on input choices
@@ -933,14 +983,17 @@ export default {
       return !this.checkEmpty(this.inputs.sp.specificity_taxa.sp_taxid.value)
     },
     segmentedval() {
-      return this.inputs.opts.autoinput.segmented.value
+      if (this.inputs.opts.autoinput.taxid.value) {
+        return this.inputs.opts.autoinput.taxid.value.pk
+      }
+      return 0
     },
     spsegmentedval() {
-      return this.inputs.sp.specificity_taxa.sp_segmented.value
+      if (this.inputs.sp.specificity_taxa.sp_taxid.value) {
+        return this.inputs.sp.specificity_taxa.sp_taxid.value.pk
+      }
+      return 0
     },
-    spsegmentval() {
-      return (this.spsegmentedval & this.checkEmpty(this.inputs.sp.specificity_taxa.sp_segment.value))
-    }
   },
   watch: {
     inputchoiceval(val) {
@@ -967,21 +1020,55 @@ export default {
         this.inputs.sp.specificity_taxa.sp_taxid.valid = null
       }
     },
-    spsegmentval(val) {
-      this.inputs.sp.specificity_taxa.sp_segment.rules = val? 'required' : ''
-      if (!val) {
-        this.inputs.sp.specificity_taxa.sp_segment.valid = null
+    async segmentedval(val) {
+      let vm = this
+      if (val != 0) {
+        let response = await fetch('/api/taxonrank/' + val + '/segment_names/', {
+          headers: {
+            "X-CSRFToken": csrfToken
+          }
+        })
+        if (response.ok) {
+          let response_json = await response.json()
+          vm.inputs.opts.autoinput.segment.options = response_json
+          let seglen = (response_json.length > 0)
+          vm.inputs.opts.autoinput.segment.show = seglen
+          vm.inputs.opts.autoinput.segment.cols = seglen? 6 : 0
+          vm.inputs.opts.autoinput.taxid.cols = seglen? 6 : 12
+          vm.inputs.opts.autoinput.segment.rules = seglen? 'required' : ''
+          vm.inputs.opts.autoinput.segment.value = seglen? '' : 'None'
+        }
+      } else {
+        vm.inputs.opts.autoinput.segment.show = false
+        vm.inputs.opts.autoinput.segment.cols = 0
+        vm.inputs.opts.autoinput.taxid.cols = 12
+        vm.inputs.opts.autoinput.segment.rules = ''
       }
     },
-    segmentedval(val) {
-      this.inputs.opts.autoinput.segment.show = val
-      this.inputs.opts.autoinput.segment.cols = val? 6 : 0
-      this.inputs.opts.autoinput.taxid.cols = val? 6 : 12
-    },
-    spsegmentedval(val) {
-      this.inputs.sp.specificity_taxa.sp_segment.show = val
-      this.inputs.sp.specificity_taxa.sp_segment.cols = val? 6 : 0
-      this.inputs.sp.specificity_taxa.sp_taxid.cols = val? 6 : 12
+    async spsegmentedval(val) {
+      let vm = this
+      if (val != 0) {
+        let response = await fetch('/api/taxonrank/' + val + '/segment_names/', {
+          headers: {
+            "X-CSRFToken": csrfToken
+          }
+        })
+        if (response.ok) {
+          let response_json = await response.json()
+          vm.inputs.sp.specificity_taxa.sp_segment.options = response_json
+          let seglen = (response_json.length > 0)
+          vm.inputs.sp.specificity_taxa.sp_segment.show = seglen
+          vm.inputs.sp.specificity_taxa.sp_segment.cols = seglen? 6 : 0
+          vm.inputs.sp.specificity_taxa.sp_taxid.cols = seglen? 6 : 12
+          vm.inputs.sp.specificity_taxa.sp_segment.rules = seglen? 'required' : ''
+          vm.inputs.sp.specificity_taxa.sp_segment.value = seglen? '' : 'None'
+        }
+      } else {
+        vm.inputs.sp.specificity_taxa.sp_segment.show = false
+        vm.inputs.sp.specificity_taxa.sp_segment.cols = 0
+        vm.inputs.sp.specificity_taxa.sp_taxid.cols = 12
+        vm.inputs.sp.specificity_taxa.sp_segment.valid = null
+      }
     },
   },
   methods: {
@@ -990,6 +1077,13 @@ export default {
       return (Array.isArray(val) && val.length === 0) ||
              [false, null, undefined].includes(val) ||
              !String(val).trim().length
+    },
+    warnInvalidForm() {
+      console.log('here')
+      this.invalid_form = true
+      setTimeout(() => {
+        this.invalid_form = false
+      }, 1500)
     },
     async validateMultiParts() {
       if (this.inputs.sp.specificity_taxa.show != false & this.checkEmpty(this.inputs.sp.specificity_taxa.value)) {
@@ -1003,84 +1097,98 @@ export default {
     async adapt_run() {
       // Handles submission
       // Relies on innermost input field names matching adapt_web.wdl's input variable names.
-      this.loading = true
-      let response = null
-      try {
-        let form_data = new FormData()
-        for (let sec of this.get_sub(this.inputs)) {
-          for (let subsec of this.get_sub(this.inputs[sec])) {
-            if (this.inputs[sec][subsec].show != false) {
-              if (this.inputs[sec][subsec].type == 'multi') {
-                form_data.append(subsec, JSON.stringify(this.inputs[sec][subsec].value));
-              } else {
-                for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
-                  if (this.inputs[sec][subsec][input_var].show != false & !this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
-                    if (input_var.includes('fasta')) {
-                      if (Array.isArray(this.inputs[sec][subsec][input_var].value)) {
-                        for (let file of this.inputs[sec][subsec][input_var].value) {
-                          form_data.append(input_var + '[]', file, file.name);
+      let isValid = await this.$refs.fullform.validate();
+      if (!isValid) {
+        this.warnInvalidForm()
+      } else {
+        this.loading = true
+        let response = null
+        try {
+          let form_data = new FormData()
+          for (let sec of this.get_sub(this.inputs)) {
+            for (let subsec of this.get_sub(this.inputs[sec])) {
+              if (this.inputs[sec][subsec].show != false) {
+                if (this.inputs[sec][subsec].type == 'multi') {
+                  let multiinput = []
+                  for (let row of this.inputs[sec][subsec].value) {
+                    let rowval = {}
+                    for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
+                      rowval[input_var] = this.inputs[sec][subsec][input_var].trackby ?  row[input_var][this.inputs[sec][subsec][input_var].trackby] : row[input_var]
+                    }
+                    multiinput.push(rowval)
+                  }
+                  form_data.append(subsec, JSON.stringify(multiinput));
+                } else {
+                  for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
+                    if (this.inputs[sec][subsec][input_var].show != false & !this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
+                      if (input_var.includes('fasta')) {
+                        if (Array.isArray(this.inputs[sec][subsec][input_var].value)) {
+                          for (let file of this.inputs[sec][subsec][input_var].value) {
+                            form_data.append(input_var + '[]', file, file.name);
+                          }
+                        } else {
+                          form_data.append(input_var + '[]',
+                                           this.inputs[sec][subsec][input_var].value,
+                                           this.inputs[sec][subsec][input_var].value.name);
                         }
-                      } else {
-                        form_data.append(input_var + '[]',
-                                         this.inputs[sec][subsec][input_var].value,
-                                         this.inputs[sec][subsec][input_var].value.name);
+                      } else if (!this.inputs[sec][subsec][input_var].exclude) {
+                        let inputval = this.inputs[sec][subsec][input_var].trackby ? this.inputs[sec][subsec][input_var].value[this.inputs[sec][subsec][input_var].trackby] : this.inputs[sec][subsec][input_var].value
+                        form_data.append(input_var, inputval)
                       }
-                    } else if (!this.inputs[sec][subsec][input_var].exclude){
-                      form_data.append(input_var, this.inputs[sec][subsec][input_var].value)
                     }
                   }
                 }
               }
             }
           }
-        }
 
-        response = await fetch('/api/adaptrun/', {
-          method: 'POST',
-          headers: {
-            "X-CSRFToken": csrfToken
-          },
-          body: form_data,
-        })
+          response = await fetch('/api/adaptrun/', {
+            method: 'POST',
+            headers: {
+              "X-CSRFToken": csrfToken
+            },
+            body: form_data,
+          })
 
-        if (response.ok) {
-          let responsejson = await response.json()
-          let runid = responsejson.cromwell_id.slice(0,8) + ';' + responsejson.submit_time + ';' + form_data.get('nickname')
-          let prev_runids = Cookies.get('runid')
-          if (prev_runids == null) {
-            Cookies.set('runid', runid)
-          }
-          else {
-            Cookies.set('runid', prev_runids + ',' + runid)
-          }
-          Cookies.set('submitted', true)
-          window.location.href = '/results'
-        }
-        else {
-          let contentType = response.headers.get("content-type");
-          if (contentType && contentType.indexOf("application/json") !== -1) {
+          if (response.ok) {
             let responsejson = await response.json()
-            this.$root.$data.modaltitle = Object.keys(responsejson)[0]
-            this.$root.$data.modalmsg = responsejson[this.$root.$data.modaltitle]
+            let runid = responsejson.cromwell_id.slice(0,8) + ';' + responsejson.submit_time + ';' + form_data.get('nickname')
+            let prev_runids = Cookies.get('runid')
+            if (prev_runids == null) {
+              Cookies.set('runid', runid)
+            }
+            else {
+              Cookies.set('runid', prev_runids + ',' + runid)
+            }
+            Cookies.set('submitted', true)
+            window.location.href = '/results'
           }
           else {
-            this.$root.$data.modaltitle = 'Error'
-            this.$root.$data.modalmsg = await response.text()
+            let contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+              let responsejson = await response.json()
+              this.$root.$data.modaltitle = Object.keys(responsejson)[0]
+              this.$root.$data.modalmsg = responsejson[this.$root.$data.modaltitle]
+            }
+            else {
+              this.$root.$data.modaltitle = 'Error'
+              this.$root.$data.modalmsg = await response.text()
+            }
+            this.$root.$data.modalvariant = 'danger'
+            this.$root.$emit('show-msg');
           }
+        }
+        catch (error) {
+          this.$root.$data.modaltitle = 'Error'
+          this.$root.$data.modalmsg = error.message
           this.$root.$data.modalvariant = 'danger'
           this.$root.$emit('show-msg');
         }
+        finally {
+          this.loading = false
+        }
+        return response
       }
-      catch (error) {
-        this.$root.$data.modaltitle = 'Error'
-        this.$root.$data.modalmsg = error.message
-        this.$root.$data.modalvariant = 'danger'
-        this.$root.$emit('show-msg');
-      }
-      finally {
-        this.loading = false
-      }
-      return response
     },
     get_sub(sec) {
       // Helper function to get children of section
@@ -1134,6 +1242,7 @@ export default {
         if (!this.inputs[sec][subsec][input_var].exclude) {
           fields.push({
             key: input_var,
+            formatter: (value) => value.label? value.label : value,
             label: this.inputs[sec][subsec][input_var].label,
             thClass: 'f-5',
             thStyle: 'width: 45.8333%; padding: 5px'

@@ -22,7 +22,7 @@
         >
           {{ root.$data.all_taxons[segment].shortname }}
         </b-button>
-      <span v-if="i<subspecies.num_segments-1">;</span>
+      <span v-if="i<subspecies.num_segments-1">|</span>
       </span>
     </span>
   </div>
