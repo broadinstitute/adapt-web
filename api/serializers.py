@@ -9,11 +9,27 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username')
 
 
-class TaxonSerializer(serializers.ModelSerializer):
-    taxonrank = serializers.PrimaryKeyRelatedField(
+class TaxonRankSerializer(serializers.ModelSerializer):
+    taxons = serializers.PrimaryKeyRelatedField(
+        queryset=Taxon.objects.all(),
+        allow_null=True,
+        required=False,
+        many=True
+    )
+    parent = serializers.PrimaryKeyRelatedField(
         queryset=TaxonRank.objects.all(),
         allow_null=True,
         required=False
+    )
+    class Meta:
+        model = TaxonRank
+        fields = ('pk', 'latin_name', 'rank', 'parent', 'description', 'taxons', 'parent_info', 'any_assays', 'num_children', 'num_segments')
+
+
+class TaxonSerializer(serializers.ModelSerializer):
+    taxonrank = TaxonRankSerializer(
+        allow_null=True,
+        required=False,
     )
     class Meta:
         model = Taxon
@@ -32,23 +48,6 @@ class TaxonSerializer(serializers.ModelSerializer):
         taxon = Taxon.objects.create(taxonrank=taxonrank, **validated_data)
 
         return taxon
-
-
-class TaxonRankSerializer(serializers.ModelSerializer):
-    taxons = serializers.PrimaryKeyRelatedField(
-        queryset=Taxon.objects.all(),
-        allow_null=True,
-        required=False,
-        many=True
-    )
-    parent = serializers.PrimaryKeyRelatedField(
-        queryset=TaxonRank.objects.all(),
-        allow_null=True,
-        required=False
-    )
-    class Meta:
-        model = TaxonRank
-        fields = ('pk', 'latin_name', 'rank', 'parent', 'description', 'taxons', 'parent_info', 'any_assays', 'num_children', 'num_segments')
 
 
 class PrimerSerializer(serializers.ModelSerializer):
