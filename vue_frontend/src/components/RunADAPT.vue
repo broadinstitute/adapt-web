@@ -123,7 +123,6 @@
                           :loading="loading_taxa"
                           :track-by="inputs[sec][subsec][input_var].trackby"
                           :label="inputs[sec][subsec][input_var].optlabel"
-                          :state="getValidationState(validationContext)"
                         ></multiselect>
                         <b-form-input
                           v-if="inputs[sec][subsec][input_var].type == 'number'"
@@ -210,7 +209,6 @@
                               :loading="loading_taxa"
                               :track-by="inputs[sec][subsec][input_var].trackby"
                               :label="inputs[sec][subsec][input_var].optlabel"
-                              :state="inputs[sec][subsec][input_var].valid"
                             ></multiselect>
                             <b-form-input
                               v-if="inputs[sec][subsec][input_var].type == 'number'"
@@ -1079,7 +1077,6 @@ export default {
              !String(val).trim().length
     },
     warnInvalidForm() {
-      console.log('here')
       this.invalid_form = true
       setTimeout(() => {
         this.invalid_form = false

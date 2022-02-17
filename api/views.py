@@ -1352,14 +1352,14 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         content = {'Input Error': "Specificity taxa not formatted correctly. "
                             "It should be a list of objects with keys of 'taxid' and optionally 'segment'"}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    if not isinstance(sp_tax['sp_taxid'], str) or not sp_tax['sp_taxid'].isdigit():
-                        content = {'Input Error': "Taxa in specificity taxa should be nonnegative integers"}
+                    if not isinstance(sp_tax['sp_taxid'], int):
+                        content = {'Input Error': "Taxa in specificity taxa should be integers"}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
                     sp_segment = sp_tax['sp_segment'] if 'sp_segment' in sp_tax else 'None'
                     if not isinstance(sp_segment, str):
                         content = {'Input Error': "Segments in specificity taxa should be strings"}
                         return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
-                    sp_taxon_str += "%s\t%s\n" %(sp_tax['sp_taxid'], sp_segment)
+                    sp_taxon_str += "%i\t%s\n" %(sp_tax['sp_taxid'], sp_segment)
                 specificity_taxa_file = sp_taxon_str.encode('utf-8')
                 S3.put_object(Bucket = STORAGE_BUCKET, Key = key, Body = specificity_taxa_file)
                 workflowInputs["adapt_web.adapt.specificity_taxa"] = "s3://%s/%s" %(STORAGE_BUCKET, key)
