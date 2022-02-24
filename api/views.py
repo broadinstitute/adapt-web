@@ -758,7 +758,10 @@ class AssaySetViewSet(viewsets.ModelViewSet):
                     zipped_output = BytesIO()
                     with zipfile.ZipFile(zipped_output, "a", zipfile.ZIP_DEFLATED) as zipped_output_a:
                         for i, output_file in enumerate(output_files):
-                            zipped_output_a.writestr("%s.fasta" %(assay_sets_with_alns[i].taxonrank.latin_name), output_file)
+                            fastaname = assay_sets_with_alns[i].taxonrank.latin_name
+                            if assay_sets_with_alns[i].taxonrank.rank == 'segment':
+                                fastaname = "%s_%s" %(assay_sets_with_alns[i].taxonrank.parent.latin_name, fastaname)
+                            zipped_output_a.writestr("%s.fasta" %fastaname, output_file)
                     zipped_output.seek(0)
                     filename = "alignments" + "_".join([str(pk) for pk in pks]) + ".zip"
                     response = FileResponse(zipped_output, content_type=output_type)

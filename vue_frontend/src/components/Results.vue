@@ -207,7 +207,7 @@ export default {
           case 'Aborted':
           case 'Aborting':
             this.$root.$data.modaltitle = 'Job Failed';
-            this.$root.$data.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact ppillai@broadinstitute.org.';
+            this.$root.$data.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact adapt@broadinstitute.org.';
             this.$root.$data.modalvariant = 'danger';
             this.$root.$emit('show-msg');
             this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname)

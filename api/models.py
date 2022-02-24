@@ -48,6 +48,16 @@ class TaxonRank(models.Model):
     def any_assays(self):
         return self.assay_sets.all().exists()
 
+    @property
+    def any_child_assays(self):
+        children = self.children.all()
+        while len(children) > 0:
+            child = children.pop(0)
+            if child.any_assays():
+                return True
+            children.append(child.children.all())
+        return self.assay_sets.all().exists()
+
     class Meta:
         ordering = ['rank', 'latin_name']
 
