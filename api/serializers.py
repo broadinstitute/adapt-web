@@ -27,9 +27,17 @@ class TaxonRankSerializer(serializers.ModelSerializer):
 
 
 class TaxonSerializer(serializers.ModelSerializer):
-    taxonrank = TaxonRankSerializer(
+    taxonrank = TaxonRankSerializer()
+    class Meta:
+        model = Taxon
+        fields = ('taxid', 'taxonrank')
+
+
+class TaxonCreateSerializer(serializers.ModelSerializer):
+    taxonrank = serializers.PrimaryKeyRelatedField(
+        queryset=TaxonRank.objects.all(),
         allow_null=True,
-        required=False,
+        required=False
     )
     class Meta:
         model = Taxon

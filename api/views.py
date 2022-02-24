@@ -7,11 +7,11 @@ import uuid
 import boto3
 import sys
 import re
+import time
 import xml.etree.ElementTree as ET
 from io import BytesIO
 from botocore.exceptions import ClientError
 from collections import defaultdict
-
 
 from django.shortcuts import render, get_object_or_404, get_list_or_404
 from django.http import HttpResponse, JsonResponse, FileResponse, Http404
@@ -35,6 +35,8 @@ from .permissions import AdminPermissionOrReadOnly
 SERVER_URL = "https://ip-10-0-16-250.ec2.internal/api/workflows/v1"
 WORKFLOW_URL = "https://raw.githubusercontent.com/broadinstitute/adapt-pipes/main/adapt_web.wdl"
 NCBI_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+NCBI_TAX_URL = "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip"
+NCBI_NEIGHBORS_URL = "https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239&cmd=download2"
 
 QUEUE_ARN = "arn:aws:batch:us-east-1:194065838422:job-queue/default-Adapt-Cromwell-54-Core"
 IMAGE = "quay.io/broadinstitute/adaptcloud"
@@ -336,6 +338,10 @@ class TaxonViewSet(viewsets.ModelViewSet):
         return Response()
 
     def get_queryset(self):
+        rank = self.request.query_params.get('rank')
+        if rank:
+            qs = Taxon.objects.filter(taxonrank__rank__in=rank.split(',')).distinct()
+            return qs
         taxids = self.request.query_params.get('taxid')
         if not taxids:
             return Taxon.objects.all()
@@ -407,6 +413,159 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
             else:
                 children.extend(list(child.children.all()))
         return Response(sorted(segment_names))
+
+    @staticmethod
+    def save_by_rank(name, taxrank, taxid=None, parent=None):
+        if taxrank not in LINEAGE_RANKS:
+            if taxrank == 'no rank' and parent.rank == 'species':
+                rank = 'subspecies'
+            else:
+                return parent
+        else:
+            rank = taxrank
+        taxonrank_data = {'latin_name': name, 'rank': rank}
+        if parent:
+            taxonrank_data['parent'] = parent.pk
+        try:
+            taxonrank = get_object_or_404(TaxonRank, **taxonrank_data)
+        except Http404:
+            serializer = TaxonRankSerializer(data=taxonrank_data)
+            serializer.is_valid(raise_exception=True)
+            taxonrank = serializer.save()
+        if taxid:
+            try:
+                taxon_data = {'taxid': taxid, 'taxonrank': taxonrank.pk}
+                get_object_or_404(Taxon, **taxon_data)
+            except Http404:
+                serializer = TaxonCreateSerializer(data=taxon_data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+        return taxonrank
+
+    @staticmethod
+    def save_or_get_taxid(taxid):
+        params = {'db': 'taxonomy', 'id': taxid}
+        need_tax_xml = True
+        tries = 0
+        while need_tax_xml:
+            response = requests.get(NCBI_URL, params=params)
+            if response.ok:
+                need_tax_xml = False
+            elif response.status_code == 429:
+                tries += 1
+                if tries > 5:
+                    raise requests.exceptions.HTTPError("NCBI has timed out "
+                                                        "too many times.")
+                time.sleep(5)
+        tax_xml = response.text
+        tax_ET = ET.fromstring(tax_xml)[0]
+        tax_name = tax_ET.find('ScientificName').text
+        tax_rank = tax_ET.find('Rank').text
+        lineage = tax_ET.find('LineageEx')
+        parent = None
+        for ancestor in lineage.findall('Taxon'):
+            ancestor_id = int(ancestor.find('TaxId').text)
+            ancestor_name = ancestor.find('ScientificName').text
+            ancestor_rank = ancestor.find('Rank').text
+            if ancestor_rank in LINEAGE_RANKS:
+                parent = TaxonRankViewSet.save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
+        taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_name, tax_rank, taxid=taxid, parent=parent)
+        return taxonrank_obj
+
+    @staticmethod
+    def taxon_update():
+        # Get taxdump folder and unzip
+        ncbi_tax_folder_zip = requests.get(NCBI_TAX_URL)
+        viral_taxa = set()
+        name_to_taxid = {}
+        with zipfile.ZipFile(BytesIO(ncbi_tax_folder_zip.content)) as ncbi_tax_folder:
+            # Determine what number the Viruses division is
+            # Was 9 as of 2021/02/15, use as default
+            viral_division = 9
+            try:
+                with ncbi_tax_folder.open('division.dmp') as tax_division:
+                    for row in tax_division:
+                        # Note-no headers, so required to use position in list
+                        cells = row.decode("utf-8") .split("\t|\t")
+                        if cells[1] == "VRL":
+                            viral_division = cells[0]
+                            break
+            except KeyError: # File does not exist
+                pass
+
+            # Determine which tax IDs are viruses
+            # Note-files have no headers, so required to use position in list
+            with ncbi_tax_folder.open('nodes.dmp') as tax_nodes:
+                for row in tax_nodes:
+                    cells = row.decode("utf-8").split("\t|\t")
+                    if cells[4] == viral_division:
+                        viral_taxa.add(cells[0])
+
+            # Determine what the names for the tax IDs are
+            with ncbi_tax_folder.open('names.dmp') as tax_names:
+                for row in tax_names:
+                    cells = row.decode("utf-8").split("\t|\t")
+                    taxid = cells[0]
+                    name = cells[1]
+                    if taxid in viral_taxa:
+                        name_to_taxid[name] = int(taxid)
+                        # if cells[3].startswith("scientific name"):
+                        #     viral_nodes[cells[0]]["latin_name"] = name
+                        # else:
+                        #     viral_nodes[cells[0]]["description"].append(name + ";")
+
+        ncbi_neighbors_table = requests.get(NCBI_NEIGHBORS_URL)
+        prev_name = None
+        prev_seg = None
+        for row in ncbi_neighbors_table.content.decode("utf-8").split("\r\n"):
+            if row.startswith("##"):
+                continue
+            cells = row.split("\t")
+            # hosts = cells[2]
+            name = cells[4]
+            segment = cells[5]
+            if name == prev_name and segment == prev_seg:
+                continue
+            # if "vertebrate" in hosts or "human" in hosts:
+            if name in name_to_taxid:
+                taxid = name_to_taxid[name]
+                taxonrank_obj = TaxonRankViewSet.save_or_get_taxid(taxid)
+                if segment != "segment  ":
+                    # Remove "segment " (8 characters) from segment name
+                    segment_name = segment[8:]
+                    segment_taxonrank = TaxonRankViewSet.save_by_rank(segment_name, 'segment', parent=taxonrank_obj)
+            prev_name = name
+            prev_seg = segment
+
+        return Response()
+
+    @action(detail=False, methods=['post'])
+    def update_names(self, request, *args, **kwargs):
+        # Get taxdump folder and unzip
+        ncbi_tax_folder_zip = requests.get(NCBI_TAX_URL)
+        taxid_to_alt_names = defaultdict(list)
+        taxid_to_latin_names = {}
+        with zipfile.ZipFile(BytesIO(ncbi_tax_folder_zip.content)) as ncbi_tax_folder:
+            with ncbi_tax_folder.open('names.dmp') as tax_names:
+                for row in tax_names:
+                    cells = row.decode("utf-8") .split("\t|\t")
+                    taxid = int(cells[0])
+                    taxon_obj = Taxon.objects.filter(pk=taxid)
+                    if taxon_obj.exists():
+                        if cells[3].startswith("scientific name"):
+                            taxid_to_latin_names[taxid] = name
+                        else:
+                            taxid_to_alt_names[taxid].append(name)
+
+        for taxid in taxid_to_alt_names:
+            taxon_obj = Taxon.objects.get(pk=taxid)
+            description = taxid_to_alt_names[taxid].join(";")
+            latin_name = taxid_to_latin_names[taxid]
+            taxon_serializer = TaxonCreateSerializer(taxon_obj,
+                data={'description': description,
+                      'latin_name': latin_name},
+                partial=True)
+            taxon_serializer.save()
 
 
 class LeftPrimersViewSet(viewsets.ModelViewSet):
@@ -621,36 +780,9 @@ class AssayViewSet(viewsets.ModelViewSet):
     queryset = Assay.objects.all()
 
     @staticmethod
-    def save_by_rank(name, taxrank, taxid=None, parent=None):
-        if taxrank not in LINEAGE_RANKS:
-            if taxrank == 'no rank' and parent.rank == 'species':
-                rank = 'subspecies'
-            else:
-                return parent
-        else:
-            rank = taxrank
-        taxonrank_data = {'latin_name': name, 'rank': rank}
-        if parent:
-            taxonrank_data['parent'] = parent.pk
-        try:
-            taxonrank = get_object_or_404(TaxonRank, **taxonrank_data)
-            return taxonrank
-        except Http404:
-            pass
-        serializer = TaxonRankSerializer(data=taxonrank_data)
-        serializer.is_valid(raise_exception=True)
-        taxonrank = serializer.save()
-        if taxid:
-            data = {'taxid': taxid, 'taxonrank': taxonrank.pk}
-            serializer = TaxonSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        return taxonrank
-
-    @staticmethod
     def update(s3_file_paths, obj, sp, start_time, taxid, tax_seg, alns=None, anns=None):
         """
-        Updates the database given a job ID from Cromwell
+        Updates the database given the metadata of a single Cromwell job
 
         """
         if alns:
@@ -669,22 +801,9 @@ class AssayViewSet(viewsets.ModelViewSet):
             taxon_obj = get_object_or_404(Taxon, pk=int(taxid))
             taxonrank_obj = taxon_obj.taxonrank
         except Http404:
-            params = {'db': 'taxonomy', 'id': int(taxid)}
-            tax_xml = requests.get(NCBI_URL, params=params).text
-            tax_ET = ET.fromstring(tax_xml)[0]
-            tax_name = tax_ET.find('ScientificName').text
-            tax_rank = tax_ET.find('Rank').text
-            lineage = tax_ET.find('LineageEx')
-            parent = None
-            for ancestor in lineage.findall('Taxon'):
-                ancestor_id = ancestor.find('TaxId').text
-                ancestor_name = ancestor.find('ScientificName').text
-                ancestor_rank = ancestor.find('Rank').text
-                if ancestor_rank in LINEAGE_RANKS:
-                    parent = AssayViewSet.save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
-            taxonrank_obj = AssayViewSet.save_by_rank(tax_name, tax_rank, taxid=taxid, parent=parent)
+            taxonrank_obj = TaxonRankViewSet.save_or_get_taxid(int(taxid))
         if tax_seg != 'None':
-            taxonrank_obj = AssayViewSet.save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
+            taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
 
         output_files_encoded = _files(s3_file_paths)
         if isinstance(output_files_encoded, Response):
@@ -842,32 +961,6 @@ class AssayViewSet(viewsets.ModelViewSet):
             for i, val in enumerate(taxa_line.split('\t'))} \
             for taxa_line in taxa_lines[1:]]
 
-        def save_by_rank(name, taxrank, taxid=None, parent=None):
-            if taxrank not in LINEAGE_RANKS:
-                if taxrank == 'no rank' and parent.rank == 'species':
-                    rank = 'subspecies'
-                else:
-                    return parent
-            else:
-                rank = taxrank
-            taxonrank_data = {'latin_name': name, 'rank': rank}
-            if parent:
-                taxonrank_data['parent'] = parent.pk
-            try:
-                taxonrank = get_object_or_404(TaxonRank, **taxonrank_data)
-                return taxonrank
-            except Http404:
-                pass
-            serializer = TaxonRankSerializer(data=taxonrank_data)
-            serializer.is_valid(raise_exception=True)
-            taxonrank = serializer.save()
-            if taxid:
-                data = {'taxid': taxid, 'taxonrank': taxonrank.pk}
-                serializer = TaxonSerializer(data=data)
-                serializer.is_valid(raise_exception=True)
-                taxon = serializer.save()
-            return taxonrank
-
         for p, sp in enumerate(sps):
             for q, obj in enumerate(objs):
                 for r, taxon in enumerate(taxa):
@@ -880,22 +973,9 @@ class AssayViewSet(viewsets.ModelViewSet):
                         taxon_obj = get_object_or_404(Taxon, pk=int(taxon["taxid"]))
                         taxonrank_obj = taxon_obj.taxonrank
                     except Http404:
-                        params = {'db': 'taxonomy', 'id': int(taxon['taxid'])}
-                        tax_xml = requests.get(NCBI_URL, params=params).text
-                        tax_ET = ET.fromstring(tax_xml)[0]
-                        tax_name = tax_ET.find('ScientificName').text
-                        tax_rank = tax_ET.find('Rank').text
-                        lineage = tax_ET.find('LineageEx')
-                        parent = None
-                        for ancestor in lineage.findall('Taxon'):
-                            ancestor_id = ancestor.find('TaxId').text
-                            ancestor_name = ancestor.find('ScientificName').text
-                            ancestor_rank = ancestor.find('Rank').text
-                            if ancestor_rank in LINEAGE_RANKS:
-                                parent = save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
-                        taxonrank_obj = save_by_rank(tax_name, tax_rank, taxid=taxon['taxid'], parent=parent)
+                        taxonrank_obj = TaxonRankViewSet.save_or_get_taxid(int(taxon['taxid']))
                     if tax_seg != 'None':
-                        taxonrank_obj = save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
+                        taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
 
                     output_files_encoded = _files(s3_file_paths[p][q][r])
                     if isinstance(output_files_encoded, Response):
