@@ -3,7 +3,6 @@ import zipfile
 from tqdm import tqdm
 
 from io import BytesIO
-
 from django.core.management.base import BaseCommand, CommandError
 from api.views import TaxonRankViewSet
 
@@ -72,7 +71,7 @@ class Command(BaseCommand):
             # if "vertebrate" in hosts or "human" in hosts:
             if name in name_to_taxid:
                 taxid = name_to_taxid[name]
-                taxonrank_obj = TaxonRankViewSet.save_or_get_taxid(taxid)
+                taxonrank_obj = TaxonRankViewSet.save_by_taxid(taxid)
                 if segment != "segment  ":
                     # Remove "segment " (8 characters) from segment name
                     segment_name = segment[8:]

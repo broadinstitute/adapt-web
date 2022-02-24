@@ -443,34 +443,38 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
         return taxonrank
 
     @staticmethod
-    def save_or_get_taxid(taxid):
-        params = {'db': 'taxonomy', 'id': taxid}
-        need_tax_xml = True
-        tries = 0
-        while need_tax_xml:
-            response = requests.get(NCBI_URL, params=params)
-            if response.ok:
-                need_tax_xml = False
-            elif response.status_code == 429:
-                tries += 1
-                if tries > 5:
-                    raise requests.exceptions.HTTPError("NCBI has timed out "
-                                                        "too many times.")
-                time.sleep(5)
-        tax_xml = response.text
-        tax_ET = ET.fromstring(tax_xml)[0]
-        tax_name = tax_ET.find('ScientificName').text
-        tax_rank = tax_ET.find('Rank').text
-        lineage = tax_ET.find('LineageEx')
-        parent = None
-        for ancestor in lineage.findall('Taxon'):
-            ancestor_id = int(ancestor.find('TaxId').text)
-            ancestor_name = ancestor.find('ScientificName').text
-            ancestor_rank = ancestor.find('Rank').text
-            if ancestor_rank in LINEAGE_RANKS:
-                parent = TaxonRankViewSet.save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
-        taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_name, tax_rank, taxid=taxid, parent=parent)
-        return taxonrank_obj
+    def save_by_taxid(taxid):
+        try:
+            taxon_obj = get_object_or_404(Taxon, pk=taxid)
+            return taxon_obj.taxonrank
+        except Http404:
+            params = {'db': 'taxonomy', 'id': taxid}
+            need_tax_xml = True
+            tries = 0
+            while need_tax_xml:
+                response = requests.get(NCBI_URL, params=params)
+                if response.ok:
+                    need_tax_xml = False
+                elif response.status_code == 429:
+                    tries += 1
+                    if tries > 5:
+                        raise requests.exceptions.HTTPError("NCBI has timed out "
+                                                            "too many times.")
+                    time.sleep(5)
+            tax_xml = response.text
+            tax_ET = ET.fromstring(tax_xml)[0]
+            tax_name = tax_ET.find('ScientificName').text
+            tax_rank = tax_ET.find('Rank').text
+            lineage = tax_ET.find('LineageEx')
+            parent = None
+            for ancestor in lineage.findall('Taxon'):
+                ancestor_id = int(ancestor.find('TaxId').text)
+                ancestor_name = ancestor.find('ScientificName').text
+                ancestor_rank = ancestor.find('Rank').text
+                if ancestor_rank in LINEAGE_RANKS:
+                    parent = TaxonRankViewSet.save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
+            taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_name, tax_rank, taxid=taxid, parent=parent)
+            return taxonrank_obj
 
     @staticmethod
     def taxon_update():
@@ -529,7 +533,7 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
             # if "vertebrate" in hosts or "human" in hosts:
             if name in name_to_taxid:
                 taxid = name_to_taxid[name]
-                taxonrank_obj = TaxonRankViewSet.save_or_get_taxid(taxid)
+                taxonrank_obj = TaxonRankViewSet.save_by_taxid(taxid)
                 if segment != "segment  ":
                     # Remove "segment " (8 characters) from segment name
                     segment_name = segment[8:]
@@ -797,11 +801,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                                  "there must be the same number of annotations "
                                  "as output file paths."},
                                 status=httpstatus.HTTP_400_BAD_REQUEST)
-        try:
-            taxon_obj = get_object_or_404(Taxon, pk=int(taxid))
-            taxonrank_obj = taxon_obj.taxonrank
-        except Http404:
-            taxonrank_obj = TaxonRankViewSet.save_or_get_taxid(int(taxid))
+        taxonrank_obj = TaxonRankViewSet.save_by_taxid(int(taxid))
         if tax_seg != 'None':
             taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
 
@@ -969,11 +969,7 @@ class AssayViewSet(viewsets.ModelViewSet):
                         continue
                     if (isinstance(s3_file_paths[p][q], dict) and r not in s3_file_paths[p][q]) or s3_file_paths[p][q][r] == []:
                         continue
-                    try:
-                        taxon_obj = get_object_or_404(Taxon, pk=int(taxon["taxid"]))
-                        taxonrank_obj = taxon_obj.taxonrank
-                    except Http404:
-                        taxonrank_obj = TaxonRankViewSet.save_or_get_taxid(int(taxon['taxid']))
+                    taxonrank_obj = TaxonRankViewSet.save_by_taxid(int(taxon['taxid']))
                     if tax_seg != 'None':
                         taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
 
