@@ -50,12 +50,12 @@ class TaxonRank(models.Model):
 
     @property
     def any_child_assays(self):
-        children = self.children.all()
+        children = list(self.children.all())
         while len(children) > 0:
             child = children.pop(0)
-            if child.any_assays():
+            if child.assay_sets.all().exists():
                 return True
-            children.append(child.children.all())
+            children.extend(list(child.children.all()))
         return self.assay_sets.all().exists()
 
     class Meta:
