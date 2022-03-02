@@ -63,21 +63,21 @@
                     :sm="inputs[sec][subsec][input_var].cols ? inputs[sec][subsec][input_var].cols : 12"
                     :align-self="inputs[sec][subsec][input_var].type == 'boolean'? 'center' : 'start'"
                   >
-                    <b-form-group
-                      class="field"
-                      v-show="inputs[sec][subsec][input_var].show == false? false : true"
-                      :label="inputs[sec][subsec][input_var].label"
-                      :label-for="input_var"
-                      label-align=left
-                      :id="sec + '-' + subsec + '-' + input_var"
+                    <!-- ValidationProvider allows VeeValidate to put rules on a field -->
+                    <ValidationProvider
+                      :vid="input_var"
+                      :rules="inputs[sec][subsec][input_var].rules"
+                      v-slot="validationContext"
+                      :name="inputs[sec][subsec][input_var].label"
+                      mode="eager"
                     >
-                      <!-- ValidationProvider allows VeeValidate to put rules on a field -->
-                      <ValidationProvider
-                        :vid="input_var"
-                        :rules="inputs[sec][subsec][input_var].rules"
-                        v-slot="validationContext"
-                        :name="inputs[sec][subsec][input_var].label"
-                        mode="eager"
+                      <b-form-group
+                        v-show="inputs[sec][subsec][input_var].show == false? false : true"
+                        :label="inputs[sec][subsec][input_var].label"
+                        :label-for="input_var"
+                        label-align=left
+                        :id="sec + '-' + subsec + '-' + input_var"
+                        :class="['field', {'invalid': validationContext.failed}]"
                       >
                         <!-- v-if only produces the input depending on the type -->
                         <b-form-file
@@ -176,8 +176,8 @@
                           <span v-html="inputs[sec][subsec][input_var].dynamic_description[inputs[sec][subsec][input_var].value]"/>
                         </b-form-text>
                         <b-form-invalid-feedback :id="subsec + '-' + input_var + '-feedback'" :state="getValidationState(validationContext)">{{ validationContext.errors[0] }}</b-form-invalid-feedback>
-                      </ValidationProvider>
-                    </b-form-group>
+                      </b-form-group>
+                    </ValidationProvider>
                   </b-col>
                 </b-form-row>
                 <b-form
@@ -1201,7 +1201,7 @@ export default {
       return files.length === 1 ? files[0].name : `${files.length} files selected`
     },
     getValidationState({failed, valid = null }) {
-      // Only show if field is invalid; don't show if valid
+      // Only return validity if field has failed; don't show if field hasn't been checked
       return !failed ? null : valid;
     },
     multiValidate(sec, subsec) {

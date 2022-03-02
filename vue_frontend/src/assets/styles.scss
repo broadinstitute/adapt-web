@@ -22,6 +22,7 @@ $navbar-light-disabled-color:       rgba($dark, .3);
 $body-color:                        $dark;
 $list-group-color:                  rgba($dark, .6);
 $input-color:                       $dark;
+$input-placeholder-color:           color.scale($info, $lightness: -20%);
 
 $footer-height:                     6rem;
 
@@ -403,6 +404,7 @@ a.anchor {
   font-style: italic;
 }
 
+// Multiselect
 .multiselect__option--selected.multiselect__option--highlight {
   background: #f3f3f3;
   color: #35495e;
@@ -412,6 +414,28 @@ a.anchor {
   background: #f3f3f3;
   content: attr(data-deselect);
   color: #35495e;
+}
+
+.multiselect__tags {
+  border: 1px solid #ced4da;
+}
+
+.invalid .multiselect__tags {
+  border: 1px solid $danger;
+}
+
+.multiselect__input::-webkit-input-placeholder{
+  color:$input-placeholder-color;
+}
+.multiselect__input:-ms-input-placeholder{
+  color:$input-placeholder-color;
+}
+.multiselect__input::placeholder{
+  color:$input-placeholder-color;
+}
+
+.multiselect__placeholder{
+  color:$input-placeholder-color;
 }
 
 // GitHub Corner (https://tholman.com/github-corners/)
