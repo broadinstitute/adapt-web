@@ -9,7 +9,7 @@
           <i style="font-size: max(min(1.7vw, 1.4em),0.8em)">Activity-informed Design with All-inclusive Patrolling of Targets</i>
         </b-col>
       </b-row>
-      <p class="pb-3 text-muted f-4">ADAPT efficiently designs nucleic acid diagnostic assays with maximal predicted detection activity over genomic variation, with a focus on viruses.</p>
+      <p class="pb-3 text-muted f-4">ADAPT efficiently designs nucleic acid diagnostic assays with maximal predicted sensitivity across genomic variation, with a focus on viruses.</p>
       <b-card class="mt-5 mb-5">
         <b-card-text>
           <b-row align-v="center">
@@ -82,7 +82,7 @@
       <p class="pt-5 f-5">Currently, ADAPT is directly suited to Cas13a-based diagnostics, e.g., with the <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5526198/" rel="noreferrer" target="_blank">SHERLOCK</a>, <a href="https://www.nature.com/articles/s41467-020-19097-x" rel="noreferrer" target="_blank">SHINE</a>, or <a href="https://www.nature.com/articles/s41586-020-2279-8" rel="noreferrer" target="_blank">CARMEN</a> platforms. Future versions will extend ADAPT's predictive models to work with other nucleic acid detection technologies.</p>
       <p class="f-5">This website is being developed and maintained by <a href="https://priyappillai.github.io/" rel="noreferrer" target="_blank">Priya Pillai</a> and <a href="https://hayden.bio" rel="noreferrer" target="_blank">Hayden Metsky</a>, in the Sabeti Lab at the Broad Institute of MIT and Harvard.</p>
       <br>
-      <p><span class="disclaimer">Note: ADAPT’s pre-designed assays were generated fully automatically and we have not yet experimentally validated most of them; they are intended for research use only. They have gone through in silico checks of comprehensiveness and sensitivity to their species.</span></p>
+      <p><span class="disclaimer">Note: ADAPT’s pre-designed assays were generated fully automatically and we have not yet experimentally validated most of them; they are intended for research use only. They have gone through in silico checks of comprehensiveness, sensitivity, and specificity.</span></p>
     </div>
   </transition>
 </template>
