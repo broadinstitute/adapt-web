@@ -16,7 +16,9 @@ from collections import defaultdict
 from django.shortcuts import render, get_object_or_404, get_list_or_404
 from django.http import HttpResponse, JsonResponse, FileResponse, Http404
 from django.core.files import File
+from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.cache import cache_page
 from django.contrib.auth.models import User
 from django.db.models import Case, When
 
@@ -337,7 +339,11 @@ class TaxonViewSet(viewsets.ModelViewSet):
         RightPrimers.objects.all().delete()
         return Response()
 
-    def get_queryset(self):
+    @method_decorator(cache_page(60*60*24))
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self, *args, **kwargs):
         rank = self.request.query_params.get('rank')
         if rank:
             qs = Taxon.objects.filter(taxonrank__rank__in=rank.split(',')).distinct()

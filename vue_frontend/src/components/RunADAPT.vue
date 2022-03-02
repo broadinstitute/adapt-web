@@ -340,32 +340,34 @@ export default {
   },
   async created() {
     let vm = this
-    let response = await fetch('/api/taxon/', {
-      headers: {
-        "X-CSRFToken": csrfToken
+    for (let filterrank of ['species', 'genus', 'subspecies', 'family']) {
+      let response = await fetch('/api/taxon/?rank='+filterrank, {
+        headers: {
+          "X-CSRFToken": csrfToken
+        }
+      })
+      if (response.ok) {
+        let response_json = await response.json()
+        for (let child in response_json) {
+          let name = response_json[child].taxonrank.latin_name
+          let taxid = response_json[child].taxid
+          let rank = response_json[child].taxonrank.rank
+          let pk = response_json[child].taxonrank.pk
+          vm.inputs.opts.autoinput.taxid.options.push({
+              "taxid": taxid,
+              "label": "[" + rank[0].toUpperCase() + rank.slice(1) + "] " + name + " (taxid: " + taxid + ")",
+              "pk": pk
+            }
+          )
+        }
+      } else {
+        this.$root.$data.modaltitle = 'Error'
+        this.$root.$data.modalmsg = await response.text()
+        this.$root.$data.modalvariant = 'danger'
+        this.$root.$emit('show-msg');
       }
-    })
-    if (response.ok) {
-      let response_json = await response.json()
-      for (let child in response_json) {
-        let name = response_json[child].taxonrank.latin_name
-        let taxid = response_json[child].taxid
-        let rank = response_json[child].taxonrank.rank
-        let pk = response_json[child].taxonrank.pk
-        vm.inputs.opts.autoinput.taxid.options.push({
-            "taxid": taxid,
-            "label": "[" + rank[0].toUpperCase() + rank.slice(1) + "] " + name + " (taxid: " + taxid + ")",
-            "pk": pk
-          }
-        )
-      }
-    } else {
-      this.$root.$data.modaltitle = 'Error'
-      this.$root.$data.modalmsg = await response.text()
-      this.$root.$data.modalvariant = 'danger'
-      this.$root.$emit('show-msg');
+      vm.inputs.sp.specificity_taxa.sp_taxid.options = vm.inputs.opts.autoinput.taxid.options
     }
-    vm.inputs.sp.specificity_taxa.sp_taxid.options = vm.inputs.opts.autoinput.taxid.options
     vm.loading_taxa = false
   },
   mounted () {
@@ -532,7 +534,7 @@ export default {
               type: 'radio',
               value: '',
               options: [
-                { value: 'auto-from-args', text: 'Taxon' },
+                { value: 'auto-from-args', text: 'Viral Taxon' },
                 { value: 'fasta', text: 'Prealigned FASTA' },
               ],
               rules: 'required',
