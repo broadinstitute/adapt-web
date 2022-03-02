@@ -63,19 +63,19 @@ class Command(BaseCommand):
             if row.startswith("##"):
                 continue
             cells = row.split("\t")
-            # hosts = cells[2]
+            hosts = cells[2].split(",")
             name = cells[4]
             segment = cells[5]
             if name == prev_name and segment == prev_seg:
                 continue
-            # if "vertebrate" in hosts or "human" in hosts:
-            if name in name_to_taxid:
-                taxid = name_to_taxid[name]
-                taxonrank_obj = TaxonRankViewSet.save_by_taxid(taxid)
-                if segment != "segment  ":
-                    # Remove "segment " (8 characters) from segment name
-                    segment_name = segment[8:]
-                    segment_taxonrank = TaxonRankViewSet.save_by_rank(segment_name, 'segment', parent=taxonrank_obj)
+            if "vertebrates" in hosts or "human" in hosts:
+                if name in name_to_taxid:
+                    taxid = name_to_taxid[name]
+                    taxonrank_obj = TaxonRankViewSet.save_by_taxid(taxid)
+                    if segment != "segment  ":
+                        # Remove "segment " (8 characters) from segment name
+                        segment_name = segment[8:]
+                        segment_taxonrank = TaxonRankViewSet.save_by_rank(segment_name, 'segment', parent=taxonrank_obj)
             prev_name = name
             prev_seg = segment
 
