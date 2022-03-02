@@ -10,21 +10,6 @@
         </b-col>
       </b-row>
       <p class="pb-3 text-muted f-4">ADAPT efficiently designs nucleic acid diagnostic assays with maximal predicted sensitivity across genomic variation, with a focus on viruses.</p>
-      <b-card class="mt-5 mb-5">
-        <b-card-text>
-          <b-row align-v="center">
-            <b-col md=9>
-              <small><i>Preprint on bioRxiv:</i></small>
-              <a href="https://doi.org/10.1101/2020.11.28.401877" rel="noreferrer" target="_blank"><h3>Designing viral diagnostics with model-based optimization</h3></a>
-              <h6>Hayden C. Metsky, Nicole L. Welch, Priya P. Pillai, Nicholas J. Haradhvala, Laurie Rumker, Sreekar Mantena, Yibin B. Zhang, David K. Yang, Cheri M. Ackerman, Juliane Weller, Paul C. Blainey, Cameron Myhrvold, Michael Mitzenmacher, Pardis C. Sabeti</h6>
-            </b-col>
-            <b-col md=3>
-              <div class="pb-2"><small><i>Code on GitHub:</i></small></div>
-              <a href="https://github.com/broadinstitute/adapt" rel="noreferrer" target="_blank"><img width="70" alt="Octicons-mark-github" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/512px-Octicons-mark-github.svg.png"></a>
-            </b-col>
-          </b-row>
-        </b-card-text>
-      </b-card>
       <b-row>
         <b-col sm=1></b-col>
         <b-col sm=10>
@@ -79,6 +64,21 @@
           <p class="f-4 text-left">If there is a virus we have not designed for, you have custom sequences, or you require control over design parameters, you can run ADAPT easily through our web interface.</p>
         </b-col>
       </b-row>
+      <b-card class="mt-5 mb-5">
+        <b-card-text>
+          <b-row align-v="center">
+            <b-col md=9>
+              <small><i>Preprint on bioRxiv:</i></small>
+              <a href="https://doi.org/10.1101/2020.11.28.401877" rel="noreferrer" target="_blank"><h3>Designing viral diagnostics with model-based optimization</h3></a>
+              <h6>Hayden C. Metsky, Nicole L. Welch, Priya P. Pillai, Nicholas J. Haradhvala, Laurie Rumker, Sreekar Mantena, Yibin B. Zhang, David K. Yang, Cheri M. Ackerman, Juliane Weller, Paul C. Blainey, Cameron Myhrvold, Michael Mitzenmacher, Pardis C. Sabeti</h6>
+            </b-col>
+            <b-col md=3>
+              <div class="pb-2"><small><i>Code on GitHub:</i></small></div>
+              <a href="https://github.com/broadinstitute/adapt" rel="noreferrer" target="_blank"><img width="70" alt="Octicons-mark-github" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/512px-Octicons-mark-github.svg.png"></a>
+            </b-col>
+          </b-row>
+        </b-card-text>
+      </b-card>
       <p class="pt-5 f-5">Currently, ADAPT is directly suited to Cas13a-based diagnostics, e.g., with the <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5526198/" rel="noreferrer" target="_blank">SHERLOCK</a>, <a href="https://www.nature.com/articles/s41467-020-19097-x" rel="noreferrer" target="_blank">SHINE</a>, or <a href="https://www.nature.com/articles/s41586-020-2279-8" rel="noreferrer" target="_blank">CARMEN</a> platforms. Future versions will extend ADAPT's predictive models to work with other nucleic acid detection technologies.</p>
       <p class="f-5">This website is being developed and maintained by <a href="https://priyappillai.github.io/" rel="noreferrer" target="_blank">Priya Pillai</a> and <a href="https://hayden.bio" rel="noreferrer" target="_blank">Hayden Metsky</a>, in the Sabeti Lab at the Broad Institute of MIT and Harvard.</p>
       <br>
