@@ -372,6 +372,10 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
     queryset = TaxonRank.objects.all()
     serializer_class = TaxonRankSerializer
 
+    @method_decorator(cache_page(60*60*24))
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
         designed = self.request.query_params.get('designed')
         if designed:
