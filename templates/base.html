@@ -4,12 +4,16 @@
 
 <head>
   <meta charset="utf-8">
-  <title>ADAPT - {% block title %}{% endblock %}</title>
+  <html prefix="og: https://ogp.me/ns#">
+  <meta property="og:type" content="website">
+  <meta property=og:image content="https://adapt.run/static/vue/img/screenshot.png">
+  <meta property=og:image:alt content="A visualization of assays designed by ADAPT">
+  {% block details %}{% endblock %}
+  <meta name=twitter:card content=summary_large_image>
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@300;700&display=swap" rel="stylesheet">
   <link rel="icon" href="/static/vue/favicon.ico">
-  {% block description %}{% endblock %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
