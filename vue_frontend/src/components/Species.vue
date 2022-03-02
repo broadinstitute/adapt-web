@@ -28,7 +28,7 @@
     <b-button
       :id="pk+'-arrow'"
       :class="[{ collapsed: species.collapsed, 'not-collapsed': !species.collapsed }, 'p-0']"
-      v-if="species.num_children-species.num_segments>0"
+      v-if="(species.num_children-species.num_segments>0 & species.any_child_assays)"
       v-on:click.prevent="toggle()"
       variant="link"
     >

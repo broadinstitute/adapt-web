@@ -62,6 +62,7 @@ export default {
               rank: response_json[child].rank,
               num_children: response_json[child].num_children,
               num_segments: response_json[child].num_segments,
+              any_child_assays: response_json[child].any_child_assays,
               description: response_json[child].description,
               selectable: response_json[child].any_assays,
               taxids: response_json[child].taxons,

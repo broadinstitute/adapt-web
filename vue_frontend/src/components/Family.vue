@@ -12,7 +12,7 @@
       <b-button
         :id="pk+'-arrow'"
         :class="[{'collapsed': family.collapsed, 'not-collapsed': !family.collapsed }, 'p-0']"
-        v-if="family.num_children-family.num_segments>0"
+        v-if="(family.num_children-family.num_segments>0 & family.any_child_assays)"
         v-on:click.prevent="toggle()"
         variant="link"
       >

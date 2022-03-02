@@ -11,7 +11,7 @@
     <b-button
       :id="pk+'-arrow'"
       :class="[{ collapsed: genus.collapsed, 'not-collapsed': !genus.collapsed }, 'p-0']"
-      v-if="genus.num_children-genus.num_segments>0"
+      v-if="(genus.num_children-genus.num_segments>0 & genus.any_child_assays)"
       v-on:click.prevent="toggle()"
       variant="link"
     >

@@ -56,7 +56,7 @@ class TaxonRank(models.Model):
             if child.assay_sets.all().exists():
                 return True
             children.extend(list(child.children.all()))
-        return self.assay_sets.all().exists()
+        return False
 
     class Meta:
         ordering = ['rank', 'latin_name']

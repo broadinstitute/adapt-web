@@ -75,6 +75,7 @@ export default {
                 rank: vm.subspecies.rank,
                 num_children: response_json[child].num_children,
                 num_segments: response_json[child].num_segments,
+                any_child_assays: response_json[child].any_child_assays,
                 description: response_json[child].description,
                 selectable: response_json[child].any_assays,
                 taxids: vm.subspecies.taxids,
