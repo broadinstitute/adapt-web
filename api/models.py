@@ -219,6 +219,11 @@ class ADAPTRun(models.Model):
         max_length=100,
         default="Submitted"
     )
+    fail_caused_by = models.CharField(
+        max_length=100,
+        blank=True,
+        default=""
+    )
     submit_time = models.DateTimeField(
         auto_now_add=True
     )

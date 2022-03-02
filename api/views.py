@@ -50,7 +50,7 @@ with open('./api/aws_config.txt') as f:
 
 CONTACT = "adapt@broadinstitute.org"
 SUCCESSFUL_STATES = ["Succeeded"]
-FAILED_STATES = ["Failed", "Aborted"]
+FAILED_STATES = ["Failed", "Aborted", "Aborting"]
 OBJECTIVES = ["maximize-activity", "minimize-guides"]
 MAX_ALGS = ["random-greedy", "greedy"]
 FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
@@ -1330,7 +1330,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
 
             elif adaptrun.status in FAILED_STATES:
                 # TODO give reasons that the job might fail
-                content = {'Failed Job': "Job has failed. "
+                content = {'Job Failed': "Job has failed. "
                     "This could be due to invalid input parameters or "
                     "running out of memory. Please check your input prior "
                     "to your next request, then try increasing memory. "
@@ -1338,7 +1338,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 return Response(content, status=httpstatus.HTTP_400_BAD_REQUEST)
 
             else:
-                content = {'Unfinished Job': "Job is not finished running. "
+                content = {'Job Running': "Job is not finished running. "
                     "Please wait until the job is done; this can take a few "
                     "hours on large datasets. You may check your job status "
                     "using 'Get Status'."}
@@ -1363,6 +1363,19 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             # Update the model with the current status
             adaptrun.status = cromwell_json["status"]
             adaptrun.save()
+        if adaptrun.status in FAILED_STATES:
+            if adaptrun.fail_caused_by == "":
+                try:
+                    cromwell_response = requests.get("%s/%s/metadata" %(SERVER_URL,adaptrun.cromwell_id), verify=False)
+                except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout):
+                    content = {'Connection Error': "Unable to connect to our servers. "
+                        "Try again in a few minutes. If it still doesn't work, "
+                        "contact %s." %CONTACT}
+                    return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
+                cromwell_json = cromwell_response.json()
+                return Response(cromwell_json)
+
 
         # Return response with id and status
         content = {'cromwell_id': adaptrun.cromwell_id, 'status': adaptrun.status}
