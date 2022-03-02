@@ -68,13 +68,13 @@
         <b-card-text>
           <b-row align-v="center">
             <b-col md=9>
-              <small><i>Preprint on bioRxiv:</i></small>
-              <a href="https://doi.org/10.1101/2020.11.28.401877" rel="noreferrer" target="_blank"><h3>Designing viral diagnostics with model-based optimization</h3></a>
+              <small>Publication in <i>Nature Biotechnology</i>:</small>
+              <a href="https://www.nature.com/articles/s41587-022-01213-5" target="_blank"><h3>Designing sensitive viral diagnostics with machine learning</h3></a>
               <h6>Hayden C. Metsky, Nicole L. Welch, Priya P. Pillai, Nicholas J. Haradhvala, Laurie Rumker, Sreekar Mantena, Yibin B. Zhang, David K. Yang, Cheri M. Ackerman, Juliane Weller, Paul C. Blainey, Cameron Myhrvold, Michael Mitzenmacher, Pardis C. Sabeti</h6>
             </b-col>
             <b-col md=3>
-              <div class="pb-2"><small><i>Code on GitHub:</i></small></div>
-              <a href="https://github.com/broadinstitute/adapt" rel="noreferrer" target="_blank"><img width="70" alt="Octicons-mark-github" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/512px-Octicons-mark-github.svg.png"></a>
+              <div class="pb-2"><small>Code on GitHub:</small></div>
+              <a href="https://github.com/broadinstitute/adapt" target="_blank"><img width="70" alt="Octicons-mark-github" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/512px-Octicons-mark-github.svg.png"></a>
             </b-col>
           </b-row>
         </b-card-text>
