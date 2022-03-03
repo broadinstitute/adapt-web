@@ -586,7 +586,7 @@ export default {
               order: 1,
               type: 'boolean',
               value: true,
-              fields: {'enabled': 'Unaligned sequences in FASTA', 'disabled': 'Pre-aligned sequences in FASTA'},
+              fields: {'enabled': 'Align sequences', 'disabled': 'Align sequences'},
               rules: '',
               cols: 12,
             },
@@ -800,7 +800,7 @@ export default {
               order: 1,
               type: 'boolean',
               value: true,
-              fields: {'enabled': 'Output alignment', 'disabled': 'Don\'t output alignment'},
+              fields: {'enabled': 'Output alignment', 'disabled': 'Output alignment'},
               rules: '',
               cols: 12
             },
