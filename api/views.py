@@ -82,6 +82,7 @@ FASTA_CODES = {'A': set(('A')),
 
 
 BOOL_OPT_INPUT_VARS = [
+    'unaligned_fasta',
     'write_aln',
 ]
 STR_OPT_INPUT_VARS = [
