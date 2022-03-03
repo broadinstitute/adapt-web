@@ -1410,7 +1410,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 else:
                     adaptrun.fail_caused_by = "Unknown"
                 adaptrun.save()
-            content['causedBy': adaptrun.fail_caused_by]
+            content['causedBy'] = adaptrun.fail_caused_by
 
         return Response(content)
 
