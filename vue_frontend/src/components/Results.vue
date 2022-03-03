@@ -207,7 +207,18 @@ export default {
           case 'Aborted':
           case 'Aborting':
             this.$root.$data.modaltitle = 'Job Failed';
-            this.$root.$data.modalmsg = 'Run ' + this.runid + ' has failed. Please double check your input and try again. If you continue to have issues, contact adapt@broadinstitute.org.';
+            this.$root.$data.modalmsg = 'Run ' + this.runid + ' has failed due to ';
+            switch(detail_response_json) {
+              case 'Memory':
+                this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('running out of memory. Try increasing the memory setting in the "Advanced" options on the Run page and then submitting again.')
+              case 'No sequences':
+                this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('our database of viral sequences (<a href="https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239">NCBI\'s Viral Genome Database</a>) not containing any complete genomes for this virus. Try uploading a FASTA of the genomes you would like to detect.')
+              case 'Busy':
+                this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('our servers being busy. Try waiting for a few hours and then submitting again.')
+              case 'Unknown':
+                this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('an unknown reason. Please double check your input parameters; if you uploaded a file, this could be due to incorrect formatting.')
+            }
+            this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat(' If you continue to have issues, contact adapt@broadinstitute.org with your run ID.')
             this.$root.$data.modalvariant = 'danger';
             this.$root.$emit('show-msg');
             this.updateRunIDs(detail_response_json.submit_time, detail_response_json.nickname)

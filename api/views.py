@@ -54,6 +54,13 @@ FAILED_STATES = ["Failed", "Aborted", "Aborting"]
 OBJECTIVES = ["maximize-activity", "minimize-guides"]
 MAX_ALGS = ["random-greedy", "greedy"]
 FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
+
+ADAPT_ERROR = re.compile(r"Job adapt_web\.adapt.+ exited with return code 1 which has not been declared as a valid return code\. See \'continueOnReturnCode\' runtime attribute for more details\.")
+COMPUTE_ERROR = re.compile(r"\[Attempted \d+ time\(s\)\] - IOException: Could not read from s3:\/\/.+\/cromwell-execution\/adapt-web\/.+\/adapt-rc\.txt")
+MAFFT_ERROR = b'The generated alignment contains no sequences'
+TAXID_ERROR = b'Exception: No sequences were found for taxid'
+KILLED_ERROR = b'Killed'
+
 # Store the unambiguous bases that make up each
 # ambiguous base in the IUPAC notation
 FASTA_CODES = {'A': set(('A')),
@@ -1363,6 +1370,11 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
             # Update the model with the current status
             adaptrun.status = cromwell_json["status"]
             adaptrun.save()
+
+        # Return response with id and status
+        content = {'cromwell_id': adaptrun.cromwell_id, 'status': adaptrun.status}
+
+        # If failed, add reason
         if adaptrun.status in FAILED_STATES:
             if adaptrun.fail_caused_by == "":
                 try:
@@ -1374,11 +1386,32 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         "contact %s." %CONTACT}
                     return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
                 cromwell_json = cromwell_response.json()
-                return Response(cromwell_json)
+                fail_message = cromwell_json['failures'][0]['causedBy'][0]['message']
+                if re.match(ADAPT_ERROR, failure['message']):
+                    S3 = boto3.client("s3",
+                        aws_access_key_id=AWS_ACCESS_KEY_ID,
+                        aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+                    response = S3.get_object(
+                        Bucket=CROMWELL_BUCKET,
+                        Key='cromwell-execution/adapt_web/%s/call-adapt/adapt-stderr.log' %(adaptrun.cromwell_id),
+                    )
 
+                    file_body = response["Body"].read()
+                    if TAXID_ERROR in file_body:
+                        adaptrun.fail_caused_by = "No sequences"
+                    elif MAFFT_ERROR in file_body:
+                        adaptrun.fail_caused_by = "Memory"
+                    elif KILLED_ERROR in file_body:
+                        adaptrun.fail_caused_by = "Busy"
+                    else:
+                        adaptrun.fail_caused_by = "Unknown"
+                elif re.match(COMPUTE_ERROR, failure['message']):
+                    adaptrun.fail_caused_by = "Busy"
+                else:
+                    adaptrun.fail_caused_by = "Unknown"
+                adaptrun.save()
+            content['causedBy': adaptrun.fail_caused_by]
 
-        # Return response with id and status
-        content = {'cromwell_id': adaptrun.cromwell_id, 'status': adaptrun.status}
         return Response(content)
 
     def create(self, request, format=None):
