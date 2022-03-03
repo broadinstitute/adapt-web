@@ -586,7 +586,7 @@ export default {
               order: 1,
               type: 'boolean',
               value: true,
-              fields: {'enabled': 'Align sequences', 'disabled': 'Align sequences'},
+              fields: {'enabled': 'Sequences are unaligned', 'disabled': 'Sequences are unaligned'},
               rules: '',
               cols: 12,
             },
