@@ -208,17 +208,17 @@ export default {
           case 'Aborting':
             this.$root.$data.modaltitle = 'Job Failed';
             this.$root.$data.modalmsg = 'Run ' + this.runid + ' has failed due to ';
-            switch(detail_response_json) {
+            switch(detail_response_json.fail_caused_by) {
               case 'Memory':
                 this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('running out of memory. Try increasing the memory setting in the "Advanced" options on the Run page and then submitting again.')
               break;
               case 'No sequences':
-                this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('our database of viral sequences (<a href="https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239">NCBI\'s Viral Genome Database</a>) not containing any complete genomes for this virus. Try uploading a FASTA of the genomes you would like to detect.')
+                this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('our database of viral sequences (<a href="https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239">NCBI\'s Viral Genome Database</a>) not containing any complete genomes for this virus. Try uploading a FASTA of the sequences you would like to detect.')
               break;
               case 'Busy':
                 this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('our servers being busy. Try waiting for a few hours and then submitting again.')
               break;
-              case 'Unknown':
+              default:
                 this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('an unknown reason. Please double check your input parameters; if you uploaded a file, this could be due to incorrect formatting.')
               break;
             }

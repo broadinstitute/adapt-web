@@ -160,4 +160,4 @@ class AssaySetSerializer(serializers.ModelSerializer):
 class ADAPTRunSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ADAPTRun
-        fields = ('cromwell_id', 'nickname', 'form_inputs', 'status', 'alignment', 'submit_time')
+        fields = ('cromwell_id', 'nickname', 'form_inputs', 'status', 'fail_caused_by', 'alignment', 'submit_time')
