@@ -219,7 +219,7 @@ export default {
                 this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('our servers being busy. Try waiting for a few hours and then submitting again.')
               break;
               case 'No references':
-                this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('our database of viral sequences (<a href="https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239">NCBI\'s Viral Genome Database</a>) does not contain reference sequences for this virus, meaning we cannot automatically curate based on sequence quality. Try uploading a FASTA of the sequences you would like to detect.')
+                this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('our database of viral sequences (<a href="https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239">NCBI\'s Viral Genome Database</a>) not containing reference sequences for this virus, meaning we cannot automatically curate based on sequence quality. Try uploading a FASTA of the sequences you would like to detect.')
               break;
               default:
                 this.$root.$data.modalmsg = this.$root.$data.modalmsg.concat('an unknown reason. Please double check your input parameters; if you uploaded a file, this could be due to incorrect formatting.')
