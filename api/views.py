@@ -560,6 +560,30 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
 
         return Response()
 
+        # for taxid, info in viral_nodes.items():
+        #     if info["rank"] == "no rank":
+        #         if (info["parent"] in viral_nodes and
+        #             viral_nodes[info["parent"]] == "species"):
+        #             info["rank"] = "subspecies"
+        #         else:
+        #             continue
+        #     if info["rank"] in LINEAGE_RANKS:
+        #         try:
+        #             taxon_obj = Taxon.objects.get(pk=int(taxid))
+        #         except Taxon.DoesNotExist:
+        #             # Find the parent that is in the lineage ranks (not subfamily, subgenus, etc.)
+        #             parent = info["parent"]
+        #             while viral_nodes[parent]["rank"] not in LINEAGE_RANKS:
+        #                 if parent == 10239:
+        #                     parent = None
+        #                     break
+        #                 parent = viral_nodes[parent]["parent"]
+
+
+    # @action(detail=False, methods=['post'])
+    # def taxon_update_wrap(self, request, *args, **kwargs):
+    #     return TaxonRankViewSet.taxon_update()
+
     @action(detail=False, methods=['post'])
     def update_names(self, request, *args, **kwargs):
         # Get taxdump folder and unzip
@@ -822,6 +846,20 @@ class AssayViewSet(viewsets.ModelViewSet):
                                  "as output file paths."},
                                 status=httpstatus.HTTP_400_BAD_REQUEST)
         taxonrank_obj = TaxonRankViewSet.save_by_taxid(int(taxid))
+            # params = {'db': 'taxonomy', 'id': int(taxid)}
+            # tax_xml = requests.get(NCBI_URL, params=params).text
+            # tax_ET = ET.fromstring(tax_xml)[0]
+            # tax_name = tax_ET.find('ScientificName').text
+            # tax_rank = tax_ET.find('Rank').text
+            # lineage = tax_ET.find('LineageEx')
+            # parent = None
+            # for ancestor in lineage.findall('Taxon'):
+            #     ancestor_id = ancestor.find('TaxId').text
+            #     ancestor_name = ancestor.find('ScientificName').text
+            #     ancestor_rank = ancestor.find('Rank').text
+            #     if ancestor_rank in LINEAGE_RANKS:
+            #         parent = TaxonRankViewSet.save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
+            # taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_name, tax_rank, taxid=taxid, parent=parent)
         if tax_seg != 'None':
             taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
 
@@ -990,6 +1028,20 @@ class AssayViewSet(viewsets.ModelViewSet):
                     if (isinstance(s3_file_paths[p][q], dict) and r not in s3_file_paths[p][q]) or s3_file_paths[p][q][r] == []:
                         continue
                     taxonrank_obj = TaxonRankViewSet.save_by_taxid(int(taxon['taxid']))
+                        # params = {'db': 'taxonomy', 'id': int(taxon['taxid'])}
+                        # tax_xml = requests.get(NCBI_URL, params=params).text
+                        # tax_ET = ET.fromstring(tax_xml)[0]
+                        # tax_name = tax_ET.find('ScientificName').text
+                        # tax_rank = tax_ET.find('Rank').text
+                        # lineage = tax_ET.find('LineageEx')
+                        # parent = None
+                        # for ancestor in lineage.findall('Taxon'):
+                        #     ancestor_id = ancestor.find('TaxId').text
+                        #     ancestor_name = ancestor.find('ScientificName').text
+                        #     ancestor_rank = ancestor.find('Rank').text
+                        #     if ancestor_rank in LINEAGE_RANKS:
+                        #         parent = TaxonRankViewSet.save_by_rank(ancestor_name, ancestor_rank, taxid=ancestor_id, parent=parent)
+                        # taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_name, tax_rank, taxid=taxon['taxid'], parent=parent)
                     if tax_seg != 'None':
                         taxonrank_obj = TaxonRankViewSet.save_by_rank(tax_seg, 'segment', parent=taxonrank_obj)
 
@@ -1388,9 +1440,15 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                 cromwell_json = cromwell_response.json()
                 fail_message = cromwell_json['failures'][0]['causedBy'][0]['message']
                 if re.match(ADAPT_ERROR, failure['message']):
-                    S3 = boto3.client("s3",
-                        aws_access_key_id=AWS_ACCESS_KEY_ID,
-                        aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+                    try:
+                        S3 = boto3.client("s3",
+                            aws_access_key_id=AWS_ACCESS_KEY_ID,
+                            aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+                    except ClientError as e:
+                        content = {'Connection Error': "Unable to connect to our file storage. "
+                            "Try again in a few minutes. If it still doesn't work, "
+                            "contact %s." %CONTACT}
+                        return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
                     response = S3.get_object(
                         Bucket=CROMWELL_BUCKET,
                         Key='cromwell-execution/adapt_web/%s/call-adapt/adapt-stderr.log' %(adaptrun.cromwell_id),
