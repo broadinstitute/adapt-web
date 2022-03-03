@@ -15,7 +15,7 @@
         <b-navbar-toggle target="nav-collapse">
         </b-navbar-toggle>
         <b-collapse id="nav-collapse" is-nav><b-navbar-nav :justified=true class="w-100 mx-auto">
-        <b-nav-item disabled href="" class="d-none d-lg-block"></b-nav-item>
+        <b-nav-item disabled href="" class="d-none d-lg-inline-block"></b-nav-item>
         <b-nav-item href="/designs" :class="{ 'current-page': page=='Assays'}">PRE-DESIGNED ASSAYS</b-nav-item>
         <b-nav-item href="/run" :class="{ 'current-page': page=='Run'}">RUN ADAPT</b-nav-item>
         <b-nav-item href="/results" :class="{ 'current-page': page=='Results'}">RESULTS</b-nav-item>
