@@ -60,6 +60,7 @@ COMPUTE_ERROR = re.compile(r"\[Attempted \d+ time\(s\)\] - IOException: Could no
 MAFFT_ERROR = b'The generated alignment contains no sequences'
 TAXID_ERROR = b'Exception: No sequences were found for taxid'
 KILLED_ERROR = b'Killed'
+REFERENCE_ERROR = b'does not have any references in NCBI'
 
 # Store the unambiguous bases that make up each
 # ambiguous base in the IUPAC notation
@@ -1461,6 +1462,8 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         adaptrun.fail_caused_by = "Memory"
                     elif KILLED_ERROR in file_body:
                         adaptrun.fail_caused_by = "Busy"
+                    elif REFERENCE_ERROR in file_body:
+                        adaptrun.fail_caused_by = "No references"
                     else:
                         adaptrun.fail_caused_by = "Unknown"
                 elif re.match(COMPUTE_ERROR, fail_message):
