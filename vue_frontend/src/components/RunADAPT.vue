@@ -112,7 +112,7 @@
                           :aria-describedby="subsec + '-' + input_var + '-help ' + subsec + '-' + input_var + '-feedback'"
                           switch
                           class="text-center"
-                        >{{ inputs[sec][subsec][input_var].fields }}</b-form-checkbox>
+                        >{{ inputs[sec][subsec][input_var].value? inputs[sec][subsec][input_var].fields.enabled : inputs[sec][subsec][input_var].fields.disabled }}</b-form-checkbox>
                         <multiselect
                           v-if="inputs[sec][subsec][input_var].type == 'multiselect'"
                           v-model="inputs[sec][subsec][input_var].value"
@@ -246,7 +246,7 @@
                               :disabled="loading"
                               switch
                               class="text-center"
-                            >{{ inputs[sec][subsec][input_var].fields }}</b-form-checkbox>
+                            >{{ inputs[sec][subsec][input_var].value? inputs[sec][subsec][input_var].fields.enabled : inputs[sec][subsec][input_var].fields.disabled }}</b-form-checkbox>
                             <b-form-text v-if="inputs[sec][subsec][input_var].description" :id="subsec + '-' + input_var + '-help'" v-html="inputs[sec][subsec][input_var].description"></b-form-text>
                             <b-form-text v-else-if="inputs[sec][subsec][input_var].predescription" :id="subsec + '-' + input_var + '-help'" class="m-0 pb-2 f-6">
                               <span v-html="inputs[sec][subsec][input_var].predescription"/>
@@ -535,7 +535,7 @@ export default {
               value: '',
               options: [
                 { value: 'auto-from-args', text: 'Viral Taxon' },
-                { value: 'fasta', text: 'Prealigned FASTA' },
+                { value: 'fasta', text: 'FASTA File' },
               ],
               rules: 'required',
               exclude: true,
@@ -574,12 +574,21 @@ export default {
             show: false,
             fasta: {
               order: 0,
-              label: 'Prealigned FASTA File',
+              label: 'FASTA File',
               type: 'file',
               multiple: false,
               value: [],
-              description: 'Sequence <i>must</i> be aligned. You can use <a href="https://mafft.cbrc.jp/alignment/server/" rel="noreferrer" target="_blank">MAFFT</a> to align FASTAs. If file size is larger than 100MB, compress it with gzip.',
+              description: 'If file size is larger than 100MB, compress it with gzip.',
               rules: 'required_if:@inputchoice,fasta',
+              cols: 12
+            },
+            unaligned_fasta: {
+              order: 1,
+              type: 'boolean',
+              value: true,
+              fields: {'enabled': 'Unaligned sequences in FASTA', 'disabled': 'Pre-aligned sequences in FASTA'},
+              rules: '',
+              cols: 12,
             },
           },
           all: {
@@ -772,7 +781,7 @@ export default {
               cols: 6
             },
           },
-          autoadv: {
+          alnadv: {
             order: 2,
             show: false,
             label: 'Alignment',
@@ -785,15 +794,15 @@ export default {
               step: 0.01,
               description: 'A measure of how similar sequences need to be for them to be aligned.',
               rules: 'double',
-              cols: 8
+              cols: 12
             },
             write_aln: {
               order: 1,
               type: 'boolean',
               value: true,
-              fields: 'Output Alignment',
+              fields: {'enabled': 'Output alignment', 'disabled': 'Don\'t output alignment'},
               rules: '',
-              cols: 4
+              cols: 12
             },
           },
           obj: {
@@ -970,6 +979,9 @@ export default {
     inputchoiceval() {
       return this.inputs.opts.inputchoices.inputchoice.value
     },
+    alnval() {
+      return (this.inputs.opts.inputchoices.inputchoice.value == 'auto-from-args' || (this.inputs.opts.inputchoices.inputchoice.value == 'fasta' && this.inputs.opts.fileinput.unaligned_fasta.value))
+    },
     objval() {
       return this.inputs.advopts.obj.obj.value
     },
@@ -999,7 +1011,9 @@ export default {
     inputchoiceval(val) {
       this.inputs.opts.autoinput.show = val == 'auto-from-args';
       this.inputs.opts.fileinput.show = val == 'fasta';
-      this.inputs.advopts.autoadv.show = val == 'auto-from-args';
+    },
+    alnval(val) {
+      this.inputs.advopts.alnadv.show = val;
     },
     objval(val) {
       this.inputs.advopts.minguides.show = val == 'minimize-guides';
@@ -1120,7 +1134,7 @@ export default {
                 } else {
                   for (let input_var of this.get_sub(this.inputs[sec][subsec])) {
                     if (this.inputs[sec][subsec][input_var].show != false & !this.checkEmpty(this.inputs[sec][subsec][input_var].value)) {
-                      if (input_var.includes('fasta')) {
+                      if (this.inputs[sec][subsec][input_var].type == 'file') {
                         if (Array.isArray(this.inputs[sec][subsec][input_var].value)) {
                           for (let file of this.inputs[sec][subsec][input_var].value) {
                             form_data.append(input_var + '[]', file, file.name);
