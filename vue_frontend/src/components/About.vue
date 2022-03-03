@@ -9,7 +9,7 @@
           <i style="font-size: max(min(1.7vw, 1.4em),0.8em)">Activity-informed Design with All-inclusive Patrolling of Targets</i>
         </b-col>
       </b-row>
-      <p class="pb-3 text-muted f-4">ADAPT efficiently designs nucleic acid diagnostic assays with maximal predicted sensitivity across genomic variation, with a focus on viruses.</p>
+      <p class="pb-3 text-muted f-4">ADAPT efficiently designs nucleic acid diagnostic assays with maximal sensitivity across genomic variation, with a focus on CRISPR-based detection of viruses.</p>
       <b-row>
         <b-col sm=1></b-col>
         <b-col sm=10>
