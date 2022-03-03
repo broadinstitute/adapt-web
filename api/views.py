@@ -1439,7 +1439,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
                 cromwell_json = cromwell_response.json()
                 fail_message = cromwell_json['failures'][0]['causedBy'][0]['message']
-                if re.match(ADAPT_ERROR, failure['message']):
+                if re.match(ADAPT_ERROR, fail_message):
                     try:
                         S3 = boto3.client("s3",
                             aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -1463,7 +1463,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                         adaptrun.fail_caused_by = "Busy"
                     else:
                         adaptrun.fail_caused_by = "Unknown"
-                elif re.match(COMPUTE_ERROR, failure['message']):
+                elif re.match(COMPUTE_ERROR, fail_message):
                     adaptrun.fail_caused_by = "Busy"
                 else:
                     adaptrun.fail_caused_by = "Unknown"
