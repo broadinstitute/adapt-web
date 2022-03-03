@@ -82,8 +82,18 @@ th > div {
   vertical-align: middle;
 }
 
-.current-page {
-  font-weight: 600;
+.navbar {
+  padding: 0;
+}
+
+.navbar-toggler {
+  padding: 0.25rem 1.75rem;
+}
+
+@media (min-width: 992px) {
+  .current-page {
+    border-bottom: 3px solid $dark;
+  }
 }
 
 html {
@@ -150,8 +160,8 @@ text {
 }
 
 .navbar-collapse .nav-item {
-  height: 4em;
-  line-height: 4em;
+  height: 5em;
+  line-height: 5em;
 }
 
 .navbar-collapse .nav-item a
@@ -160,6 +170,7 @@ text {
   vertical-align: middle;
   line-height: 1.5em; /* <-- adjust this */
   padding: 0 0;
+  font-weight: 500;
 }
 
 .navbar-brand {
