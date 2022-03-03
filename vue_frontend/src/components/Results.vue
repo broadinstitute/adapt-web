@@ -311,7 +311,7 @@ export default {
       })
       if (response.ok) {
         this.$root.$data.ann[this.runid] = await response.json()
-        if (this.$root.$data.ann[this.runid] = {}) {
+        if (this.$root.$data.ann[this.runid] == {}) {
           this.$root.$data.ann[this.runid] = {0: []}
         }
       } else if (response.status != 400) {
