@@ -1427,7 +1427,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
         content = {'cromwell_id': adaptrun.cromwell_id, 'status': adaptrun.status}
 
         # If failed, add reason
-        if adaptrun.status in FAILED_STATES:
+        if adaptrun.status in FAILED_STATES and not adaptrun.cromwell_id.startswith('example'):
             if adaptrun.fail_caused_by == "":
                 try:
                     cromwell_response = requests.get("%s/%s/metadata" %(SERVER_URL,adaptrun.cromwell_id), verify=False)
