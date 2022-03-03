@@ -1151,7 +1151,7 @@ export default {
 
           if (response.ok) {
             let responsejson = await response.json()
-            let nickname = form_data.get('nickname') | ""
+            let nickname = this.inputs.postopts.runopts.nickname.value
             let runid = responsejson.cromwell_id.slice(0,8) + ';' + responsejson.submit_time + ';' + nickname
             let prev_runids = Cookies.get('runid')
             if (prev_runids == null) {
