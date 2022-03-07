@@ -56,6 +56,7 @@ MAX_ALGS = ["random-greedy", "greedy"]
 FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
 
 ADAPT_ERROR = re.compile(r"Job adapt_web\.adapt.+ exited with return code 1 which has not been declared as a valid return code\. See \'continueOnReturnCode\' runtime attribute for more details\.")
+ADAPT_ERROR_2 = re.compile(r"The compute backend terminated the job\. If this termination is unexpected, examine likely causes such as preemption, running out of disk or memory on the compute instance, or exceeding the backend's maximum job duration\.")
 COMPUTE_ERROR = re.compile(r"\[Attempted \d+ time\(s\)\] - IOException: Could not read from s3:\/\/.+\/cromwell-execution\/adapt-web\/.+\/adapt-rc\.txt")
 MAFFT_ERROR = b'The generated alignment contains no sequences'
 TAXID_ERROR = b'Exception: No sequences were found for taxid'
@@ -1441,7 +1442,7 @@ class ADAPTRunViewSet(viewsets.ModelViewSet):
                     return Response(content, status=httpstatus.HTTP_504_GATEWAY_TIMEOUT)
                 cromwell_json = cromwell_response.json()
                 fail_message = cromwell_json['failures'][0]['causedBy'][0]['message']
-                if re.match(ADAPT_ERROR, fail_message):
+                if re.match(ADAPT_ERROR, fail_message) or re.match(ADAPT_ERROR_2, fail_message):
                     try:
                         S3 = boto3.client("s3",
                             aws_access_key_id=AWS_ACCESS_KEY_ID,
