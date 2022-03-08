@@ -578,7 +578,7 @@ export default {
               type: 'file',
               multiple: false,
               value: [],
-              description: 'If file size is larger than 100MB, compress it with gzip.',
+              description: 'Nucleotide sequences. If file size is larger than 100MB, compress it with gzip.',
               rules: 'required_if:@inputchoice,fasta',
               cols: 12
             },
