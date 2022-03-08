@@ -57,7 +57,7 @@ FINAL_STATES = SUCCESSFUL_STATES + FAILED_STATES
 
 ADAPT_ERROR = re.compile(r"Job adapt_web\.adapt.+ exited with return code 1 which has not been declared as a valid return code\. See \'continueOnReturnCode\' runtime attribute for more details\.")
 ADAPT_ERROR_2 = re.compile(r"The compute backend terminated the job\. If this termination is unexpected, examine likely causes such as preemption, running out of disk or memory on the compute instance, or exceeding the backend's maximum job duration\.")
-COMPUTE_ERROR = re.compile(r".*Could not read from s3:\/\/.+\/cromwell-execution\/adapt-web\/.+\/adapt-rc\.txt")
+COMPUTE_ERROR = re.compile(r".*Could not read from s3:\/\/.+\/cromwell-execution\/adapt_web\/.+\/adapt-rc\.txt")
 MAFFT_ERROR = b'The generated alignment contains no sequences'
 TAXID_ERROR = b'Exception: No sequences were found for taxid'
 KILLED_ERROR = b'Killed'
