@@ -1,5 +1,5 @@
-from .serializers import *
-from .models import *
+from api.serializers import *
+from api.models import *
 
 
 class Command(BaseCommand):
