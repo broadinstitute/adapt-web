@@ -1,6 +1,8 @@
 from api.serializers import *
 from api.models import *
 
+from django.core.management.base import BaseCommand
+
 
 class Command(BaseCommand):
     help = 'Remove unused taxonomies from our database'
