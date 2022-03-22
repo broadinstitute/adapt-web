@@ -1022,13 +1022,20 @@ class AssayViewSet(viewsets.ModelViewSet):
             for i, val in enumerate(taxa_line.split('\t'))} \
             for taxa_line in taxa_lines[1:]]
 
+        if tax_to_do:
+            row_to_shard = lambda row: tax_to_do.index(row)
+        else:
+            row_to_shard = lambda row: row
+
         for p, sp in enumerate(sps):
             for q, obj in enumerate(objs):
-                for r, taxon in enumerate(taxa):
+                for row, taxon in enumerate(taxa):
                     tax_seg = taxon['segment']
-                    if tax_to_do and r not in tax_to_do:
+                    if tax_to_do and row not in tax_to_do:
                         continue
-                    if (isinstance(s3_file_paths[p][q], dict) and r not in s3_file_paths[p][q]) or s3_file_paths[p][q][r] == []:
+                    r = row_to_shard(row)
+                    if ((isinstance(s3_file_paths[p][q], dict) and r not in s3_file_paths[p][q])
+                            or s3_file_paths[p][q][r] == []):
                         continue
                     taxonrank_obj = TaxonRankViewSet.save_by_taxid(int(taxon['taxid']))
                         # params = {'db': 'taxonomy', 'id': int(taxon['taxid'])}
