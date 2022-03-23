@@ -60,7 +60,7 @@ class Command(BaseCommand):
         prev_seg = None
         self.stdout.write('Getting viral and segment data (may take a while)...')
         for row in tqdm(ncbi_neighbors_table.content.decode("utf-8").split("\r\n")):
-            if row.startswith("##"):
+            if row.startswith("##") or len(row) == 0:
                 continue
             cells = row.split("\t")
             hosts = cells[2].split(",")
