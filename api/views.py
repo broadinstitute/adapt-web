@@ -453,13 +453,23 @@ class TaxonRankViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             taxonrank = serializer.save()
         if taxid:
+            taxon = None
             try:
-                taxon_data = {'taxid': taxid, 'taxonrank': taxonrank.pk}
+                taxon_data = {'taxid': taxid}
+                taxon = get_object_or_404(Taxon, **taxon_data)
+                taxon_data['taxonrank'] = taxonrank.pk
                 get_object_or_404(Taxon, **taxon_data)
             except Http404:
-                serializer = TaxonCreateSerializer(data=taxon_data)
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
+                if taxon is None:
+                    taxon_data['taxonrank'] = taxonrank.pk
+                    serializer = TaxonCreateSerializer(data=taxon_data)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                else:
+                    # This tax ID (Taxon) has a different description
+                    # (TaxonRank) in the database; most likely a manual edit
+                    # to the name was made. Delete the new taxon rank
+                    taxonrank.delete()
         return taxonrank
 
     @staticmethod
