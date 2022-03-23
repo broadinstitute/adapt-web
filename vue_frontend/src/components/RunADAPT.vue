@@ -340,7 +340,7 @@ export default {
   },
   async created() {
     let vm = this
-    for (let filterrank of ['species', 'genus', 'subspecies', 'family']) {
+    for (let filterrank of ['species', 'genus', 'family', 'subspecies']) {
       let nexturl = '/api/taxon/?limit=100&rank='+filterrank
       while (nexturl != null) {
         let response = await fetch(nexturl, {
