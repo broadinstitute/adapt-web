@@ -77,16 +77,17 @@ All the parts specific to Vue.
 The site wide stylesheet (written in SCSS) and images are in this folder.
 
 ##### *components*
-Contains the actual HTML/CSS/JS/Vue code. There are 20 components currently; 4 that corresponds with a page (`About.vue`, `Design.vue`, `RunADAPT.vue`, `Results.vue`), 2 for the header/footer (`Header.vue`, `Footer.vue`), 5 for visualizing assay results in a modal (`AssayModal.vue`, `AssayTable.vue`, `Assay.vue`, `Genome.vue`, and `ColorLegend.vue`), 7 for handling the expanding taxon structure (`Family.vue`, `Genus.vue`, `Species.vue`, `Subspecies.vue`, `ExpandFamily.vue`, `ExpandGenus.vue`, `ExpandSpecies.vue`), 1 message modal (`Modal.vue`), and 1 currently unused Home component (`Home.vue`).
+Contains the actual HTML/CSS/JS/Vue code. There are 20 components currently; 4 that corresponds with a page (`About.vue`, `Design.vue`, `RunADAPT.vue`, `Results.vue`), 2 for the header/footer (`Header.vue`, `Footer.vue`), 5 for visualizing assay results in a modal (`AssayModal.vue`, `AssayTable.vue`, `Assay.vue`, `Genome.vue`, and `ColorLegend.vue`), 7 for handling the expanding taxon structure (`Family.vue`, `Genus.vue`, `Species.vue`, `Subspecies.vue`, `ExpandFamily.vue`, `ExpandGenus.vue`, `ExpandSpecies.vue`), and 1 message modal (`Modal.vue`).
 
 The first section (`<template> ... </template>`) is the HTML template that Vue will insert data into.
 
-The second section (everything in `<script> ... export default {...} </script>`) provides properties and Javascript functions for the component. `data` sets up variables for the DOM. Code in `created()` is run immediately before the component is loaded for the first time; code in `mounted()` is run immediately after the component is loaded for the first time. Functions in `methods` are accessible from the template.
+The second section (everything in `<script> ... export default {...} </script>`) provides properties and Javascript functions for the component. `data` sets up variables for the DOM. `computed()` defined variables that will be dynamically updated based on the function given. Code in `created()` is run immediately before the component is loaded for the first time; code in `mounted()` is run immediately after the component is loaded for the first time. Functions in `methods` are accessible from the template.
 
 The optional third section (`<style scoped> ... </style>`) is CSS that will only affect this component.
 
 ##### pages
 Contains code to set up components into actual pages. In the future, we could change the components that are only one page to be made directly in that page, rather than importing them.
+For a breakdown of the pages, check out [vue_frontend/src/pages/README.md](vue_frontend/src/pages/README.md)
 
 #### node_modules (only exists after installing Vue dependencies)
 Vue dependencies will be stored in this folder.
@@ -98,7 +99,7 @@ Contains the code that connects Vue to Django. It sets up URL routing for each p
 Contains the API code-the database schema (*`models.py`*), as well as functions to define the various types of requests to the API (*`views.py`*--note, a "viewset" in *`views.py`* is a class that automatically builds the basic GET/POST/PUT etc. functions). `serializers.py` defines the fields needed to put an object into the database; `urls.py` sets up URL routing to each model; `admin.py` allows access to the models via the Django admin interface (which we shouldn't need, but is set up just in case); `apps.py` sets up the API as an app to be run by the django_backend.
 
 ### templates
-These are HTML files that Vue inserts into. For the most part, it's just connection between Vue and Django, but the head is made in `base.html` (including the connections to Google Fonts, Google Analytics, and Plausible Analytics).
+These are HTML files that Vue inserts into. For the most part, it's just connection between Vue and Django, but the head is made in `base.html` (including the connections to Google Fonts and Plausible Analytics).
 
 ### static (only exists after building Vue)
 Contains a minified version of the static assets for Vue. Django accesses Vue's `public` folder via this.

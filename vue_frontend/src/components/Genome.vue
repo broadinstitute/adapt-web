@@ -13,12 +13,17 @@ import * as d3 from "d3";
 export default {
   name: 'Genome',
   props: {
+    // Label for the genome
     cluster_id: String,
+    // Length of the alignment
     alignmentLength: Number,
+    // All of the assays used in the alignment
     assays: Array,
+    // All of the annotations of the alignment
     annotations: Array,
   },
   data() {
+    // Produces 10 colors for the annotations that are similar to the color scheme of the page
     const color = d3.scaleOrdinal(
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
       [
@@ -33,10 +38,14 @@ export default {
         d3.interpolateCool(0),
       ]
     );
+    // Sets the height of the axis
     const axesHeight = 40
+    // Sets the height difference between assay labels
     const yspace = 12
     return {
+      // SVG box width. Used as a base to scale things
       width: 800,
+      // SVG box height.
       height: axesHeight + yspace*(this.assays.length+2.5),
       margin: {
         top: 0,
@@ -45,10 +54,13 @@ export default {
         bottom: 0,
       },
       "yspace": yspace,
+      // Current location when scrolling
       scrollY: 0,
+      // References to assay links
       assayLinks: [],
       "axesHeight": axesHeight,
       annotationThickness: 10,
+      // Color options for annotations
       "color": color,
     };
   },
@@ -252,34 +264,54 @@ export default {
         .attr("y","19")
         .style("font-size","0.6rem");
     },
+    /**
+     * Modifies this.annotations to also include what row it should be in and what color it should be
+     *
+     * @return {Number} number of rows needed for the annotations
+     */
     setAnnotationRows() {
+      // Keeps track of the base location that the last annotation of that row ended
       var rowEnds = [];
+      // Keeps track of the color of the last annotation of that row
       var rowColors = [];
+      // Sort annotations in order of start position, breaking ties with longer lengths
       this.annotations.sort(function (a, b){
         if (a.start == b.start) {
+          // Same start, so break tie by the one with longer length
           return (b.end-b.start) - (a.end-a.start)
         }
+        // Compare start positions
         return a.start - b.start
       })
+      // Iterate through sorted annotations and add the properties row and color to each
       for (let annotation of this.annotations) {
         annotation.start = parseInt(annotation.start)
         annotation.end = parseInt(annotation.end)
         let row = null;
+        // i is the index of the row
         let i = 0;
+        // Find first row on which annotation will fit
         for (let rowEnd of rowEnds) {
           if (rowEnd <= annotation.start) {
+            // Annotation will fit on this row, set the row
             row = parseInt(i);
+            // Update the last annotation row color and row end
             rowColors[i]++
             rowEnds[i] = annotation.end;
+            // Row found, leave loop
             break;
           }
+          // Check next row on next loop
           i++;
         }
         if (row == null) {
+          // Does not fit in any row; add a new one
           row = rowEnds.length;
+          // Initialize new row's starting color to be 4 away from the previous row's. (helps randomize the colors a bit/reduces nearby colors being near each other in the visualization)
           rowColors.push(rowEnds.length*4)
           rowEnds.push(annotation.end);
         }
+        // Set the annotation's row and color
         annotation.row = row
         annotation.color = this.color(rowColors[row])
       }

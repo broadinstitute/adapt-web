@@ -1,5 +1,6 @@
 <template>
   <b-container fluid class="header sticky-top" :class="{ 'scroll-shade': scroll }" :style="'opacity: ' + slowshow.toString() + '; transition: 0.3s;'">
+    <!--Github Corner: Copyright (c) 2016 Tim Holman (MIT License) https://tholman.com/github-corners/-->
     <a href="https://github.com/broadinstitute/adapt" rel="noreferrer" target="_blank" class="github-corner" aria-label="View source on GitHub">
       <svg width="min(3rem, 12vw)" height="min(3rem, 12vw)" viewBox="0 0 250 250" style="fill: #45e2ea; color:#fff; position: fixed; top: 0; border: 0; right: 0; left: auto;" aria-hidden="true" class="fixed-top">
         <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
@@ -11,11 +12,14 @@
       <b-col cols=0 md=1></b-col>
       <b-col cols=12 md=10>
       <b-navbar toggleable="lg">
+        <!--Logo-->
         <b-navbar-brand href="/">AD<img v-if="prod" class="logo" @load="onLoad" :src="`${imgsrc}/static/vue/img/logo.png`" alt="A"><img v-else class="logo" @load="onLoad" src="@/assets/img/logo.png" alt="A">PT</b-navbar-brand>
+        <!--Hamburger Menu-->
         <b-navbar-toggle target="nav-collapse">
         </b-navbar-toggle>
+        <!--Menu options-->
         <b-collapse id="nav-collapse" is-nav><b-navbar-nav :justified=true class="w-100 mx-auto">
-        <b-nav-item disabled href="" class="d-none d-lg-inline-block"></b-nav-item>
+        <b-nav-item disabled href="" class="d-none d-lg-inline-block"></b-nav-item><!--Spacing-->
         <b-nav-item href="/designs" :class="{ 'current-page': page=='Assays'}">PRE-DESIGNED ASSAYS</b-nav-item>
         <b-nav-item href="/run" :class="{ 'current-page': page=='Run'}">RUN ADAPT</b-nav-item>
         <b-nav-item href="/results" :class="{ 'current-page': page=='Results'}">RESULTS</b-nav-item>
@@ -35,13 +39,18 @@ export default {
   },
   data () {
     return {
+      // Image source; changes depending on the domain being used
       imgsrc: process.env.BASE_URL,
+      // States if we are in production mode or not
       prod: false,
+      // Allows header to only be shown after image has loaded for a smoother transition
       slowshow: 0,
+      // Needed for the header to have shading on scroll
       scrollY: window.scrollY
     }
   },
   computed: {
+    // Required to be a computed property for it to continuously update the site with the scroll position
     scroll() {
       return this.scrollY > 0;
     }
@@ -53,9 +62,13 @@ export default {
   },
   mounted () {
     window.addEventListener('scroll', () => {
-      this.scrollY = window.scrollY;    })
+      this.scrollY = window.scrollY;
+    })
   },
   methods: {
+    /**
+     * Shows header after logo image has loaded
+     */
     onLoad() {
       this.slowshow = 1;
     }

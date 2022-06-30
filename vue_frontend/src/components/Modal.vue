@@ -26,17 +26,23 @@ export default {
   name: 'Modal',
   data() {
     return {
+      // Determines what color the modal is
+      // (one of 'danger', 'warning', 'info', 'success', 'dark', and 'light')
       variant: 'dark',
+      // Determines the title of the modal
       title: '',
+      // Determines the message within the modal
       msg: ''
     }
   },
   mounted() {
     var vm = this
+    // Watch for the event 'show-msg'
     vm.$root.$on('show-msg', async function() {
       vm.title =  vm.$root.$data.modaltitle
       vm.msg =  vm.$root.$data.modalmsg
       vm.variant = vm.$root.$data.modalvariant
+      // Shows the modal using BootstrapVue's watcher
       this.$bvModal.show("msg-modal")
     })
   },
