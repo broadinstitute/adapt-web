@@ -1,6 +1,7 @@
 from django.db import models
 
 
+#TODO: Should probably be refactored to be called Taxon
 class TaxonRank(models.Model):
     '''Defines base model for all viral genuses with premade designs
     '''
@@ -62,6 +63,7 @@ class TaxonRank(models.Model):
         ordering = ['rank', 'latin_name']
 
 
+#TODO: Should probably be refactored to be called TaxID
 class Taxon(models.Model):
     '''Defines base model for all viral taxonomies with premade designs
     '''
